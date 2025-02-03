@@ -219,7 +219,7 @@ st.markdown("<h1>Automated Geospatial Analysis for Sub-National Tailoring of Mal
 st.markdown("""
     <div class="img-container">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 100%; height: auto;">
+             style="width: 20%; height: 20;">
     </div>
 """, unsafe_allow_html=True)
 
