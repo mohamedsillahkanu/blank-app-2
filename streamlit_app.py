@@ -3,10 +3,8 @@ import time
 import random
 import threading
 
-# Set page config first
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
-# Add light theme to the themes dictionary
 themes = {
     "Black Modern": {
         "bg": "#000000",
@@ -52,27 +50,22 @@ themes = {
     }
 }
 
-# Modified CSS to support both light and dark themes
 st.markdown("""
     <style>
-        /* Theme-based styling */
         .stApp {
             background-color: var(--bg-color, #0E1117) !important;
             color: var(--text-color, #E0E0E0) !important;
         }
         
-        /* Sidebar theming */
         [data-testid="stSidebar"] {
             background-color: var(--sidebar-bg, #1E1E1E) !important;
             border-right: 1px solid var(--border-color, #2E2E2E);
         }
         
-        /* Text theming */
         .stMarkdown, p, h1, h2, h3 {
             color: var(--text-color, #E0E0E0) !important;
         }
         
-        /* Custom title with theme support */
         .custom-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -87,18 +80,15 @@ st.markdown("""
             width: 100%;
         }
         
-        /* Selectbox theming */
         .stSelectbox > div > div {
             background-color: var(--input-bg, #1E1E1E) !important;
             color: var(--text-color, #E0E0E0) !important;
         }
         
-        /* Checkbox theming */
         .stCheckbox > div > div > label {
             color: var(--text-color, #E0E0E0) !important;
         }
         
-        /* Section cards with theme support */
         .section-card {
             background: var(--card-bg, #1E1E1E) !important;
             color: var(--text-color, #E0E0E0) !important;
@@ -117,7 +107,6 @@ st.markdown("""
             background: var(--card-hover-bg, #2E2E2E) !important;
         }
 
-        /* Section header with theme support */
         .section-header {
             font-size: 1.5rem;
             font-weight: bold;
@@ -125,7 +114,6 @@ st.markdown("""
             color: var(--accent-color, #3498db) !important;
         }
         
-        /* Bullet points with theme support */
         .custom-bullet {
             margin-left: 20px;
             position: relative;
@@ -138,12 +126,10 @@ st.markdown("""
             left: -15px;
         }
         
-        /* Content text with theme support */
         .content-text {
             color: var(--text-color, #E0E0E0) !important;
         }
         
-        /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -161,13 +147,29 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Initialize session states
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
     st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
-# Get selected theme
+if st.session_state.first_load:
+    st.balloons()
+    st.snow()
+    welcome_placeholder = st.empty()
+    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
+    time.sleep(3)
+    welcome_placeholder.empty()
+    st.session_state.first_load = False
+
+current_time = time.time()
+if current_time - st.session_state.last_animation >= 30:
+    st.session_state.last_animation = current_time
+    theme_keys = list(themes.keys())
+    st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
+    st.balloons()
+else:
+    selected_theme = list(themes.keys())[st.session_state.theme_index]
+
 selected_theme = st.sidebar.selectbox(
     "🎨 Select Theme",
     list(themes.keys()),
@@ -175,11 +177,9 @@ selected_theme = st.sidebar.selectbox(
     key='theme_selector'
 )
 
-# Apply theme
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
 
-# Apply theme-specific CSS variables
 st.markdown(f"""
     <style>
         :root {{
@@ -197,13 +197,8 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# Rest of your existing code...
-# (Welcome animation, content sections, etc. remain the same)
-
-# Title
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
-# Image container
 st.markdown("""
     <div class="img-container" style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
@@ -211,7 +206,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Content Sections
 sections = {
     "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis. Based on the experience of the 2023 SNT implementation, we have developed an automated tool using the same validated codes with additional enhanced features. This innovation aims to build the capacity of National Malaria Control Program (NMCP) to conduct SNT easily on a yearly basis and monitor activities effectively using this tool. The tool is designed to be user-friendly and offers high processing speed.
 
@@ -236,7 +230,6 @@ The integration of automation in geospatial analysis significantly enhances the 
     "Conclusion": """The adoption of this automated system for SNT analysis represents a transformative opportunity for NMCPs. By significantly reducing the time and effort required for these tasks, programs can enhance their efficiency, improve the quality of their analyses, and ultimately lead to more timely and informed decision-making. This tool, built on the experience of the 2023 SNT implementation, not only addresses existing operational challenges but also empowers analysts to focus on deriving insights rather than getting lost in technical details. The user-friendly interface and high processing speed make it an invaluable asset for regular SNT updates and monitoring of malaria control activities."""
 }
 
-# Display sections with animation delay
 for i, (title, content) in enumerate(sections.items()):
     time.sleep(0.2)
     st.markdown(f"""
@@ -246,7 +239,6 @@ for i, (title, content) in enumerate(sections.items()):
         </div>
     """, unsafe_allow_html=True)
 
-# Enable/Disable animations toggle
 if st.sidebar.checkbox("Enable Auto Animations", value=True):
     def show_periodic_animations():
         while True:
@@ -255,7 +247,6 @@ if st.sidebar.checkbox("Enable Auto Animations", value=True):
             time.sleep(10)
             st.snow()
 
-    # Start animation thread if not already running
     if not hasattr(st.session_state, 'animation_thread'):
         st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
         st.session_state.animation_thread.daemon = True
