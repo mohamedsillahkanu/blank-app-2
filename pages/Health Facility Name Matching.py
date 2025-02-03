@@ -187,7 +187,7 @@ else:
 theme = themes[selected_theme]
 
 # Title - Using both st.title and custom HTML for better visibility
-st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+st.title("Health Facility Name Matching")
 # Image container after the title
 st.markdown("""
     <div class="img-container" style="text-align: center;">
@@ -245,7 +245,7 @@ def calculate_match(column1, column2, threshold):
     return pd.DataFrame(results)
 
 def main():
-    st.title("Health Facility Name Matching")
+   
 
     # Initialize session state
     if 'step' not in st.session_state:
