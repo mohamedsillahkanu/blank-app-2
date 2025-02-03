@@ -25,6 +25,21 @@ st.markdown("""
             color: #E0E0E0 !important;
         }
         
+        /* Custom title styles */
+        .custom-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            color: #E0E0E0 !important;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+            width: 100%;
+        }
+        
         /* Dark theme for selectbox */
         .stSelectbox > div > div {
             background-color: #1E1E1E !important;
@@ -62,6 +77,40 @@ st.markdown("""
             color: #E0E0E0;
             position: absolute;
             left: -15px;
+        }
+        
+        /* Section Cards */
+        .section-card {
+            background: #1E1E1E;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            border-left: 5px solid #3498db;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            background: #2E2E2E;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
     </style>
 """, unsafe_allow_html=True)
@@ -130,96 +179,21 @@ else:
 # Get current theme
 theme = themes[selected_theme]
 
-# Apply dark styling
-st.markdown(f"""
-    <style>
-        /* Global Styles */
-        .main {{
-            background-color: {theme["bg"]};
-            color: {theme["text"]};
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }}
-        
-        /* Header Styles */
-        h1 {{
-            background: {theme["gradient"]};
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            text-align: center;
-            animation: fadeIn 1.5s ease-in;
-        }}
-        
-        /* Section Cards */
-        .section-card {{
-            background: {theme["bg"]};
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            border-left: 5px solid {theme["accent"]};
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease-out;
-            color: {theme["text"]};
-        }}
-        
-        .section-card:hover {{
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
-            background: #2E2E2E;
-        }}
-        
-        /* Section Headers */
-        .section-header {{
-            color: {theme["accent"]};
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }}
-        
-        /* Content Text */
-        .content-text {{
-            line-height: 1.6;
-            color: {theme["text"]};
-        }}
-        
-        /* Image Container */
-        .img-container {{
-            border-radius: 15px;
-            overflow: hidden;
-            margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            animation: scaleIn 1s ease;
-            background: {theme["bg"]};
-        }}
-        
-        /* Animations */
-        @keyframes fadeIn {{
-            from {{ opacity: 0; }}
-            to {{ opacity: 1; }}
-        }}
-        
-        @keyframes slideIn {{
-            from {{ transform: translateX(-20px); opacity: 0; }}
-            to {{ transform: translateX(0); opacity: 1; }}
-        }}
-        
-        @keyframes scaleIn {{
-            from {{ transform: scale(0.95); opacity: 0; }}
-            to {{ transform: scale(1); opacity: 1; }}
-        }}
-    </style>
+# Title - Using both st.title and custom HTML for better visibility
+#st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+
+# Adding the title again with custom styling
+st.markdown("""
+    <div class="custom-title">
+        Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions
+    </div>
 """, unsafe_allow_html=True)
 
-# Title and Image
-st.markdown("<h1>Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions</h1>", unsafe_allow_html=True)
-
+# Image container after the title
 st.markdown("""
-    <div class="img-container">
+    <div class="img-container" style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 20%; height: 20;">
+             style="width: 50%; max-width: 500px; margin: 20px auto;">
     </div>
 """, unsafe_allow_html=True)
 
