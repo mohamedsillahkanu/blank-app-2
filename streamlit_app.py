@@ -6,42 +6,102 @@ import threading
 # Set page config first
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
+# Force dark theme across the entire app
+st.markdown("""
+    <style>
+        /* Override Streamlit's default theme to force dark mode */
+        .stApp {
+            background-color: #0E1117 !important;
+        }
+        
+        /* Dark theme for sidebar */
+        [data-testid="stSidebar"] {
+            background-color: #1E1E1E !important;
+            border-right: 1px solid #2E2E2E;
+        }
+        
+        /* Dark theme for all text */
+        .stMarkdown, p, h1, h2, h3 {
+            color: #E0E0E0 !important;
+        }
+        
+        /* Dark theme for selectbox */
+        .stSelectbox > div > div {
+            background-color: #1E1E1E !important;
+            color: #E0E0E0 !important;
+        }
+        
+        /* Dark theme for checkbox */
+        .stCheckbox > div > div > label {
+            color: #E0E0E0 !important;
+        }
+        
+        /* Update section cards for dark theme */
+        .section-card {
+            background: #1E1E1E !important;
+            color: #E0E0E0 !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        .section-card:hover {
+            background: #2E2E2E !important;
+        }
+        
+        /* Dark theme for content text */
+        .content-text {
+            color: #E0E0E0 !important;
+        }
+
+        /* Bullet points */
+        .custom-bullet {
+            margin-left: 20px;
+            position: relative;
+        }
+        .custom-bullet::before {
+            content: "•";
+            color: #E0E0E0;
+            position: absolute;
+            left: -15px;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Initialize session states
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
     st.session_state.theme_index = 0
     st.session_state.first_load = True
 
-# Define modern themes
+# Define dark themes
 themes = {
-    "Light Modern": {
-        "bg": "#ffffff",
+    "Dark Modern": {
+        "bg": "#0E1117",
         "accent": "#3498db",
-        "text": "#2c3e50",
+        "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
     },
     "Dark Elegance": {
         "bg": "#1a1a1a",
         "accent": "#e74c3c",
-        "text": "#ecf0f1",
+        "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #e74c3c, #c0392b)"
     },
-    "Nature Fresh": {
-        "bg": "#f0f9f4",
+    "Dark Nature": {
+        "bg": "#1E1E1E",
         "accent": "#27ae60",
-        "text": "#2c3e50",
+        "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)"
     },
-    "Cosmic Purple": {
+    "Dark Cosmic": {
         "bg": "#2c0337",
         "accent": "#9b59b6",
-        "text": "#ffffff",
+        "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)"
     },
-    "Ocean Breeze": {
-        "bg": "#e8f4f8",
+    "Dark Ocean": {
+        "bg": "#1A2632",
         "accent": "#00a8cc",
-        "text": "#2c3e50",
+        "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)"
     }
 }
@@ -70,7 +130,7 @@ else:
 # Get current theme
 theme = themes[selected_theme]
 
-# Apply modern styling
+# Apply dark styling
 st.markdown(f"""
     <style>
         /* Global Styles */
@@ -94,19 +154,21 @@ st.markdown(f"""
         
         /* Section Cards */
         .section-card {{
-            background: white;
+            background: {theme["bg"]};
             border-radius: 15px;
             padding: 25px;
             margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             border-left: 5px solid {theme["accent"]};
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: slideIn 0.5s ease-out;
+            color: {theme["text"]};
         }}
         
         .section-card:hover {{
             transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            background: #2E2E2E;
         }}
         
         /* Section Headers */
@@ -128,8 +190,9 @@ st.markdown(f"""
             border-radius: 15px;
             overflow: hidden;
             margin: 20px 0;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             animation: scaleIn 1s ease;
+            background: {theme["bg"]};
         }}
         
         /* Animations */
@@ -156,7 +219,7 @@ st.markdown("<h1>Automated Geospatial Analysis for Sub-National Tailoring of Mal
 st.markdown("""
     <div class="img-container">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 20%; height: 20;">
+             style="width: 100%; height: auto;">
     </div>
 """, unsafe_allow_html=True)
 
@@ -167,20 +230,20 @@ sections = {
 The integration of automation in geospatial analysis significantly enhances the efficiency and effectiveness of data management and visualization tasks. With the introduction of this automated system, analysis time has been drastically reduced from one year to one week. This shift not only streamlines operations but also allows analysts to focus on interpreting results rather than being bogged down by technical processes.""",
     
     "Objectives": """The main objectives of implementing automated systems for geospatial analysis and data management are:
-    • Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data, enabling quicker decision-making.
-    • Enhance Skill Accessibility: Provide tools that can be used effectively by individuals without extensive technical training.
-    • Improve Data Management Efficiency: Streamline data management processes that currently can take days to complete.
-    • Facilitate Rapid Analysis: Enable automated analysis of uploaded datasets within minutes.""",
+    <div class='custom-bullet'>Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data, enabling quicker decision-making.</div>
+    <div class='custom-bullet'>Enhance Skill Accessibility: Provide tools that can be used effectively by individuals without extensive technical training.</div>
+    <div class='custom-bullet'>Improve Data Management Efficiency: Streamline data management processes that currently can take days to complete.</div>
+    <div class='custom-bullet'>Facilitate Rapid Analysis: Enable automated analysis of uploaded datasets within minutes.</div>""",
     
     "Scope": """The scope of this project encompasses:
-    • The development and implementation of an automated system that simplifies the creation of geospatial visualizations.
-    • A comprehensive automated data analysis tool that processes datasets quickly and efficiently, enabling analysts to obtain insights in less than 20 minutes.
-    • Training and support for users to maximize the benefits of these tools, ensuring that even those with limited technical skills can leverage automation for their analytical needs.""",
+    <div class='custom-bullet'>The development and implementation of an automated system that simplifies the creation of geospatial visualizations.</div>
+    <div class='custom-bullet'>A comprehensive automated data analysis tool that processes datasets quickly and efficiently, enabling analysts to obtain insights in less than 20 minutes.</div>
+    <div class='custom-bullet'>Training and support for users to maximize the benefits of these tools, ensuring that even those with limited technical skills can leverage automation for their analytical needs.</div>""",
     
     "Target Audience": """The target audience includes:
-    • Public health officials and analysts working within NMCPs who require efficient mapping and data analysis solutions.
-    • Data managers and decision-makers seeking to improve operational efficiency and responsiveness to health challenges.
-    • Organizations interested in integrating automation into their workflows to enhance data-driven decision-making capabilities.""",
+    <div class='custom-bullet'>Public health officials and analysts working within NMCPs who require efficient mapping and data analysis solutions.</div>
+    <div class='custom-bullet'>Data managers and decision-makers seeking to improve operational efficiency and responsiveness to health challenges.</div>
+    <div class='custom-bullet'>Organizations interested in integrating automation into their workflows to enhance data-driven decision-making capabilities.</div>""",
     
     "Conclusion": """The adoption of this automated system for SNT analysis represents a transformative opportunity for NMCPs. By significantly reducing the time and effort required for these tasks, programs can enhance their efficiency, improve the quality of their analyses, and ultimately lead to more timely and informed decision-making. This tool, built on the experience of the 2023 SNT implementation, not only addresses existing operational challenges but also empowers analysts to focus on deriving insights rather than getting lost in technical details. The user-friendly interface and high processing speed make it an invaluable asset for regular SNT updates and monitoring of malaria control activities."""
 }
