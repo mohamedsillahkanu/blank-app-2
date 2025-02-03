@@ -12,6 +12,24 @@ themes = {
         "text": "#FFFFFF",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
     },
+    "Pure White": {
+        "bg": "#FFFFFF",
+        "accent": "#000000",
+        "text": "#000000",
+        "gradient": "linear-gradient(135deg, #000000, #333333)"
+    },
+    "Light Silver": {
+        "bg": "#F5F5F5",
+        "accent": "#1E88E5",
+        "text": "#212121",
+        "gradient": "linear-gradient(135deg, #1E88E5, #64B5F6)"
+    },
+    "Light Sand": {
+        "bg": "#FAFAFA",
+        "accent": "#FF7043",
+        "text": "#424242",
+        "gradient": "linear-gradient(135deg, #FF7043, #FFB74D)"
+    },
     "Light Modern": {
         "bg": "#FFFFFF",
         "accent": "#3498db",
