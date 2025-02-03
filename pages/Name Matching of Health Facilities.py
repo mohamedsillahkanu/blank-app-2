@@ -5,9 +5,6 @@ from jellyfish import jaro_winkler_similarity
 from io import BytesIO
 from PIL import Image
 
-st.image("https://raw.githubusercontent.com/mohamedsillahkanu/si/4a7954a650c20056f19da5a77fe5d09ed4e49526/welcome-animation.svg", caption="Welcome Animation")
-
-
 def calculate_match(column1, column2, threshold):
     """Calculate matching scores between two columns using Jaro-Winkler similarity."""
     results = []
