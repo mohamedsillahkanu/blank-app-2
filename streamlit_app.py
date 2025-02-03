@@ -177,6 +177,14 @@ selected_theme = st.sidebar.selectbox(
     key='theme_selector'
 )
 
+# Trigger animations on theme change
+if 'previous_theme' not in st.session_state:
+    st.session_state.previous_theme = selected_theme
+if st.session_state.previous_theme != selected_theme:
+    st.balloons()
+    st.snow()
+    st.session_state.previous_theme = selected_theme
+
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
 
