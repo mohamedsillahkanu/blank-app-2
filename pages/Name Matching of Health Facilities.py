@@ -214,7 +214,16 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 # Title and Image
-st.markdown("<h1>Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions</h1>", unsafe_allow_html=True)
+# Title - Using both st.title and custom HTML for better visibility
+st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+
+# Adding the title again with custom styling
+st.markdown("""
+    <div class="custom-title">
+        Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions
+    </div>
+""", unsafe_allow_html=True)
+
 
 st.markdown("""
     <div class="img-container">
@@ -222,6 +231,7 @@ st.markdown("""
              style="width: 20%; height: 20;">
     </div>
 """, unsafe_allow_html=True)
+
 
 # Content Sections
 sections = {
