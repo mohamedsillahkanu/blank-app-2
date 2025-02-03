@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from jellyfish import jaro_winkler_similarity
+from jellyfish import jaro_winkler_similarity  
 from io import BytesIO
 from PIL import Image
 
