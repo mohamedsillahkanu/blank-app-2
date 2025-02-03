@@ -8,6 +8,12 @@ st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", l
 
 # Add light theme to the themes dictionary
 themes = {
+    "Black Modern": {
+        "bg": "#000000",
+        "accent": "#3498db",
+        "text": "#FFFFFF",
+        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
+    },
     "Light Modern": {
         "bg": "#FFFFFF",
         "accent": "#3498db",
@@ -158,7 +164,7 @@ st.markdown("""
 # Initialize session states
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
-    st.session_state.theme_index = 0
+    st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
 # Get selected theme
@@ -207,11 +213,27 @@ st.markdown("""
 
 # Content Sections
 sections = {
-    "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis...""",
-    "Objectives": """The main objectives of implementing automated systems for geospatial analysis and data management are:...""",
-    "Scope": """...""",
-    "Target Audience": """...""",
-    "Conclusion": """..."""
+    "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis. Based on the experience of the 2023 SNT implementation, we have developed an automated tool using the same validated codes with additional enhanced features. This innovation aims to build the capacity of National Malaria Control Program (NMCP) to conduct SNT easily on a yearly basis and monitor activities effectively using this tool. The tool is designed to be user-friendly and offers high processing speed.
+
+The integration of automation in geospatial analysis significantly enhances the efficiency and effectiveness of data management and visualization tasks. With the introduction of this automated system, analysis time has been drastically reduced from one year to one week. This shift not only streamlines operations but also allows analysts to focus on interpreting results rather than being bogged down by technical processes.""",
+    
+    "Objectives": """The main objectives of implementing automated systems for geospatial analysis and data management are:
+    <div class='custom-bullet'>Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data, enabling quicker decision-making.</div>
+    <div class='custom-bullet'>Enhance Skill Accessibility: Provide tools that can be used effectively by individuals without extensive technical training.</div>
+    <div class='custom-bullet'>Improve Data Management Efficiency: Streamline data management processes that currently can take days to complete.</div>
+    <div class='custom-bullet'>Facilitate Rapid Analysis: Enable automated analysis of uploaded datasets within minutes.</div>""",
+    
+    "Scope": """
+    <div class='custom-bullet'>The development and implementation of an automated system that simplifies the creation of geospatial visualizations.</div>
+    <div class='custom-bullet'>A comprehensive automated data analysis tool that processes datasets quickly and efficiently, enabling analysts to obtain insights in less than 20 minutes.</div>
+    <div class='custom-bullet'>Training and support for users to maximize the benefits of these tools, ensuring that even those with limited technical skills can leverage automation for their analytical needs.</div>""",
+    
+    "Target Audience": """
+    <div class='custom-bullet'>Public health officials and analysts working within NMCPs who require efficient mapping and data analysis solutions.</div>
+    <div class='custom-bullet'>Data managers and decision-makers seeking to improve operational efficiency and responsiveness to health challenges.</div>
+    <div class='custom-bullet'>Organizations interested in integrating automation into their workflows to enhance data-driven decision-making capabilities.</div>""",
+    
+    "Conclusion": """The adoption of this automated system for SNT analysis represents a transformative opportunity for NMCPs. By significantly reducing the time and effort required for these tasks, programs can enhance their efficiency, improve the quality of their analyses, and ultimately lead to more timely and informed decision-making. This tool, built on the experience of the 2023 SNT implementation, not only addresses existing operational challenges but also empowers analysts to focus on deriving insights rather than getting lost in technical details. The user-friendly interface and high processing speed make it an invaluable asset for regular SNT updates and monitoring of malaria control activities."""
 }
 
 # Display sections with animation delay
