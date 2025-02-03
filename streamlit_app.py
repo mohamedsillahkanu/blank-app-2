@@ -182,14 +182,6 @@ theme = themes[selected_theme]
 
 # Title - Using both st.title and custom HTML for better visibility
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
-
-# Adding the title again with custom styling
-st.markdown("""
-    <div class="custom-title">
-        Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions
-    </div>
-""", unsafe_allow_html=True)
-
 # Image container after the title
 st.markdown("""
     <div class="img-container" style="text-align: center;">
