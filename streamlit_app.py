@@ -12,12 +12,6 @@ themes = {
         "text": "#FFFFFF",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
     },
-    "Pure White": {
-        "bg": "#FFFFFF",
-        "accent": "#000000",
-        "text": "#000000",
-        "gradient": "linear-gradient(135deg, #000000, #333333)"
-    },
     "Light Silver": {
         "bg": "#F5F5F5",
         "accent": "#1E88E5",
