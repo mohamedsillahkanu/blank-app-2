@@ -97,6 +97,13 @@ st.markdown("""
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
             background: #2E2E2E;
         }
+
+        .section-header {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        color: #3498db !important;
+        }
         
         /* Animations */
         @keyframes fadeIn {
