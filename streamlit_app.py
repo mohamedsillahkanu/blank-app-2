@@ -270,9 +270,9 @@ st.sidebar.selectbox(
 if st.sidebar.checkbox("Enable Auto Animations", value=True):
     def show_periodic_animations():
         while True:
-            time.sleep(30)
+            time.sleep(60)
             st.balloons()
-            time.sleep(1)
+            time.sleep(10)
             st.snow()
 
     # Start animation thread if not already running
