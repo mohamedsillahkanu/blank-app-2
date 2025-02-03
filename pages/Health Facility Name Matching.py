@@ -390,16 +390,6 @@ if __name__ == "__main__":
     main()
 
 
-# Display sections with animation delay
-for i, (title, content) in enumerate(sections.items()):
-    time.sleep(0.2)  # Small delay between sections
-    st.markdown(f"""
-        <div class="section-card">
-            <div class="section-header">{title}</div>
-            <div class="content-text">{content}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
 # Sidebar theme selector
 st.sidebar.selectbox(
     "🎨 Select Theme",
