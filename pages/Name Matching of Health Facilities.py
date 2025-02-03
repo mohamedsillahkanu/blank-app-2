@@ -240,39 +240,198 @@ st.markdown("""
 
 
 # Content Sections
-sections = {
-    "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis. Based on the experience of the 2023 SNT implementation, we have developed an automated tool using the same validated codes with additional enhanced features. This innovation aims to build the capacity of National Malaria Control Program (NMCP) to conduct SNT easily on a yearly basis and monitor activities effectively using this tool. The tool is designed to be user-friendly and offers high processing speed.
+import streamlit as st
+import pandas as pd
+import numpy as np
+from jellyfish import jaro_winkler_similarity
+from io import BytesIO
+from PIL import Image
 
-The integration of automation in geospatial analysis significantly enhances the efficiency and effectiveness of data management and visualization tasks. With the introduction of this automated system, analysis time has been drastically reduced from one year to one week. This shift not only streamlines operations but also allows analysts to focus on interpreting results rather than being bogged down by technical processes.""",
-    
-    "Objectives": """The main objectives of implementing automated systems for geospatial analysis and data management are:
-    <div class='custom-bullet'>Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data, enabling quicker decision-making.</div>
-    <div class='custom-bullet'>Enhance Skill Accessibility: Provide tools that can be used effectively by individuals without extensive technical training.</div>
-    <div class='custom-bullet'>Improve Data Management Efficiency: Streamline data management processes that currently can take days to complete.</div>
-    <div class='custom-bullet'>Facilitate Rapid Analysis: Enable automated analysis of uploaded datasets within minutes.</div>""",
-    
-    "Scope": """The scope of this project encompasses:
-    <div class='custom-bullet'>The development and implementation of an automated system that simplifies the creation of geospatial visualizations.</div>
-    <div class='custom-bullet'>A comprehensive automated data analysis tool that processes datasets quickly and efficiently, enabling analysts to obtain insights in less than 20 minutes.</div>
-    <div class='custom-bullet'>Training and support for users to maximize the benefits of these tools, ensuring that even those with limited technical skills can leverage automation for their analytical needs.</div>""",
-    
-    "Target Audience": """The target audience includes:
-    <div class='custom-bullet'>Public health officials and analysts working within NMCPs who require efficient mapping and data analysis solutions.</div>
-    <div class='custom-bullet'>Data managers and decision-makers seeking to improve operational efficiency and responsiveness to health challenges.</div>
-    <div class='custom-bullet'>Organizations interested in integrating automation into their workflows to enhance data-driven decision-making capabilities.</div>""",
-    
-    "Conclusion": """The adoption of this automated system for SNT analysis represents a transformative opportunity for NMCPs. By significantly reducing the time and effort required for these tasks, programs can enhance their efficiency, improve the quality of their analyses, and ultimately lead to more timely and informed decision-making. This tool, built on the experience of the 2023 SNT implementation, not only addresses existing operational challenges but also empowers analysts to focus on deriving insights rather than getting lost in technical details. The user-friendly interface and high processing speed make it an invaluable asset for regular SNT updates and monitoring of malaria control activities."""
-}
+st.image("https://raw.githubusercontent.com/mohamedsillahkanu/si/4a7954a650c20056f19da5a77fe5d09ed4e49526/welcome-animation.svg", caption="Welcome Animation")
 
-# Display sections with animation delay
-for i, (title, content) in enumerate(sections.items()):
-    time.sleep(0.2)  # Small delay between sections
-    st.markdown(f"""
-        <div class="section-card">
-            <div class="section-header">{title}</div>
-            <div class="content-text">{content}</div>
-        </div>
-    """, unsafe_allow_html=True)
+
+def calculate_match(column1, column2, threshold):
+    """Calculate matching scores between two columns using Jaro-Winkler similarity."""
+    results = []
+    
+    for value1 in column1:
+        if value1 in column2.values:
+            results.append({
+                'Col1': value1,
+                'Col2': value1,
+                'Match_Score': 100,
+                'Match_Status': 'Match'
+            })
+        else:
+            best_score = 0
+            best_match = None
+            for value2 in column2:
+                similarity = jaro_winkler_similarity(str(value1), str(value2)) * 100
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = value2
+            results.append({
+                'Col1': value1,
+                'Col2': best_match,
+                'Match_Score': round(best_score, 2),
+                'Match_Status': 'Unmatch' if best_score < threshold else 'Match'
+            })
+    
+    for value2 in column2:
+        if value2 not in [r['Col2'] for r in results]:
+            results.append({
+                'Col1': None,
+                'Col2': value2,
+                'Match_Score': 0,
+                'Match_Status': 'Unmatch'
+            })
+    
+    return pd.DataFrame(results)
+
+def main():
+    st.title("Health Facility Name Matching")
+
+    # Initialize session state
+    if 'step' not in st.session_state:
+        st.session_state.step = 1
+    if 'master_hf_list' not in st.session_state:
+        st.session_state.master_hf_list = None
+    if 'health_facilities_dhis2_list' not in st.session_state:
+        st.session_state.health_facilities_dhis2_list = None
+
+    # Step 1: File Upload
+    if st.session_state.step == 1:
+        st.header("Step 1: Upload Files")
+        mfl_file = st.file_uploader("Upload Master HF List (CSV, Excel):", type=['csv', 'xlsx', 'xls'])
+        dhis2_file = st.file_uploader("Upload DHIS2 HF List (CSV, Excel):", type=['csv', 'xlsx', 'xls'])
+
+        if mfl_file and dhis2_file:
+            try:
+                # Read files
+                if mfl_file.name.endswith('.csv'):
+                    st.session_state.master_hf_list = pd.read_csv(mfl_file)
+                else:
+                    st.session_state.master_hf_list = pd.read_excel(mfl_file)
+
+                if dhis2_file.name.endswith('.csv'):
+                    st.session_state.health_facilities_dhis2_list = pd.read_csv(dhis2_file)
+                else:
+                    st.session_state.health_facilities_dhis2_list = pd.read_excel(dhis2_file)
+
+                st.success("Files uploaded successfully!")
+                
+                # Display previews
+                st.subheader("Preview of Master HF List")
+                st.dataframe(st.session_state.master_hf_list.head())
+                st.subheader("Preview of DHIS2 HF List")
+                st.dataframe(st.session_state.health_facilities_dhis2_list.head())
+
+                if st.button("Proceed to Column Renaming"):
+                    st.session_state.step = 2
+                    st.experimental_rerun()
+
+            except Exception as e:
+                st.error(f"Error reading files: {e}")
+
+    # Step 2: Column Renaming
+    elif st.session_state.step == 2:
+        st.header("Step 2: Rename Columns (Optional)")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("Master HF List Columns")
+            mfl_renamed_columns = {}
+            for col in st.session_state.master_hf_list.columns:
+                new_col = st.text_input(f"Rename '{col}' to:", key=f"mfl_{col}", value=col)
+                mfl_renamed_columns[col] = new_col
+
+        with col2:
+            st.subheader("DHIS2 HF List Columns")
+            dhis2_renamed_columns = {}
+            for col in st.session_state.health_facilities_dhis2_list.columns:
+                new_col = st.text_input(f"Rename '{col}' to:", key=f"dhis2_{col}", value=col)
+                dhis2_renamed_columns[col] = new_col
+
+        if st.button("Apply Changes and Continue"):
+            st.session_state.master_hf_list = st.session_state.master_hf_list.rename(columns=mfl_renamed_columns)
+            st.session_state.health_facilities_dhis2_list = st.session_state.health_facilities_dhis2_list.rename(
+                columns=dhis2_renamed_columns)
+            st.session_state.step = 3
+            st.experimental_rerun()
+
+        if st.button("Skip Renaming"):
+            st.session_state.step = 3
+            st.experimental_rerun()
+
+    # Step 3: Column Selection and Matching
+    elif st.session_state.step == 3:
+        st.header("Step 3: Select Columns for Matching")
+        
+        mfl_col = st.selectbox("Select HF Name column in Master HF List:", 
+                              st.session_state.master_hf_list.columns)
+        dhis2_col = st.selectbox("Select HF Name column in DHIS2 HF List:", 
+                                st.session_state.health_facilities_dhis2_list.columns)
+        
+        threshold = st.slider("Set Match Threshold (0-100):", 
+                            min_value=0, max_value=100, value=70)
+
+        if st.button("Perform Matching"):
+            # Process data
+            master_hf_list_clean = st.session_state.master_hf_list.copy()
+            dhis2_list_clean = st.session_state.health_facilities_dhis2_list.copy()
+            
+            master_hf_list_clean[mfl_col] = master_hf_list_clean[mfl_col].astype(str)
+            master_hf_list_clean = master_hf_list_clean.drop_duplicates(subset=[mfl_col])
+            dhis2_list_clean[dhis2_col] = dhis2_list_clean[dhis2_col].astype(str)
+
+            st.write("### Counts of Health Facilities")
+            st.write(f"Count of HFs in DHIS2 list: {len(dhis2_list_clean)}")
+            st.write(f"Count of HFs in MFL list: {len(master_hf_list_clean)}")
+
+            # Perform matching
+            with st.spinner("Performing matching..."):
+                hf_name_match_results = calculate_match(
+                    master_hf_list_clean[mfl_col],
+                    dhis2_list_clean[dhis2_col],
+                    threshold
+                )
+
+                # Rename columns and add new column for replacements
+                hf_name_match_results = hf_name_match_results.rename(
+                    columns={'Col1': 'HF_Name_in_MFL', 'Col2': 'HF_Name_in_DHIS2'}
+                )
+                hf_name_match_results['New_HF_Name_in_MFL'] = np.where(
+                    hf_name_match_results['Match_Score'] >= threshold,
+                    hf_name_match_results['HF_Name_in_DHIS2'],
+                    hf_name_match_results['HF_Name_in_MFL']
+                )
+
+                # Display results
+                st.write("### Matching Results")
+                st.dataframe(hf_name_match_results)
+
+                # Download results
+                output = BytesIO()
+                with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                    hf_name_match_results.to_excel(writer, index=False)
+                output.seek(0)
+
+                st.download_button(
+                    label="Download Matching Results as Excel",
+                    data=output,
+                    file_name="hf_name_matching_results.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+
+        if st.button("Start Over"):
+            st.session_state.step = 1
+            st.session_state.master_hf_list = None
+            st.session_state.health_facilities_dhis2_list = None
+            st.experimental_rerun()
+
+if __name__ == "__main__":
+    main()
 
 # Sidebar theme selector
 st.sidebar.selectbox(
