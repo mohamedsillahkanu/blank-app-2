@@ -1,8 +1,4 @@
 import streamlit as st
-import time
-import random
-import threading
-import streamlit as st
 import pandas as pd
 import numpy as np
 from jellyfish import jaro_winkler_similarity
@@ -12,8 +8,10 @@ import random
 import time
 import threading
 
+# Page configuration
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
+# Theme definitions
 themes = {
     "Black Modern": {
         "bg": "#000000",
@@ -71,6 +69,7 @@ themes = {
     }
 }
 
+# Custom CSS styles
 st.markdown("""
     <style>
         .stApp {
@@ -168,11 +167,116 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+def calculate_match(column1, column2, threshold):
+    """Calculate matching scores between two columns using Jaro-Winkler similarity."""
+    results = []
+    
+    for value1 in column1:
+        if value1 in column2.values:
+            results.append({
+                'Col1': value1,
+                'Col2': value1,
+                'Match_Score': 100,
+                'Match_Status': 'Match'
+            })
+        else:
+            best_score = 0
+            best_match = None
+            for value2 in column2:
+                similarity = jaro_winkler_similarity(str(value1), str(value2)) * 100
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = value2
+            results.append({
+                'Col1': value1,
+                'Col2': best_match,
+                'Match_Score': round(best_score, 2),
+                'Match_Status': 'Unmatch' if best_score < threshold else 'Match'
+            })
+    
+    for value2 in column2:
+        if value2 not in [r['Col2'] for r in results]:
+            results.append({
+                'Col1': None,
+                'Col2': value2,
+                'Match_Score': 0,
+                'Match_Status': 'Unmatch'
+            })
+    
+    return pd.DataFrame(results)
+
+def show_confetti():
+    """Display confetti animation."""
+    st.markdown("""
+        <style>
+            @keyframes confetti {
+                0% { transform: translateY(0) rotate(0deg); }
+                100% { transform: translateY(100vh) rotate(360deg); }
+            }
+            .confetti {
+                position: fixed;
+                animation: confetti 4s linear;
+                z-index: 9999;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    for i in range(50):
+        color = f"hsl({random.randint(0, 360)}, 100%, 50%)"
+        left = random.randint(0, 100)
+        st.markdown(f"""
+            <div class="confetti" style="left: {left}vw; background: {color}; 
+            width: 10px; height: 10px; border-radius: 50%;"></div>
+        """, unsafe_allow_html=True)
+
+def show_sparkles():
+    """Display sparkles animation."""
+    st.markdown("""
+        <style>
+            @keyframes sparkle {
+                0% { transform: scale(0); opacity: 0; }
+                50% { transform: scale(1); opacity: 1; }
+                100% { transform: scale(0); opacity: 0; }
+            }
+            .sparkle {
+                position: fixed;
+                animation: sparkle 2s infinite;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    for i in range(20):
+        left = random.randint(0, 100)
+        top = random.randint(0, 100)
+        st.markdown(f"""
+            <div class="sparkle" style="left: {left}vw; top: {top}vh; 
+            background: gold; width: 5px; height: 5px; border-radius: 50%;"></div>
+        """, unsafe_allow_html=True)
+
+def show_fireworks():
+    """Display random fireworks animation."""
+    animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
+    random.choice(animations)
+
+# List of available animations
+animations_list = [
+    st.balloons,
+    st.snow,
+    show_confetti,
+    show_sparkles,
+    show_fireworks,
+    lambda: [st.balloons(), st.snow()],
+    lambda: [show_confetti(), show_sparkles()],
+    lambda: [st.balloons(), show_confetti()],
+    lambda: [st.snow(), show_sparkles()],
+    lambda: [show_confetti(), st.snow()]
+]
+
+# Initialize session state for animations
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
     st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
+# Show welcome message on first load
 if st.session_state.first_load:
     st.balloons()
     st.snow()
@@ -182,15 +286,15 @@ if st.session_state.first_load:
     welcome_placeholder.empty()
     st.session_state.first_load = False
 
+# Handle theme rotation
 current_time = time.time()
 if current_time - st.session_state.last_animation >= 30:
     st.session_state.last_animation = current_time
     theme_keys = list(themes.keys())
     st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
     st.balloons()
-else:
-    selected_theme = list(themes.keys())[st.session_state.theme_index]
 
+# Theme selection
 selected_theme = st.sidebar.selectbox(
     "🎨 Select Theme",
     list(themes.keys()),
@@ -198,7 +302,7 @@ selected_theme = st.sidebar.selectbox(
     key='theme_selector'
 )
 
-# Trigger animations on theme change
+# Handle theme change animations
 if 'previous_theme' not in st.session_state:
     st.session_state.previous_theme = selected_theme
 if st.session_state.previous_theme != selected_theme:
@@ -206,6 +310,7 @@ if st.session_state.previous_theme != selected_theme:
     st.snow()
     st.session_state.previous_theme = selected_theme
 
+# Apply selected theme
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
 
@@ -225,16 +330,6 @@ st.markdown(f"""
         }}
     </style>
 """, unsafe_allow_html=True)
-
-st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
-
-st.markdown("""
-    <div class="img-container" style="text-align: center;">
-        <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 50%; max-width: 500px; margin: 20px auto;">
-    </div>
-""", unsafe_allow_html=True)
-
 
 def main():
     st.title("Health Facility Name Matching")
@@ -269,6 +364,7 @@ def main():
                 st.success("Files uploaded successfully!")
                 
                 # Display previews
+                st.
                 st.subheader("Preview of Master HF List")
                 st.dataframe(st.session_state.master_hf_list.head())
                 st.subheader("Preview of DHIS2 HF List")
@@ -428,69 +524,17 @@ def main():
             st.session_state.health_facilities_dhis2_list = None
             st.experimental_rerun()
 
-
-def show_confetti():
-    st.markdown("""
-        <style>
-            @keyframes confetti {
-                0% { transform: translateY(0) rotate(0deg); }
-                100% { transform: translateY(100vh) rotate(360deg); }
-            }
-            .confetti {
-                position: fixed;
-                animation: confetti 4s linear;
-                z-index: 9999;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    for i in range(50):
-        color = f"hsl({random.randint(0, 360)}, 100%, 50%)"
-        left = random.randint(0, 100)
-        st.markdown(f"""
-            <div class="confetti" style="left: {left}vw; background: {color}; 
-            width: 10px; height: 10px; border-radius: 50%;"></div>
-        """, unsafe_allow_html=True)
-
-def show_sparkles():
-    st.markdown("""
-        <style>
-            @keyframes sparkle {
-                0% { transform: scale(0); opacity: 0; }
-                50% { transform: scale(1); opacity: 1; }
-                100% { transform: scale(0); opacity: 0; }
-            }
-            .sparkle {
-                position: fixed;
-                animation: sparkle 2s infinite;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    for i in range(20):
-        left = random.randint(0, 100)
-        top = random.randint(0, 100)
-        st.markdown(f"""
-            <div class="sparkle" style="left: {left}vw; top: {top}vh; 
-            background: gold; width: 5px; height: 5px; border-radius: 50%;"></div>
-        """, unsafe_allow_html=True)
-
-def show_fireworks():
-    animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
-    random.choice(animations)
-
-animations_list = [
-    st.balloons,
-    st.snow,
-    show_confetti,
-    show_sparkles,
-    show_fireworks,
-    lambda: [st.balloons(), st.snow()],
-    lambda: [show_confetti(), show_sparkles()],
-    lambda: [st.balloons(), show_confetti()],
-    lambda: [st.snow(), show_sparkles()],
-    lambda: [show_confetti(), st.snow()]
-]
-
+# Main execution
 if __name__ == "__main__":
+    st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+    
+    st.markdown("""
+        <div class="img-container" style="text-align: center;">
+            <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
+                 style="width: 50%; max-width: 500px; margin: 20px auto;">
+        </div>
+    """, unsafe_allow_html=True)
+    
     main()
     
     # Enable animations if checkbox is checked
@@ -506,4 +550,3 @@ if __name__ == "__main__":
             st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
             st.session_state.animation_thread.daemon = True
             st.session_state.animation_thread.start()
-
