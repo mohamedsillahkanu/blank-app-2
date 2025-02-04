@@ -1,30 +1,28 @@
 import streamlit as st
-import geopandas as gpd
 import pandas as pd
-import matplotlib.pyplot as plt
-from shapely.geometry import Point
 import numpy as np
+from jellyfish import jaro_winkler_similarity
 from io import BytesIO
 
-# Page configuration - must be the first Streamlit command
+# Page configuration
 st.set_page_config(
-    page_title="Health Facility Map Generator",
-    page_icon="🗺️",
+    page_title="Health Facility Name Matching",
+    page_icon="🏥",
     layout="wide"
 )
 
-# Light Sand Theme styling
+# Light Silver theme styling
 st.markdown("""
     <style>
     .stApp {
-        background-color: #FAFAFA;
+        background-color: #F5F5F5;
     }
     .main {
         padding: 2rem;
-        color: #424242;
+        color: #212121;
     }
     .stButton>button {
-        background-color: #FF7043 !important;
+        background-color: #1E88E5 !important;
         color: white !important;
         border: none !important;
         padding: 0.5rem 1rem !important;
@@ -35,7 +33,7 @@ st.markdown("""
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background-color: #FFB74D !important;
+        background-color: #1565C0 !important;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .uploadedFile {
@@ -43,7 +41,7 @@ st.markdown("""
         background: #FFFFFF;
         padding: 1rem;
         border-radius: 4px;
-        border: 1px solid #FFB74D;
+        border: 1px solid #1E88E5;
     }
     .stDataFrame {
         margin-top: 1rem;
@@ -55,33 +53,73 @@ st.markdown("""
     }
     .stSelectbox > div > div {
         background-color: #FFFFFF;
-        border: 1px solid #FFB74D;
+        border: 1px solid #1E88E5;
     }
     .stTextInput > div > div > input {
-        border: 1px solid #FFB74D;
-    }
-    .stSlider > div > div > div {
-        background-color: #FF7043;
-    }
-    h1, h2, h3, h4, h5, h6 {
-        color: #424242;
-    }
-    .stMarkdown {
-        color: #424242;
-    }
-    [data-testid="stFileUploader"] {
-        background-color: #FFFFFF;
-        padding: 1rem;
-        border-radius: 4px;
-        border: 1px solid #FFB74D;
+        border: 1px solid #1E88E5;
     }
     [data-testid="stHeader"] {
-        background: linear-gradient(135deg, #FF7043, #FFB74D);
+        background: linear-gradient(135deg, #1E88E5, #64B5F6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
     </style>
 """, unsafe_allow_html=True)
+
+def show_animations():
+    """Show snow and balloon animations"""
+    st.snow()
+    st.balloons()
+
+def find_facility_column(df):
+    """Automatically find the health facility name column"""
+    for col in df.columns:
+        if 'hf' in col.lower() or 'facility' in col.lower():
+            return col
+    return df.columns[0]  # Default to first column if no match found
+
+def prepare_facility_data(df, source):
+    """Prepare facility data with appropriate suffixes"""
+    renamed_df = df.copy()
+    suffix = f"_{source}"
+    # Rename all columns with suffix
+    renamed_df.columns = [f"{col}{suffix}" for col in renamed_df.columns]
+    return renamed_df
+    results = []
+    
+    for value1 in column1:
+        if value1 in column2.values:
+            results.append({
+                'Col1': value1,
+                'Col2': value1,
+                'Match_Score': 100,
+                'Match_Status': 'Match'
+            })
+        else:
+            best_score = 0
+            best_match = None
+            for value2 in column2:
+                similarity = jaro_winkler_similarity(str(value1), str(value2)) * 100
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = value2
+            results.append({
+                'Col1': value1,
+                'Col2': best_match,
+                'Match_Score': round(best_score, 2),
+                'Match_Status': 'Unmatch' if best_score < threshold else 'Match'
+            })
+    
+    for value2 in column2:
+        if value2 not in [r['Col2'] for r in results]:
+            results.append({
+                'Col1': None,
+                'Col2': value2,
+                'Match_Score': 0,
+                'Match_Status': 'Unmatch'
+            })
+    
+    return pd.DataFrame(results)
 
 def read_data_file(file):
     """Read different types of data files"""
@@ -95,221 +133,216 @@ def read_data_file(file):
     except Exception as e:
         st.error(f"Error reading file {file.name}: {str(e)}")
         return None
-    """
-    Prepare facility data by adding appropriate suffixes to column names
-    source: 'MFL' or 'DHIS2'
-    """
-    renamed_df = facility_data.copy()
-    suffix = f"_{source}"
-    renamed_df.columns = [f"{col}{suffix}" for col in renamed_df.columns]
-    return renamed_df
-
-def process_map(shapefile_data, mfl_data, dhis2_data, config):
-    """Process and create the map with the given configuration using Light Sand theme colors"""
-    plt.style.use('seaborn-whitegrid')
-    plt.rcParams.update({
-        'figure.facecolor': '#FAFAFA',
-        'axes.facecolor': '#FFFFFF',
-        'figure.figsize': (15, 10)
-    })
-    try:
-        # Prepare both datasets with appropriate suffixes
-        mfl_data_processed = prepare_facility_data(mfl_data, "MFL")
-        dhis2_data_processed = prepare_facility_data(dhis2_data, "DHIS2")
-
-        # Create geometry for MFL data
-        mfl_geometry = [Point(xy) for xy in zip(
-            mfl_data[config['mfl_longitude_col']], 
-            mfl_data[config['mfl_latitude_col']]
-        )]
-        mfl_gdf = gpd.GeoDataFrame(
-            mfl_data_processed, 
-            geometry=mfl_geometry, 
-            crs="EPSG:4326"
-        )
-
-        # Create geometry for DHIS2 data
-        dhis2_geometry = [Point(xy) for xy in zip(
-            dhis2_data[config['dhis2_longitude_col']], 
-            dhis2_data[config['dhis2_latitude_col']]
-        )]
-        dhis2_gdf = gpd.GeoDataFrame(
-            dhis2_data_processed, 
-            geometry=dhis2_geometry, 
-            crs="EPSG:4326"
-        )
-
-        # Ensure consistent CRS for shapefile
-        if shapefile_data.crs is None:
-            shapefile_data = shapefile_data.set_crs(epsg=4326)
-        else:
-            shapefile_data = shapefile_data.to_crs(epsg=4326)
-
-        # Create the map
-        fig, ax = plt.subplots(figsize=(15, 10))
-        
-        # Plot shapefile
-        shapefile_data.plot(
-            ax=ax, 
-            color=config['background_color'], 
-            edgecolor='black', 
-            linewidth=0.5
-        )
-
-        # Calculate aspect ratio
-        bounds = shapefile_data.total_bounds
-        mid_y = np.mean([bounds[1], bounds[3]])
-        aspect = 1.0
-        
-        if -90 < mid_y < 90:
-            try:
-                aspect = 1 / np.cos(np.radians(mid_y))
-                if not np.isfinite(aspect) or aspect <= 0:
-                    aspect = 1.0
-            except:
-                aspect = 1.0
-        
-        ax.set_aspect(aspect)
-
-        # Plot MFL facilities in blue
-        mfl_gdf.plot(
-            ax=ax,
-            color='blue',
-            markersize=config['point_size'],
-            alpha=config['point_alpha'],
-            label='MFL Facilities'
-        )
-
-        # Plot DHIS2 facilities in red
-        dhis2_gdf.plot(
-            ax=ax,
-            color='red',
-            markersize=config['point_size'],
-            alpha=config['point_alpha'],
-            label='DHIS2 Facilities'
-        )
-
-        # Add legend
-        ax.legend()
-
-        # Customize appearance
-        plt.title(config['map_title'], fontsize=20, pad=20)
-        plt.axis('off')
-
-        return fig, mfl_data_processed, dhis2_data_processed
-
-    except Exception as e:
-        st.error(f"Error in map processing: {str(e)}")
-        return None, None, None
 
 def main():
-    st.title("Health Facility Distribution Map Generator")
+    st.title("Health Facility Name Matching")
 
-    # Import required libraries for handling different file formats
-    shp_file = st.file_uploader("Upload Shapefile (.shp)", type=["shp"])
-    shx_file = st.file_uploader("Upload Shapefile Index (.shx)", type=["shx"])
-    dbf_file = st.file_uploader("Upload Attribute Database (.dbf)", type=["dbf"])
-    mfl_file = st.file_uploader("Upload MFL Data (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"], key="mfl")
-    dhis2_file = st.file_uploader("Upload DHIS2 Data (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"], key="dhis2")
+    # Initialize session state
+    if 'step' not in st.session_state:
+        st.session_state.step = 1
+        show_animations()  # Show animations on first load
+    if 'master_hf_list' not in st.session_state:
+        st.session_state.master_hf_list = None
+    if 'health_facilities_dhis2_list' not in st.session_state:
+        st.session_state.health_facilities_dhis2_list = None
 
-    # Process files if all are uploaded
-    if all([shp_file, shx_file, dbf_file, mfl_file, dhis2_file]):
-        try:
-            # Read files using BytesIO for shapefiles
-            import tempfile
-            import os
+    # Step 1: File Upload
+    if st.session_state.step == 1:
+        st.header("Upload Files")
+        mfl_file = st.file_uploader("Upload Master HF List:", type=['csv', 'xlsx', 'xls'])
+        dhis2_file = st.file_uploader("Upload DHIS2 HF List:", type=['csv', 'xlsx', 'xls'])
 
-            # Create a temporary directory
-            with tempfile.TemporaryDirectory() as tmp_dir:
-                # Save shapefile components to temporary directory
-                shp_path = os.path.join(tmp_dir, "temp.shp")
-                shx_path = os.path.join(tmp_dir, "temp.shx")
-                dbf_path = os.path.join(tmp_dir, "temp.dbf")
+        if mfl_file and dhis2_file:
+            try:
+                # Read data files
+                mfl_data = read_data_file(mfl_file)
+                dhis2_data = read_data_file(dhis2_file)
                 
-                # Write the uploaded files to temporary location
-                with open(shp_path, 'wb') as f:
-                    f.write(shp_file.getvalue())
-                with open(shx_path, 'wb') as f:
-                    f.write(shx_file.getvalue())
-                with open(dbf_path, 'wb') as f:
-                    f.write(dbf_file.getvalue())
-                
-                # Read the shapefile from temporary directory
-                shapefile = gpd.read_file(shp_path)
-            
-            # Preview the data
-            st.subheader("MFL Data Preview")
-            st.dataframe(mfl_data.head())
-            st.subheader("DHIS2 Data Preview")
-            st.dataframe(dhis2_data.head())
+                if mfl_data is not None and dhis2_data is not None:
+                    # Prepare data with suffixes
+                    mfl_data_processed = prepare_facility_data(mfl_data, "MFL")
+                    dhis2_data_processed = prepare_facility_data(dhis2_data, "DHIS2")
+                    
+                    # Find facility name columns
+                    mfl_col = find_facility_column(mfl_data)
+                    dhis2_col = find_facility_column(dhis2_data)
+                    
+                    # Display previews
+                    st.success("Files uploaded successfully!")
+                    show_animations()
+                    
+                    st.subheader("Preview of Data")
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("Master Facility List Preview")
+                        st.dataframe(mfl_data.head())
+                        st.write(f"Using column: {mfl_col}")
+                    with col2:
+                        st.write("DHIS2 List Preview")
+                        st.dataframe(dhis2_data.head())
+                        st.write(f"Using column: {dhis2_col}")
+                    
+                    if st.button("Proceed with Matching"):
+                        st.session_state.mfl_data = mfl_data
+                        st.session_state.dhis2_data = dhis2_data
+                        st.session_state.mfl_col = mfl_col
+                        st.session_state.dhis2_col = dhis2_col
+                        st.session_state.step = 2
+                        st.experimental_rerun()
 
-            # Map customization options
-            st.header("Map Customization")
+            except Exception as e:
+                st.error(f"Error reading files: {e}")
+
+    # Step 2: Matching Process
+    elif st.session_state.step == 2:
+        st.header("Matching Process")
+        
+        with st.spinner("Performing matching..."):
+            # Process the data
+            mfl_data = st.session_state.mfl_data
+            dhis2_data = st.session_state.dhis2_data
+            mfl_col = st.session_state.mfl_col
+            dhis2_col = st.session_state.dhis2_col
             
-            col1, col2 = st.columns(2)
+            # Convert name columns to string and handle duplicates
+            mfl_data[mfl_col] = mfl_data[mfl_col].astype(str)
+            dhis2_data[dhis2_col] = dhis2_data[dhis2_col].astype(str)
             
-            with col1:
-                map_title = st.text_input("Map Title", "Health Facility Distribution")
-                point_size = st.slider("Point Size", 10, 200, 50)
+            # Display facility counts
+            st.write("### Facility Counts")
+            st.write(f"DHIS2 facilities: {len(dhis2_data)}")
+            st.write(f"MFL facilities: {len(mfl_data)}")
+            
+            # Calculate matches with fixed threshold of 70
+            matches = []
+            for mfl_name in mfl_data[mfl_col]:
+                best_match = None
+                best_score = 0
                 
-            with col2:
-                point_alpha = st.slider("Point Transparency", 0.1, 1.0, 0.7)
-                background_color = st.selectbox(
-                    "Background Color",
-                    ["white", "lightgray", "beige", "lightblue"]
+                # Check for exact matches first
+                if mfl_name in dhis2_data[dhis2_col].values:
+                    matches.append({
+                        'MFL_Name': mfl_name,
+                        'DHIS2_Name': mfl_name,
+                        'Match_Score': 100,
+                        'Match_Status': 'Exact Match'
+                    })
+                    continue
+                
+                # If no exact match, find best match
+                for dhis2_name in dhis2_data[dhis2_col]:
+                    score = jaro_winkler_similarity(str(mfl_name), str(dhis2_name)) * 100
+                    if score > best_score:
+                        best_score = score
+                        best_match = dhis2_name
+                
+                matches.append({
+                    'MFL_Name': mfl_name,
+                    'DHIS2_Name': best_match,
+                    'Match_Score': round(best_score, 2),
+                    'Match_Status': 'Match' if best_score >= 70 else 'No Match'
+                })
+            
+            # Create matches DataFrame
+            matches_df = pd.DataFrame(matches)
+            
+            # Prepare both datasets with suffixes
+            mfl_data_suffix = mfl_data.copy()
+            dhis2_data_suffix = dhis2_data.copy()
+            
+            # Add suffixes to all columns
+            mfl_data_suffix.columns = [f"{col}_MFL" for col in mfl_data_suffix.columns]
+            dhis2_data_suffix.columns = [f"{col}_DHIS2" for col in dhis2_data_suffix.columns]
+            
+            # Merge matches with original data
+            final_results = matches_df.merge(
+                mfl_data_suffix, 
+                left_on='MFL_Name',
+                right_on=f"{mfl_col}_MFL",
+                how='left'
+            ).merge(
+                dhis2_data_suffix,
+                left_on='DHIS2_Name',
+                right_on=f"{dhis2_col}_DHIS2",
+                how='left'
+            )
+            
+            # Drop duplicate columns
+            cols_to_drop = [f"{mfl_col}_MFL", f"{dhis2_col}_DHIS2"]
+            final_results = final_results.drop(columns=cols_to_drop, errors='ignore')
+            
+            # Display results
+            st.write("### Matching Results")
+            st.dataframe(final_results)
+            
+            # Download button
+            csv = final_results.to_csv(index=False)
+            if st.download_button(
+                label="Download Results",
+                data=csv,
+                file_name="facility_matching_results.csv",
+                mime="text/csv"
+            ):
+                show_animations()
+        
+        if st.button("Perform Matching"):
+            # Process data
+            master_hf_list_clean = st.session_state.master_hf_list.copy()
+            dhis2_list_clean = st.session_state.health_facilities_dhis2_list.copy()
+            
+            # Display facility counts
+            st.write("### Counts of Health Facilities")
+            st.write(f"Count of HFs in DHIS2 list: {len(dhis2_list_clean)}")
+            st.write(f"Count of HFs in MFL list: {len(master_hf_list_clean)}")
+            
+            # Perform matching
+            with st.spinner("Performing matching..."):
+                hf_name_match_results = calculate_match(
+                    master_hf_list_clean[mfl_col],
+                    dhis2_list_clean[dhis2_col],
+                    threshold
                 )
-
-            # Automatically set configuration using standardized column names
-            config = {
-                'mfl_longitude_col': next((col for col in mfl_data.columns if 'long' in col.lower()), mfl_data.columns[0]),
-                'mfl_latitude_col': next((col for col in mfl_data.columns if 'lat' in col.lower()), mfl_data.columns[1]),
-                'dhis2_longitude_col': next((col for col in dhis2_data.columns if 'long' in col.lower()), dhis2_data.columns[0]),
-                'dhis2_latitude_col': next((col for col in dhis2_data.columns if 'lat' in col.lower()), dhis2_data.columns[1]),
-                'map_title': map_title,
-                'point_size': point_size,
-                'point_alpha': point_alpha,
-                'background_color': background_color
-            }
-
-            # Process and display map
-            fig, mfl_processed, dhis2_processed = process_map(shapefile, mfl_data, dhis2_data, config)
-            
-            if fig and mfl_processed is not None and dhis2_processed is not None:
-                st.pyplot(fig)
-
-                # Combine processed data
-                combined_data = pd.concat([mfl_processed, dhis2_processed], axis=1)
-
-                # Download buttons
-                col1, col2 = st.columns(2)
-                with col1:
-                    buf = BytesIO()
-                    fig.savefig(buf, format='png', dpi=300, bbox_inches='tight')
-                    st.download_button(
-                        "Download Map (PNG)",
-                        buf.getvalue(),
-                        "health_facility_map.png",
-                        "image/png"
-                    )
                 
-                with col2:
-                    csv = combined_data.to_csv(index=False)
-                    st.download_button(
-                        "Download Combined Data (CSV)",
-                        csv,
-                        "combined_facility_data.csv",
-                        "text/csv"
-                    )
+                # Rename columns and process results
+                hf_name_match_results = hf_name_match_results.rename(
+                    columns={
+                        'Col1': 'HF_Name_in_MFL',
+                        'Col2': 'HF_Name_in_DHIS2'
+                    }
+                )
+                
+                # Add suffixes to all columns
+                master_hf_cols = {col: f"{col}_MFL" for col in master_hf_list_clean.columns}
+                dhis2_cols = {col: f"{col}_DHIS2" for col in dhis2_list_clean.columns}
+                
+                master_hf_list_clean = master_hf_list_clean.rename(columns=master_hf_cols)
+                dhis2_list_clean = dhis2_list_clean.rename(columns=dhis2_cols)
+                
+                # Merge and create final results
+                merged_results = pd.concat([
+                    hf_name_match_results,
+                    master_hf_list_clean,
+                    dhis2_list_clean
+                ], axis=1)
+                
+                st.write("### Matching Results")
+                st.dataframe(merged_results)
+                
+                # Add download button
+                csv = merged_results.to_csv(index=False)
+                if st.download_button(
+                    label="Download Matching Results",
+                    data=csv,
+                    file_name="facility_matching_results.csv",
+                    mime="text/csv"
+                ):
+                    show_animations()  # Show animations on download
 
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-            st.write("Please check your input files and try again.")
-    else:
-        st.info("""Please upload all required files to generate the map. You need:
-        1. Shapefile components (.shp, .shx, .dbf)
-        2. MFL Excel file (.xlsx)
-        3. DHIS2 Excel file (.xlsx)
-        """)
+        if st.button("Start Over"):
+            st.session_state.step = 1
+            st.session_state.master_hf_list = None
+            st.session_state.health_facilities_dhis2_list = None
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
