@@ -192,24 +192,22 @@ def process_map(shapefile_data, mfl_data, dhis2_data, config):
         return None, None, None
 
 def main():
-    st.title("Health Facility Distribution")
-    st.write("Upload your shapefiles, MFL data, and DHIS2 data to generate a customized map.")
+    st.title("Health Facility Distribution Map Generator")
 
-    # File upload section
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.header("Upload Shapefiles")
-        shp_file = st.file_uploader("Upload .shp file", type=["shp"])
-        shx_file = st.file_uploader("Upload .shx file", type=["shx"])
-        dbf_file = st.file_uploader("Upload .dbf file", type=["dbf"])
-
-    with col2:
-        st.header("Upload MFL Data")
-        mfl_file = st.file_uploader("Upload MFL Excel file (.xlsx)", type=["xlsx"], key="mfl")
-
-    with col3:
-        st.header("Upload DHIS2 Data")
-        dhis2_file = st.file_uploader("Upload DHIS2 Excel file (.xlsx)", type=["xlsx"], key="dhis2")
+    # File upload section in straight line
+    st.write("Upload Files:")
+    cols = st.columns([1, 1, 1, 1, 1])
+    
+    with cols[0]:
+        shp_file = st.file_uploader("SHP", type=["shp"])
+    with cols[1]:
+        shx_file = st.file_uploader("SHX", type=["shx"])
+    with cols[2]:
+        dbf_file = st.file_uploader("DBF", type=["dbf"])
+    with cols[3]:
+        mfl_file = st.file_uploader("MFL Excel", type=["xlsx"], key="mfl")
+    with cols[4]:
+        dhis2_file = st.file_uploader("DHIS2 Excel", type=["xlsx"], key="dhis2")
 
     # Process files if all are uploaded
     if all([shp_file, shx_file, dbf_file, mfl_file, dhis2_file]):
