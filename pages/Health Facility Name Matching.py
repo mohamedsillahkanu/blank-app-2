@@ -8,30 +8,77 @@ from io import BytesIO
 
 # Page configuration - must be the first Streamlit command
 st.set_page_config(
-    page_title="Health Facility Matching",
+    page_title="Health Facility Map Generator",
     page_icon="🗺️",
     layout="wide"
 )
 
-# Theme and styling
+# Light Sand Theme styling
 st.markdown("""
     <style>
     .stApp {
-        background-color: #FFFFFF;
+        background-color: #FAFAFA;
     }
     .main {
         padding: 2rem;
+        color: #424242;
     }
     .stButton>button {
+        background-color: #FF7043 !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.5rem 1rem !important;
+        border-radius: 4px !important;
+        font-weight: bold !important;
         width: 100%;
         margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        background-color: #FFB74D !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .uploadedFile {
         margin-bottom: 1rem;
+        background: #FFFFFF;
+        padding: 1rem;
+        border-radius: 4px;
+        border: 1px solid #FFB74D;
     }
     .stDataFrame {
         margin-top: 1rem;
         margin-bottom: 1rem;
+        background: #FFFFFF;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .stSelectbox > div > div {
+        background-color: #FFFFFF;
+        border: 1px solid #FFB74D;
+    }
+    .stTextInput > div > div > input {
+        border: 1px solid #FFB74D;
+    }
+    .stSlider > div > div > div {
+        background-color: #FF7043;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #424242;
+    }
+    .stMarkdown {
+        color: #424242;
+    }
+    [data-testid="stFileUploader"] {
+        background-color: #FFFFFF;
+        padding: 1rem;
+        border-radius: 4px;
+        border: 1px solid #FFB74D;
+    }
+    [data-testid="stHeader"] {
+        background: linear-gradient(135deg, #FF7043, #FFB74D);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -47,7 +94,13 @@ def prepare_facility_data(facility_data, source):
     return renamed_df
 
 def process_map(shapefile_data, mfl_data, dhis2_data, config):
-    """Process and create the map with the given configuration"""
+    """Process and create the map with the given configuration using Light Sand theme colors"""
+    plt.style.use('seaborn-whitegrid')
+    plt.rcParams.update({
+        'figure.facecolor': '#FAFAFA',
+        'axes.facecolor': '#FFFFFF',
+        'figure.figsize': (15, 10)
+    })
     try:
         # Prepare both datasets with appropriate suffixes
         mfl_data_processed = prepare_facility_data(mfl_data, "MFL")
