@@ -66,10 +66,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def show_animations():
-    """Show snow and balloon animations"""
+def show_welcome():
+    """Show welcome message with animations"""
+    welcome_container = st.empty()
+    welcome_container.info("🏥 Welcome to the Health Facility Name Matching Tool")
     st.snow()
     st.balloons()
+    # Clear welcome message after a few seconds
+    time.sleep(3)
+    welcome_container.empty()
 
 def find_facility_column(df):
     """Automatically find the health facility name column"""
