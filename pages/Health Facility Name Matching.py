@@ -145,7 +145,8 @@ def main():
                                 'MFL_Name': mfl_name,
                                 'DHIS2_Name': mfl_name,
                                 'Match_Score': 100,
-                                'Match_Status': 'Exact Match'
+                                'Match_Status': 'Exact Match',
+                                'New_MFL': mfl_name  # Same name for exact matches
                             })
                             continue
                         
@@ -161,7 +162,8 @@ def main():
                             'MFL_Name': mfl_name,
                             'DHIS2_Name': best_match,
                             'Match_Score': round(best_score, 2),
-                            'Match_Status': 'Match' if best_score >= 70 else 'No Match'
+                            'Match_Status': 'Match' if best_score >= 70 else 'No Match',
+                            'New_MFL': best_match if best_score >= 70 else mfl_name  # Use DHIS2 name if good match, else keep MFL name
                         })
                     
                     # Create final results
@@ -178,8 +180,20 @@ def main():
                         how='left'
                     )
                     
-                    # Drop duplicate columns
-                    final_results = final_results.drop(columns=[mfl_col_with_suffix, dhis2_col_with_suffix], errors='ignore')
+                    # Sort columns to put matching columns first
+                    column_order = [
+                        'MFL_Name',
+                        'DHIS2_Name',
+                        'New_MFL',
+                        'Match_Score',
+                        'Match_Status'
+                    ]
+                    # Add remaining columns
+                    remaining_cols = [col for col in final_results.columns if col not in column_order]
+                    column_order.extend(remaining_cols)
+                    
+                    # Reorder columns
+                    final_results = final_results[column_order]
                     
                     # Display results
                     st.write("### Matching Results")
