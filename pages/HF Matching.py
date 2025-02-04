@@ -354,7 +354,7 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Apply Changes and Continue"):
-                st.session_state.master_hf_list = st.session_state.master_hf_list.rename(columns
+                
                 st.session_state.master_hf_list = st.session_state.master_hf_list.rename(columns=mfl_renamed_columns)
                 st.session_state.health_facilities_dhis2_list = st.session_state.health_facilities_dhis2_list.rename(columns=dhis2_renamed_columns)
             
