@@ -39,7 +39,7 @@ st.markdown("""
     }
     .uploadedFile {
         margin-bottom: 1rem;
-        background: white;
+        background: gray;
         padding: 1rem;
         border-radius: 4px;
         border: 1px solid #1E88E5;
