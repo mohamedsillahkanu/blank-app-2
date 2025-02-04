@@ -194,20 +194,14 @@ def process_map(shapefile_data, mfl_data, dhis2_data, config):
 def main():
     st.title("Health Facility Distribution Map Generator")
 
-    # File upload section in straight line
+    # File upload section in vertical format
     st.write("Upload Files:")
-    cols = st.columns([1, 1, 1, 1, 1])
     
-    with cols[0]:
-        shp_file = st.file_uploader("SHP", type=["shp"])
-    with cols[1]:
-        shx_file = st.file_uploader("SHX", type=["shx"])
-    with cols[2]:
-        dbf_file = st.file_uploader("DBF", type=["dbf"])
-    with cols[3]:
-        mfl_file = st.file_uploader("MFL Excel", type=["xlsx"], key="mfl")
-    with cols[4]:
-        dhis2_file = st.file_uploader("DHIS2 Excel", type=["xlsx"], key="dhis2")
+    shp_file = st.file_uploader("Upload Shapefile (.shp)", type=["shp"])
+    shx_file = st.file_uploader("Upload Shapefile Index (.shx)", type=["shx"])
+    dbf_file = st.file_uploader("Upload Attribute Database (.dbf)", type=["dbf"])
+    mfl_file = st.file_uploader("Upload MFL Data (.xlsx)", type=["xlsx"], key="mfl")
+    dhis2_file = st.file_uploader("Upload DHIS2 Data (.xlsx)", type=["xlsx"], key="dhis2")
 
     # Process files if all are uploaded
     if all([shp_file, shx_file, dbf_file, mfl_file, dhis2_file]):
