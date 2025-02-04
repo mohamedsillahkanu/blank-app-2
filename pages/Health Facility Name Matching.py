@@ -215,14 +215,27 @@ def main():
     # Process files if all are uploaded
     if all([shp_file, shx_file, dbf_file, mfl_file, dhis2_file]):
         try:
-            # Read files
-            shapefile = gpd.read_file(shp_file)
-            mfl_data = read_data_file(mfl_file)
-            dhis2_data = read_data_file(dhis2_file)
-            
-            if mfl_data is None or dhis2_data is None:
-                st.error("Error reading input files. Please check the file formats.")
-                return
+            # Read files using BytesIO for shapefiles
+            import tempfile
+            import os
+
+            # Create a temporary directory
+            with tempfile.TemporaryDirectory() as tmp_dir:
+                # Save shapefile components to temporary directory
+                shp_path = os.path.join(tmp_dir, "temp.shp")
+                shx_path = os.path.join(tmp_dir, "temp.shx")
+                dbf_path = os.path.join(tmp_dir, "temp.dbf")
+                
+                # Write the uploaded files to temporary location
+                with open(shp_path, 'wb') as f:
+                    f.write(shp_file.getvalue())
+                with open(shx_path, 'wb') as f:
+                    f.write(shx_file.getvalue())
+                with open(dbf_path, 'wb') as f:
+                    f.write(dbf_file.getvalue())
+                
+                # Read the shapefile from temporary directory
+                shapefile = gpd.read_file(shp_path)
             
             # Preview the data
             st.subheader("MFL Data Preview")
