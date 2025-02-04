@@ -69,28 +69,12 @@ st.markdown("""
            color: var(--text-color, #000000) !important;
            background-color: var(--input-bg, #FFFFFF) !important;
        }
-       @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-       @keyframes slideIn {
-           from { transform: translateX(-20px); opacity: 0; }
-           to { transform: translateX(0); opacity: 1; }
-       }
    </style>
 """, unsafe_allow_html=True)
 
-if 'last_animation' not in st.session_state:
-   st.session_state.last_animation = time.time()
-   st.session_state.theme_index = 0
-   st.session_state.first_load = True
-if 'step' not in st.session_state:
-   st.session_state.step = 1
-if 'master_hf_list' not in st.session_state:
-   st.session_state.master_hf_list = None
-if 'health_facilities_dhis2_list' not in st.session_state:
-   st.session_state.health_facilities_dhis2_list = None
-
 themes = {
    "Black Modern": {
-       "bg": "#000000", "accent": "#3498db", "text": "#FFFFFF", 
+       "bg": "#000000", "accent": "#3498db", "text": "#FFFFFF",
        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
    },
    "Light Silver": {
@@ -122,6 +106,34 @@ themes = {
        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)"
    }
 }
+
+if 'step' not in st.session_state:
+   st.session_state.step = 1
+if 'master_hf_list' not in st.session_state:
+   st.session_state.master_hf_list = None
+if 'health_facilities_dhis2_list' not in st.session_state:
+   st.session_state.health_facilities_dhis2_list = None
+
+selected_theme = st.sidebar.selectbox("🎨 Theme:", list(themes.keys()))
+theme = themes[selected_theme]
+is_light = "Light" in selected_theme
+
+st.markdown(f"""
+   <style>
+       :root {{
+           --bg-color: {theme['bg']};
+           --text-color: {theme['text']};
+           --accent-color: {theme['accent']};
+           --gradient: {theme['gradient']};
+           --sidebar-bg: {theme['bg']};
+           --card-bg: {'#F8F9FA' if is_light else '#1E1E1E'};
+           --card-hover-bg: {'#E9ECEF' if is_light else '#2E2E2E'};
+           --input-bg: {'#F8F9FA' if is_light else '#1E1E1E'};
+           --shadow-color: {'rgba(0,0,0,0.1)' if is_light else 'rgba(0,0,0,0.3)'};
+           --border-color: {'#DEE2E6' if is_light else '#2E2E2E'};
+       }}
+   </style>
+""", unsafe_allow_html=True)
 
 def calculate_match(df1, df2, col1, col2, threshold):
    results = []
@@ -225,39 +237,6 @@ def main():
            st.session_state.health_facilities_dhis2_list = None
            st.experimental_rerun()
        st.markdown('</div>', unsafe_allow_html=True)
-
-theme = themes[st.sidebar.selectbox("🎨 Theme:", list(themes.keys()))]
-is_light = "Light" in selected_theme
-
-st.markdown(f"""
-   <style>
-       :root {{
-           --bg-color: {theme['bg']};
-           --text-color: {theme['text']};
-           --accent-color: {theme['accent']};
-           --gradient: {theme['gradient']};
-           --sidebar-bg: {theme['bg']};
-           --card-bg: {'#F8F9FA' if is_light else '#1E1E1E'};
-           --card-hover-bg: {'#E9ECEF' if is_light else '#2E2E2E'};
-           --input-bg: {'#F8F9FA' if is_light else '#1E1E1E'};
-           --shadow-color: {'rgba(0,0,0,0.1)' if is_light else 'rgba(0,0,0,0.3)'};
-           --border-color: {'#DEE2E6' if is_light else '#2E2E2E'};
-       }}
-   </style>
-""", unsafe_allow_html=True)
-
-if st.sidebar.checkbox("Enable Animations", True):
-   def show_animations():
-       while True:
-           time.sleep(60)
-           st.balloons()
-           time.sleep(10)
-           st.snow()
-
-   if not hasattr(st.session_state, 'animation_thread'):
-       st.session_state.animation_thread = threading.Thread(target=show_animations)
-       st.session_state.animation_thread.daemon = True
-       st.session_state.animation_thread.start()
 
 if __name__ == "__main__":
    main()
