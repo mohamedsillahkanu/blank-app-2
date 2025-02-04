@@ -77,6 +77,16 @@ def show_welcome():
     time.sleep(3)
     welcome_container.empty()
 
+def prepare_facility_data(df, source):
+    """
+    Prepare facility data by adding appropriate suffixes
+    """
+    renamed_df = df.copy()
+    suffix = f"_{source}"
+    # Rename all columns with suffix
+    renamed_df.columns = [f"{col}{suffix}" for col in renamed_df.columns]
+    return renamed_df
+
 def handle_duplicates(df, facility_col):
     """
     Handle duplicates in facility names by appending adm3 names
@@ -111,7 +121,9 @@ def handle_duplicates(df, facility_col):
     return df
 
 def find_facility_column(df):
-    """Automatically find the health facility name column"""
+    """
+    Automatically find the health facility name column
+    """
     for col in df.columns:
         if 'hf' in col.lower() or 'facility' in col.lower():
             return col
