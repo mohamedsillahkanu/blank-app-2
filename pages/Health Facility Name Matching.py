@@ -77,6 +77,39 @@ def show_welcome():
     time.sleep(3)
     welcome_container.empty()
 
+def handle_duplicates(df, facility_col):
+    """
+    Handle duplicates in facility names by appending adm3 names
+    """
+    # Find duplicated facility names
+    duplicated = df[facility_col].duplicated(keep=False)
+    
+    if duplicated.any():
+        # For rows with duplicated names, append adm3 if available
+        df_new = df.copy()
+        adm3_cols = [col for col in df.columns if 'adm3' in col.lower()]
+        
+        if adm3_cols:
+            adm3_col = adm3_cols[0]  # Take the first adm3 column found
+            
+            # Only modify duplicated names
+            mask = duplicated
+            df_new.loc[mask, facility_col] = (
+                df_new.loc[mask, facility_col] + '_' + 
+                df_new.loc[mask, adm3_col].fillna('unknown').astype(str)
+            )
+        else:
+            # If no adm3 column, append a number
+            for name in df[facility_col][duplicated].unique():
+                mask = df[facility_col] == name
+                df_new.loc[mask, facility_col] = [
+                    f"{name}_{i+1}" for i in range(sum(mask))
+                ]
+        
+        return df_new
+    
+    return df
+
 def find_facility_column(df):
     """Automatically find the health facility name column"""
     for col in df.columns:
@@ -84,13 +117,17 @@ def find_facility_column(df):
             return col
     return df.columns[0]  # Default to first column if no match found
 
-def prepare_facility_data(df, source):
-    """Prepare facility data with appropriate suffixes"""
-    renamed_df = df.copy()
-    suffix = f"_{source}"
-    # Rename all columns with suffix
-    renamed_df.columns = [f"{col}{suffix}" for col in renamed_df.columns]
-    return renamed_df
+def prepare_data_for_matching(mfl_data, dhis2_data):
+    """Prepare data by handling duplicates and finding facility columns"""
+    # Find facility columns
+    mfl_col = find_facility_column(mfl_data)
+    dhis2_col = find_facility_column(dhis2_data)
+    
+    # Handle duplicates in both datasets
+    mfl_data_clean = handle_duplicates(mfl_data, mfl_col)
+    dhis2_data_clean = handle_duplicates(dhis2_data, dhis2_col)
+    
+    return mfl_data_clean, dhis2_data_clean, mfl_col, dhis2_col
     results = []
     
     for value1 in column1:
