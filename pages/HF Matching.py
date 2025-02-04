@@ -6,13 +6,11 @@ from io import BytesIO
 from PIL import Image
 import time
 import random
-import threading
 
 # Set page config first
 st.set_page_config(page_title="Health Facility Matching Tool", page_icon="🏥", layout="wide")
 
-
-
+# Define themes
 themes = {
     "Black Modern": {
         "bg": "#000000",
@@ -55,141 +53,31 @@ themes = {
         "accent": "#27ae60",
         "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)"
-    },
-    "Dark Cosmic": {
-        "bg": "#2c0337",
-        "accent": "#9b59b6",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)"
-    },
-    "Dark Ocean": {
-        "bg": "#1A2632",
-        "accent": "#00a8cc",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)"
     }
 }
 
-st.markdown("""
-    <style>
-        .stApp {
-            background-color: var(--bg-color, #0E1117) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, #1E1E1E) !important;
-            border-right: 1px solid var(--border-color, #2E2E2E);
-        }
-        
-        .stMarkdown, p, h1, h2, h3 {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .custom-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            color: var(--text-color, #E0E0E0) !important;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: block;
-            width: 100%;
-        }
-        
-        .stSelectbox > div > div {
-            background-color: var(--input-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .stCheckbox > div > div > label {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .section-card {
-            background: var(--card-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-            box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.3)) !important;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            border-left: 5px solid var(--accent-color, #3498db);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        .section-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.5));
-            background: var(--card-hover-bg, #2E2E2E) !important;
-        }
-
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--accent-color, #3498db) !important;
-        }
-        
-        .custom-bullet {
-            margin-left: 20px;
-            position: relative;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        .custom-bullet::before {
-            content: "•";
-            color: var(--text-color, #E0E0E0);
-            position: absolute;
-            left: -15px;
-        }
-        
-        .content-text {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-    </style>
-""", unsafe_allow_html=True)
-
+# Initialize session state
+if 'step' not in st.session_state:
+    st.session_state.step = 1
+if 'master_hf_list' not in st.session_state:
+    st.session_state.master_hf_list = None
+if 'health_facilities_dhis2_list' not in st.session_state:
+    st.session_state.health_facilities_dhis2_list = None
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
     st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
+# Welcome animation on first load
 if st.session_state.first_load:
     st.balloons()
-    st.snow()
     welcome_placeholder = st.empty()
-    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
+    welcome_placeholder.success("Welcome to the Health Facility Matching Tool! 🏥")
     time.sleep(3)
     welcome_placeholder.empty()
     st.session_state.first_load = False
 
-current_time = time.time()
-if current_time - st.session_state.last_animation >= 30:
-    st.session_state.last_animation = current_time
-    theme_keys = list(themes.keys())
-    st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
-    st.balloons()
-else:
-    selected_theme = list(themes.keys())[st.session_state.theme_index]
-
+# Theme selection in sidebar
 selected_theme = st.sidebar.selectbox(
     "🎨 Select Theme",
     list(themes.keys()),
@@ -197,70 +85,155 @@ selected_theme = st.sidebar.selectbox(
     key='theme_selector'
 )
 
-# Trigger animations on theme change
+# Theme animation
 if 'previous_theme' not in st.session_state:
     st.session_state.previous_theme = selected_theme
 if st.session_state.previous_theme != selected_theme:
     st.balloons()
-    st.snow()
     st.session_state.previous_theme = selected_theme
 
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
 
+# Apply CSS styling
 st.markdown(f"""
     <style>
-        :root {{
-            --bg-color: {theme['bg']};
-            --text-color: {theme['text']};
-            --accent-color: {theme['accent']};
-            --gradient: {theme['gradient']};
-            --sidebar-bg: {theme['bg']};
-            --card-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --card-hover-bg: {'#E9ECEF' if is_light_theme else '#2E2E2E'};
-            --input-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --shadow-color: {f'rgba(0, 0, 0, 0.1)' if is_light_theme else 'rgba(0, 0, 0, 0.3)'};
-            --border-color: {'#DEE2E6' if is_light_theme else '#2E2E2E'};
+        .stApp {{
+            background-color: {theme['bg']};
+            color: {theme['text']};
+        }}
+        
+        [data-testid="stSidebar"] {{
+            background-color: {theme['bg']};
+            border-right: 1px solid {'#DEE2E6' if is_light_theme else '#2E2E2E'};
+        }}
+        
+        .stMarkdown, p, h1, h2, h3 {{
+            color: {theme['text']} !important;
+        }}
+        
+        .custom-title {{
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+            color: {theme['text']};
+            background: {theme['gradient']};
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }}
+        
+        .section-card {{
+            background: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
+            color: {theme['text']};
+            box-shadow: 0 4px 6px {'rgba(0, 0, 0, 0.1)' if is_light_theme else 'rgba(0, 0, 0, 0.3)'};
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid {theme['accent']};
+            transition: transform 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }}
+        
+        .section-card:hover {{
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px {'rgba(0, 0, 0, 0.1)' if is_light_theme else 'rgba(0, 0, 0, 0.5)'};
+        }}
+
+        .section-header {{
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: {theme['accent']};
+        }}
+        
+        @keyframes fadeIn {{
+            from {{ opacity: 0; }}
+            to {{ opacity: 1; }}
+        }}
+        
+        @keyframes slideIn {{
+            from {{ transform: translateX(-20px); opacity: 0; }}
+            to {{ transform: translateX(0); opacity: 1; }}
+        }}
+        
+        @keyframes scaleIn {{
+            from {{ transform: scale(0.95); opacity: 0; }}
+            to {{ transform: scale(1); opacity: 1; }}
+        }}
+        
+        .stButton button {{
+            background: {theme['accent']};
+            color: {'#000000' if is_light_theme else '#FFFFFF'};
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }}
+        
+        .stButton button:hover {{
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }}
+        
+        .stTextInput input, .stSelectbox select {{
+            background-color: {'#FFFFFF' if is_light_theme else '#2E2E2E'};
+            color: {theme['text']};
+            border-radius: 5px;
+            border: 1px solid {'#DEE2E6' if is_light_theme else '#3E3E3E'};
+        }}
+        
+        [data-testid="stFileUploader"] {{
+            background-color: {'#FFFFFF' if is_light_theme else '#2E2E2E'};
+            padding: 1rem;
+            border-radius: 10px;
+            border: 2px dashed {'#DEE2E6' if is_light_theme else '#3E3E3E'};
         }}
     </style>
 """, unsafe_allow_html=True)
-
-st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
-
-st.markdown("""
-    <div class="img-container" style="text-align: center;">
-        <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 50%; max-width: 500px; margin: 20px auto;">
-    </div>
-""", unsafe_allow_html=True)
-
-
-
 
 def calculate_match(df1, df2, col1, col2, threshold):
     """Calculate matching scores between two columns using Jaro-Winkler similarity."""
     results = []
     
+    # Create prefix lists for columns to avoid conflicts
+    mfl_columns = [f'MFL_{col}' for col in df1.columns]
+    dhis2_columns = [f'DHIS2_{col}' for col in df2.columns]
+    
     for idx1, row1 in df1.iterrows():
         value1 = str(row1[col1])
+        
+        # Initialize a result row with all MFL columns
+        result_row = {
+            f'MFL_{col}': row1[col] for col in df1.columns
+        }
+        
+        # Add placeholder None values for all DHIS2 columns
+        result_row.update({
+            f'DHIS2_{col}': None for col in df2.columns
+        })
+        
+        # Add match metadata columns
+        result_row.update({
+            'Match_Score': 0,
+            'Match_Status': 'Unmatch',
+            'New_HF_name_in_MFL': value1
+        })
+        
         if value1 in df2[col2].values:
             # Exact match
             matched_row = df2[df2[col2] == value1].iloc[0]
-            result_row = {
-                f'MFL_{col1}': value1,
-                f'DHIS2_{col2}': value1,
+            # Update DHIS2 columns
+            for c in df2.columns:
+                result_row[f'DHIS2_{c}'] = matched_row[c]
+            # Update match metadata
+            result_row.update({
                 'Match_Score': 100,
                 'Match_Status': 'Match',
                 'New_HF_name_in_MFL': value1
-            }
-            # Add all columns from both dataframes
-            for c in df1.columns:
-                if c != col1:
-                    result_row[f'MFL_{c}'] = row1[c]
-            for c in df2.columns:
-                if c != col2:
-                    result_row[f'DHIS2_{c}'] = matched_row[c]
-            results.append(result_row)
+            })
         else:
             # Find best match
             best_score = 0
@@ -272,43 +245,53 @@ def calculate_match(df1, df2, col1, col2, threshold):
                     best_score = similarity
                     best_match_row = row2
             
-            result_row = {
-                f'MFL_{col1}': value1,
-                f'DHIS2_{col2}': best_match_row[col2] if best_match_row is not None else None,
-                'Match_Score': round(best_score, 2),
-                'Match_Status': 'Unmatch' if best_score < threshold else 'Match',
-                'New_HF_name_in_MFL': best_match_row[col2] if best_score >= threshold else value1
-            }
-            # Add all columns from both dataframes
-            for c in df1.columns:
-                if c != col1:
-                    result_row[f'MFL_{c}'] = row1[c]
-            for c in df2.columns:
-                if c != col2:
-                    result_row[f'DHIS2_{c}'] = best_match_row[c] if best_match_row is not None else None
-            results.append(result_row)
+            if best_match_row is not None:
+                # Update DHIS2 columns
+                for c in df2.columns:
+                    result_row[f'DHIS2_{c}'] = best_match_row[c]
+                # Update match metadata
+                result_row.update({
+                    'Match_Score': round(best_score, 2),
+                    'Match_Status': 'Unmatch' if best_score < threshold else 'Match',
+                    'New_HF_name_in_MFL': best_match_row[col2] if best_score >= threshold else value1
+                })
+        
+        results.append(result_row)
     
     # Add unmatched facilities from DHIS2
     for idx2, row2 in df2.iterrows():
         value2 = str(row2[col2])
         if value2 not in [str(r[f'DHIS2_{col2}']) for r in results]:
+            # Initialize result row with None for all MFL columns
             result_row = {
-                f'MFL_{col1}': None,
-                f'DHIS2_{col2}': value2,
+                f'MFL_{col}': None for col in df1.columns
+            }
+            
+            # Add all DHIS2 columns
+            result_row.update({
+                f'DHIS2_{col}': row2[col] for col in df2.columns
+            })
+            
+            # Add match metadata
+            result_row.update({
                 'Match_Score': 0,
                 'Match_Status': 'Unmatch',
                 'New_HF_name_in_MFL': None
-            }
-            # Add all columns from both dataframes
-            for c in df1.columns:
-                if c != col1:
-                    result_row[f'MFL_{c}'] = None
-            for c in df2.columns:
-                if c != col2:
-                    result_row[f'DHIS2_{c}'] = row2[c]
+            })
+            
             results.append(result_row)
     
-    return pd.DataFrame(results)
+    # Create DataFrame and organize columns
+    result_df = pd.DataFrame(results)
+    
+    # Organize columns in a logical order
+    column_order = (
+        mfl_columns +  # All MFL columns first
+        dhis2_columns +  # Then all DHIS2 columns
+        ['Match_Score', 'Match_Status', 'New_HF_name_in_MFL']  # Metadata columns last
+    )
+    
+    return result_df[column_order]
 
 def main():
     st.markdown('<h1 class="custom-title">Health Facility Name Matching</h1>', unsafe_allow_html=True)
@@ -371,9 +354,10 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             if st.button("Apply Changes and Continue"):
+                st.session_state.master_hf_list = st.session_state.master_hf_list.rename(columns
                 st.session_state.master_hf_list = st.session_state.master_hf_list.rename(columns=mfl_renamed_columns)
-                st.session_state.health_facilities_dhis2_list = st.session_state.health_facilities_dhis2_list.rename(
-                    columns=dhis2_renamed_columns)
+                st.session_state.health_facilities_dhis2_list = st.session_state.health_facilities_dhis2_list.rename(columns=dhis2_renamed_columns)
+            
                 st.session_state.step = 3
                 st.experimental_rerun()
         
@@ -419,9 +403,30 @@ def main():
                     threshold
                 )
 
-                # Display results
+                # Display results with interactive table
                 st.markdown('<div class="section-header">Matching Results</div>', unsafe_allow_html=True)
-                st.dataframe(hf_name_match_results)
+                
+                # Convert DataFrame to records for table display
+                if not hf_name_match_results.empty:
+                    st.dataframe(
+                        hf_name_match_results,
+                        use_container_width=True,
+                        hide_index=True,
+                    )
+
+                    # Add statistics
+                    total_records = len(hf_name_match_results)
+                    matched = len(hf_name_match_results[hf_name_match_results['Match_Status'] == 'Match'])
+                    unmatched = total_records - matched
+                    
+                    st.markdown(f"""
+                        <div class="section-card">
+                            <div class="section-header">Matching Statistics</div>
+                            <p>Total Records: {total_records}</p>
+                            <p>Matched: {matched} ({(matched/total_records*100):.1f}%)</p>
+                            <p>Unmatched: {unmatched} ({(unmatched/total_records*100):.1f}%)</p>
+                        </div>
+                    """, unsafe_allow_html=True)
 
                 # Download results
                 output = BytesIO()
@@ -430,7 +435,7 @@ def main():
                 output.seek(0)
 
                 st.download_button(
-                    label="Download Matching Results as Excel",
+                    label="📥 Download Matching Results as Excel",
                     data=output,
                     file_name="hf_name_matching_results.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -444,98 +449,6 @@ def main():
         
         st.markdown('</div>', unsafe_allow_html=True)
 
-
-
-for i, (title, content) in enumerate(sections.items()):
-    time.sleep(0.2)
-    st.markdown(f"""
-        <div class="section-card">
-            <div class="section-header">{title}</div>
-            <div class="content-text">{content}</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-def show_confetti():
-    st.markdown("""
-        <style>
-            @keyframes confetti {
-                0% { transform: translateY(0) rotate(0deg); }
-                100% { transform: translateY(100vh) rotate(360deg); }
-            }
-            .confetti {
-                position: fixed;
-                animation: confetti 4s linear;
-                z-index: 9999;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    for i in range(50):
-        color = f"hsl({random.randint(0, 360)}, 100%, 50%)"
-        left = random.randint(0, 100)
-        st.markdown(f"""
-            <div class="confetti" style="left: {left}vw; background: {color}; 
-            width: 10px; height: 10px; border-radius: 50%;"></div>
-        """, unsafe_allow_html=True)
-
-def show_sparkles():
-    st.markdown("""
-        <style>
-            @keyframes sparkle {
-                0% { transform: scale(0); opacity: 0; }
-                50% { transform: scale(1); opacity: 1; }
-                100% { transform: scale(0); opacity: 0; }
-            }
-            .sparkle {
-                position: fixed;
-                animation: sparkle 2s infinite;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-    for i in range(20):
-        left = random.randint(0, 100)
-        top = random.randint(0, 100)
-        st.markdown(f"""
-            <div class="sparkle" style="left: {left}vw; top: {top}vh; 
-            background: gold; width: 5px; height: 5px; border-radius: 50%;"></div>
-        """, unsafe_allow_html=True)
-
-def show_fireworks():
-    animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
-    random.choice(animations)
-
-animations_list = [
-    st.balloons,
-    st.snow,
-    show_confetti,
-    show_sparkles,
-    show_fireworks,
-    lambda: [st.balloons(), st.snow()],
-    lambda: [show_confetti(), show_sparkles()],
-    lambda: [st.balloons(), show_confetti()],
-    lambda: [st.snow(), show_sparkles()],
-    lambda: [show_confetti(), st.snow()]
-]
-
-# Update theme change animation
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    random.choice(animations_list)()
-    st.session_state.previous_theme = selected_theme
-
-# Update periodic animations
-if st.sidebar.checkbox("Enable Auto Animations", value=True):
-    def show_periodic_animations():
-        while True:
-            time.sleep(60)
-            random.choice(animations_list)()
-            time.sleep(10)
-            random.choice(animations_list)()
-
-    if not hasattr(st.session_state, 'animation_thread'):
-        st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
-        st.session_state.animation_thread.daemon = True
-        st.session_state.animation_thread.start()
-
 if __name__ == "__main__":
     main()
+                                                                                         
