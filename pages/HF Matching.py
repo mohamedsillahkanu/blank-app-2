@@ -64,6 +64,7 @@ themes = {
 
 st.markdown("""
     <style>
+        /* Base Styles */
         .stApp {
             background-color: var(--bg-color, #0E1117) !important;
             color: var(--text-color, #E0E0E0) !important;
@@ -92,15 +93,7 @@ st.markdown("""
             width: 100%;
         }
         
-        .stSelectbox > div > div {
-            background-color: var(--input-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .stCheckbox > div > div > label {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
+        /* Section Styles */
         .section-card {
             background: var(--card-bg, #1E1E1E) !important;
             color: var(--text-color, #E0E0E0) !important;
@@ -118,28 +111,85 @@ st.markdown("""
             box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.5));
             background: var(--card-hover-bg, #2E2E2E) !important;
         }
-
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--accent-color, #3498db) !important;
+        
+        /* Animation Styles */
+        @keyframes mosquito-flight {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            25% { transform: translate(100px, -50px) rotate(45deg) scale(1.2); }
+            50% { transform: translate(200px, 0) rotate(90deg) scale(1); }
+            75% { transform: translate(100px, 50px) rotate(180deg) scale(0.8); }
+            100% { transform: translate(0, 0) rotate(360deg) scale(1); }
         }
         
-        .custom-bullet {
-            margin-left: 20px;
-            position: relative;
-            color: var(--text-color, #E0E0E0) !important;
+        .mosquito {
+            position: fixed;
+            width: 15px !important;
+            height: 15px !important;
+            background-color: #000000 !important;
+            border-radius: 50%;
+            animation: mosquito-flight 8s infinite;
+            z-index: 9999;
+            opacity: 0.8;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
         }
-        .custom-bullet::before {
-            content: "•";
-            color: var(--text-color, #E0E0E0);
+        
+        .mosquito::before,
+        .mosquito::after {
+            content: '';
             position: absolute;
-            left: -15px;
+            width: 12px;
+            height: 4px;
+            background: rgba(0,0,0,0.6);
+            top: 50%;
+            left: 50%;
+            transform-origin: left center;
         }
         
-        .content-text {
-            color: var(--text-color, #E0E0E0) !important;
+        .mosquito::before {
+            transform: translateY(-50%) rotate(45deg);
+        }
+        
+        .mosquito::after {
+            transform: translateY(-50%) rotate(-45deg);
+        }
+        
+        @keyframes star-twinkle {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.3; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .star {
+            position: fixed;
+            width: 3px;
+            height: 3px;
+            background-color: #FFD700;
+            border-radius: 50%;
+            animation: star-twinkle 2s infinite;
+            z-index: 9998;
+            box-shadow: 0 0 5px #FFD700;
+        }
+        
+        @keyframes rainfall {
+            0% { 
+                transform: translateY(-10vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { 
+                transform: translateY(110vh) translateX(-20px);
+                opacity: 0;
+            }
+        }
+        
+        .raindrop {
+            position: fixed;
+            width: 2px;
+            height: 15px;
+            background: linear-gradient(transparent, rgba(135, 206, 235, 0.8));
+            animation: rainfall 1.5s linear infinite;
+            z-index: 9997;
         }
         
         @keyframes fadeIn {
@@ -156,135 +206,73 @@ st.markdown("""
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-
-        /* New Animation Styles */
-        @keyframes mosquito-flight {
-            0% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(10px, 10px) rotate(90deg); }
-            50% { transform: translate(0, 20px) rotate(180deg); }
-            75% { transform: translate(-10px, 10px) rotate(270deg); }
-            100% { transform: translate(0, 0) rotate(360deg); }
+        
+        .custom-bullet {
+            margin-left: 20px;
+            position: relative;
+            color: var(--text-color, #E0E0E0) !important;
         }
         
-        @keyframes star-twinkle {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(0.8); }
+        .custom-bullet::before {
+            content: "•";
+            color: var(--text-color, #E0E0E0);
+            position: absolute;
+            left: -15px;
         }
         
-        @keyframes rainfall {
-            0% { transform: translateY(-100vh); }
-            100% { transform: translateY(100vh); }
-        }
-        
-        .mosquito {
-            position: fixed;
-            width: 8px;
-            height: 8px;
-            background-color: rgba(0, 0, 0, 0.6);
-            border-radius: 50%;
-            animation: mosquito-flight 4s infinite;
-            z-index: 9999;
-        }
-        
-        .star {
-            position: fixed;
-            width: 4px;
-            height: 4px;
-            background-color: #FFD700;
-            border-radius: 50%;
-            animation: star-twinkle 2s infinite;
-            z-index: 9999;
-        }
-        
-        .raindrop {
-            position: fixed;
-            width: 2px;
-            height: 10px;
-            background: linear-gradient(transparent, rgba(135, 206, 235, 0.5));
-            animation: rainfall 1s linear infinite;
-            z-index: 9999;
-        }
-
-        @keyframes confetti {
-            0% { transform: translateY(0) rotate(0deg); }
-            100% { transform: translateY(100vh) rotate(360deg); }
-        }
-        
-        .confetti {
-            position: fixed;
-            animation: confetti 4s linear;
-            z-index: 9999;
-        }
-
-        @keyframes sparkle {
-            0% { transform: scale(0); opacity: 0; }
-            50% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-        
-        .sparkle {
-            position: fixed;
-            animation: sparkle 2s infinite;
-            z-index: 9999;
+        .content-text {
+            color: var(--text-color, #E0E0E0) !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # Animation Functions
-def show_mosquitoes():
-    for i in range(15):
+def create_automatic_mosquitoes():
+    for i in range(10):
         left = random.randint(0, 100)
-        top = random.randint(0, 100)
-        delay = random.random() * 4
+        top = random.randint(20, 80)
+        delay = i * 0.5
         st.markdown(f"""
-            <div class="mosquito" style="left: {left}vw; top: {top}vh; 
-            animation-delay: {delay}s;"></div>
+            <div class="mosquito" style="
+                left: {left}vw;
+                top: {top}vh;
+                animation-delay: {delay}s;
+                animation-duration: {random.uniform(5, 8)}s;
+            "></div>
         """, unsafe_allow_html=True)
 
-def show_stars():
-    for i in range(30):
-        left = random.randint(0, 100)
-        top = random.randint(0, 30)
-        delay = random.random() * 2
-        st.markdown(f"""
-            <div class="star" style="left: {left}vw; top: {top}vh; 
-            animation-delay: {delay}s;"></div>
-        """, unsafe_allow_html=True)
-
-def show_rainfall():
-    for i in range(50):
-        left = random.randint(0, 100)
-        delay = random.random()
-        st.markdown(f"""
-            <div class="raindrop" style="left: {left}vw; 
-            animation-delay: {delay}s;"></div>
-        """, unsafe_allow_html=True)
-
-def show_confetti():
-    for i in range(50):
-        color = f"hsl({random.randint(0, 360)}, 100%, 50%)"
-        left = random.randint(0, 100)
-        st.markdown(f"""
-            <div class="confetti" style="left: {left}vw; background: {color}; 
-            width: 10px; height: 10px; border-radius: 50%;"></div>
-        """, unsafe_allow_html=True)
-
-def show_sparkles():
+def create_automatic_stars():
     for i in range(20):
         left = random.randint(0, 100)
-        top = random.randint(0, 100)
+        top = random.randint(0, 40)
+        delay = random.uniform(0, 2)
+        size = random.uniform(2, 4)
         st.markdown(f"""
-            <div class="sparkle" style="left: {left}vw; top: {top}vh; 
-            background: gold; width: 5px; height: 5px; border-radius: 50%;"></div>
+            <div class="star" style="
+                left: {left}vw;
+                top: {top}vh;
+                width: {size}px;
+                height: {size}px;
+                animation-delay: {delay}s;
+                animation-duration: {random.uniform(1.5, 3)}s;
+            "></div>
         """, unsafe_allow_html=True)
 
-def show_fireworks():
-    animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
-    random.choice(animations)
+def create_automatic_rainfall():
+    for i in range(30):
+        left = random.randint(0, 100)
+        delay = random.uniform(0, 2)
+        st.markdown(f"""
+            <div class="raindrop" style="
+                left: {left}vw;
+                animation-delay: {delay}s;
+                animation-duration: {random.uniform(1, 1.5)}s;
+            "></div>
+        """, unsafe_allow_html=True)
 
 # Initialize session state
-if 'last_animation' not in st.session_state:
-    st.session_state.last_animation = time.time()
+if 'animations_initialized' not in st.session_state:
+    st.session_state.animations_initialized = False
     st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
@@ -292,52 +280,28 @@ if 'last_animation' not in st.session_state:
 if st.session_state.first_load:
     st.balloons()
     st.snow()
-    show_mosquitoes()
-    show_stars()
+    create_automatic_mosquitoes()
+    create_automatic_stars()
     welcome_placeholder = st.empty()
     welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
     time.sleep(3)
     welcome_placeholder.empty()
     st.session_state.first_load = False
 
-# Theme selection and animation
-current_time = time.time()
-if current_time - st.session_state.last_animation >= 30:
-    st.session_state.last_animation = current_time
-    theme_keys = list(themes.keys())
-    st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
-    random.choice([st.balloons, st.snow, show_mosquitoes, show_stars, show_rainfall])()
+# Initialize all animations
+if not st.session_state.animations_initialized:
+    create_automatic_mosquitoes()
+    create_automatic_stars()
+    create_automatic_rainfall()
+    st.session_state.animations_initialized = True
 
+# Theme selection
 selected_theme = st.sidebar.selectbox(
     "🎨 Select Theme",
     list(themes.keys()),
     index=st.session_state.theme_index,
     key='theme_selector'
 )
-
-# Updated animations list
-animations_list = [
-    st.balloons,
-    st.snow,
-    show_confetti,
-    show_sparkles,
-    show_fireworks,
-    show_mosquitoes,
-    show_stars,
-    show_rainfall,
-    lambda: [st.balloons(), show_mosquitoes()],
-    lambda: [st.snow(), show_stars()],
-    lambda: [show_rainfall(), show_mosquitoes()],
-    lambda: [show_stars(), show_sparkles()],
-    lambda: [show_mosquitoes(), show_rainfall(), show_stars()]
-]
-
-# Theme change animation
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    random.choice(animations_list)()
-    st.session_state.previous_theme = selected_theme
 
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
@@ -359,6 +323,22 @@ st.markdown(f"""
         }}
     </style>
 """, unsafe_allow_html=True)
+
+# Periodic animations
+def show_periodic_animations():
+    while True:
+        time.sleep(random.uniform(15, 30))
+        random.choice([
+            create_automatic_mosquitoes,
+            create_automatic_stars,
+            create_automatic_rainfall
+        ])()
+
+# Start animation thread
+if not hasattr(st.session_state, 'animation_thread'):
+    st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
+    st.session_state.animation_thread.daemon = True
+    st.session_state.animation_thread.start()
 
 # Main content
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
@@ -396,7 +376,7 @@ The integration of automation in geospatial analysis significantly enhances the 
 
 # Render sections with animations
 for i, (title, content) in enumerate(sections.items()):
-    time.sleep(0.2)  # Slight delay for animation effect
+    time.sleep(0.2)
     st.markdown(f"""
         <div class="section-card">
             <div class="section-header">{title}</div>
@@ -404,39 +384,33 @@ for i, (title, content) in enumerate(sections.items()):
         </div>
     """, unsafe_allow_html=True)
 
-# Periodic animations
-if st.sidebar.checkbox("Enable Auto Animations", value=True):
-    def show_periodic_animations():
-        while True:
-            time.sleep(60)  # Wait for 60 seconds
-            random.choice(animations_list)()
-            time.sleep(10)  # Short delay between animations
-            random.choice(animations_list)()  # Show another animation
-
-    # Start animation thread if not already running
-    if not hasattr(st.session_state, 'animation_thread'):
-        st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
-        st.session_state.animation_thread.daemon = True  # Set as daemon thread
-        st.session_state.animation_thread.start()
-
-# Add sidebar controls for animation settings
-with st.sidebar:
-    st.markdown("### 🎬 Animation Controls")
-    if st.button("Trigger Random Animation"):
-        random.choice(animations_list)()
-    
-    animation_speed = st.slider("Animation Speed", 0.5, 2.0, 1.0, 0.1)
-    st.markdown(f"""
-        <style>
-            .mosquito, .star, .raindrop {{
-                animation-duration: {1/animation_speed}s !important;
-            }}
-        </style>
-    """, unsafe_allow_html=True)
-
-# Footer
+# Add footer
 st.markdown("""
     <div style='text-align: center; margin-top: 50px; padding: 20px;'>
         <p>© 2024 Geospatial Analysis Tool. All rights reserved.</p>
     </div>
 """, unsafe_allow_html=True)
+
+# Function to check and restart animations periodically
+def check_and_restart_animations():
+    while True:
+        time.sleep(45)  # Check every 45 seconds
+        if not st.session_state.animations_initialized:
+            create_automatic_mosquitoes()
+            create_automatic_stars()
+            create_automatic_rainfall()
+            st.session_state.animations_initialized = True
+
+# Start the animation checker thread
+if not hasattr(st.session_state, 'checker_thread'):
+    st.session_state.checker_thread = threading.Thread(target=check_and_restart_animations)
+    st.session_state.checker_thread.daemon = True
+    st.session_state.checker_thread.start()
+
+# Additional automatic animations on page load
+if not hasattr(st.session_state, 'initial_animations_done'):
+    st.session_state.initial_animations_done = True
+    create_automatic_mosquitoes()
+    create_automatic_stars()
+    time.sleep(2)
+    create_automatic_rainfall()
