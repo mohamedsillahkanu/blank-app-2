@@ -80,20 +80,30 @@ st.markdown("""
         <div class="mosquito">🦟</div>
         <div class="mosquito">🦟</div>
         <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
+        <div class="mosquito">🦟</div>
     </div>
     """, unsafe_allow_html=True)
 
 st.title("Flying Mosquitoes Animation")
 st.write("Watch out for these pesky mosquitoes!")
 
-# Add some interactive elements
-if st.button("Add More Mosquitoes"):
-    st.snow()  # Add some visual effect
-    st.markdown("""
-        <div class="mosquito-container">
-            <div class="mosquito">🦟</div>
-            <div class="mosquito">🦟</div>
-            <div class="mosquito">🦟</div>
-            <div class="mosquito">🦟</div>
-        </div>
-    """, unsafe_allow_html=True)
+
