@@ -195,6 +195,118 @@ def main():
     # Initialize session state
     if 'step' not in st.session_state:
         st.session_state.step = 1
+        st.balloons()
+        st.snow()
+
+    # File Upload
+    st.write("Upload Files:")
+    mfl_file = st.file_uploader("Upload Master HF List:", type=['csv', 'xlsx', 'xls'])
+    dhis2_file = st.file_uploader("Upload DHIS2 HF List:", type=['csv', 'xlsx', 'xls'])
+
+    if mfl_file and dhis2_file:
+        try:
+            # Read data files
+            mfl_data = read_data_file(mfl_file)
+            dhis2_data = read_data_file(dhis2_file)
+            
+            if mfl_data is not None and dhis2_data is not None:
+                # Find facility columns first
+                mfl_col = find_facility_column(mfl_data)
+                dhis2_col = find_facility_column(dhis2_data)
+                
+                # Handle duplicates
+                mfl_data = handle_duplicates(mfl_data, mfl_col)
+                dhis2_data = handle_duplicates(dhis2_data, dhis2_col)
+                
+                # Prepare data with suffixes
+                mfl_data_processed = prepare_facility_data(mfl_data, "MFL")
+                dhis2_data_processed = prepare_facility_data(dhis2_data, "DHIS2")
+                
+                # Display previews
+                st.success("Files uploaded successfully!")
+                st.balloons()
+                st.snow()
+                
+                st.subheader("Preview of Data")
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("Master Facility List Preview")
+                    st.dataframe(mfl_data_processed.head())
+                with col2:
+                    st.write("DHIS2 List Preview")
+                    st.dataframe(dhis2_data_processed.head())
+
+                # Perform matching automatically
+                with st.spinner("Performing matching..."):
+                    matches = []
+                    mfl_col_with_suffix = f"{mfl_col}_MFL"
+                    dhis2_col_with_suffix = f"{dhis2_col}_DHIS2"
+                    
+                    # Calculate matches with fixed threshold of 70
+                    for mfl_name in mfl_data_processed[mfl_col_with_suffix]:
+                        if mfl_name in dhis2_data_processed[dhis2_col_with_suffix].values:
+                            matches.append({
+                                'MFL_Name': mfl_name,
+                                'DHIS2_Name': mfl_name,
+                                'Match_Score': 100,
+                                'Match_Status': 'Exact Match'
+                            })
+                            continue
+                        
+                        # Find best match
+                        best_match = None
+                        best_score = 0
+                        for dhis2_name in dhis2_data_processed[dhis2_col_with_suffix]:
+                            score = jaro_winkler_similarity(str(mfl_name), str(dhis2_name)) * 100
+                            if score > best_score:
+                                best_score = score
+                                best_match = dhis2_name
+                        
+                        matches.append({
+                            'MFL_Name': mfl_name,
+                            'DHIS2_Name': best_match,
+                            'Match_Score': round(best_score, 2),
+                            'Match_Status': 'Match' if best_score >= 70 else 'No Match'
+                        })
+                    
+                    # Create matches DataFrame
+                    matches_df = pd.DataFrame(matches)
+                    
+                    # Merge with original data
+                    final_results = matches_df.merge(
+                        mfl_data_processed, 
+                        left_on='MFL_Name',
+                        right_on=mfl_col_with_suffix,
+                        how='left'
+                    ).merge(
+                        dhis2_data_processed,
+                        left_on='DHIS2_Name',
+                        right_on=dhis2_col_with_suffix,
+                        how='left'
+                    )
+                    
+                    # Drop duplicate columns
+                    final_results = final_results.drop(columns=[mfl_col_with_suffix, dhis2_col_with_suffix], errors='ignore')
+                    
+                    # Display results
+                    st.write("### Matching Results")
+                    st.dataframe(final_results)
+                    
+                    # Download button
+                    csv = final_results.to_csv(index=False)
+                    st.download_button(
+                        label="Download Results",
+                        data=csv,
+                        file_name="facility_matching_results.csv",
+                        mime="text/csv"
+                    )
+
+        except Exception as e:
+            st.error(f"Error reading files: {e}")
+
+if __name__ == "__main__":
+    main()
+        st.session_state.step = 1
         st.balloons()  # Show balloons on first load
         st.snow()  # Show snow effect on first load
     if 'master_hf_list' not in st.session_state:
