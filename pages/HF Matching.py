@@ -62,173 +62,155 @@ themes = {
     }
 }
 
-st.markdown("""
-    <style>
-        /* Base Styles */
-        .stApp {
-            background-color: var(--bg-color, #0E1117) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, #1E1E1E) !important;
-            border-right: 1px solid var(--border-color, #2E2E2E);
-        }
-        
-        .stMarkdown, p, h1, h2, h3 {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .custom-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            color: var(--text-color, #E0E0E0) !important;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: block;
-            width: 100%;
-        }
-        
-        /* Section Styles */
-        .section-card {
-            background: var(--card-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-            box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.3)) !important;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            border-left: 5px solid var(--accent-color, #3498db);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        .section-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.5));
-            background: var(--card-hover-bg, #2E2E2E) !important;
-        }
-        
-        /* Animation Styles */
-        @keyframes mosquito-flight {
-            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-            25% { transform: translate(100px, -50px) rotate(45deg) scale(1.2); }
-            50% { transform: translate(200px, 0) rotate(90deg) scale(1); }
-            75% { transform: translate(100px, 50px) rotate(180deg) scale(0.8); }
-            100% { transform: translate(0, 0) rotate(360deg) scale(1); }
-        }
-        
-        .mosquito {
-            position: fixed;
-            width: 15px !important;
-            height: 15px !important;
-            background-color: #000000 !important;
-            border-radius: 50%;
-            animation: mosquito-flight 8s infinite;
-            z-index: 9999;
-            opacity: 0.8;
-            box-shadow: 0 0 5px rgba(0,0,0,0.5);
-        }
-        
-        .mosquito::before,
-        .mosquito::after {
-            content: '';
-            position: absolute;
-            width: 12px;
-            height: 4px;
-            background: rgba(0,0,0,0.6);
-            top: 50%;
-            left: 50%;
-            transform-origin: left center;
-        }
-        
-        .mosquito::before {
-            transform: translateY(-50%) rotate(45deg);
-        }
-        
-        .mosquito::after {
-            transform: translateY(-50%) rotate(-45deg);
-        }
-        
-        @keyframes star-twinkle {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.5); opacity: 0.3; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-        
-        .star {
-            position: fixed;
-            width: 3px;
-            height: 3px;
-            background-color: #FFD700;
-            border-radius: 50%;
-            animation: star-twinkle 2s infinite;
-            z-index: 9998;
-            box-shadow: 0 0 5px #FFD700;
-        }
-        
-        @keyframes rainfall {
-            0% { 
-                transform: translateY(-10vh) translateX(0);
-                opacity: 0;
+def get_base_styles():
+    return """
+        <style>
+            @keyframes mosquito-flight {
+                0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+                25% { transform: translate(100px, -50px) rotate(45deg) scale(1.2); }
+                50% { transform: translate(200px, 0) rotate(90deg) scale(1); }
+                75% { transform: translate(100px, 50px) rotate(180deg) scale(0.8); }
+                100% { transform: translate(0, 0) rotate(360deg) scale(1); }
             }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { 
-                transform: translateY(110vh) translateX(-20px);
-                opacity: 0;
-            }
-        }
-        
-        .raindrop {
-            position: fixed;
-            width: 2px;
-            height: 15px;
-            background: linear-gradient(transparent, rgba(135, 206, 235, 0.8));
-            animation: rainfall 1.5s linear infinite;
-            z-index: 9997;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-        
-        .custom-bullet {
-            margin-left: 20px;
-            position: relative;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .custom-bullet::before {
-            content: "•";
-            color: var(--text-color, #E0E0E0);
-            position: absolute;
-            left: -15px;
-        }
-        
-        .content-text {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
 
-# Animation Functions
-def create_automatic_mosquitoes():
-    for i in range(10):
+            @keyframes star-twinkle {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.5); opacity: 0.3; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+
+            @keyframes rainfall {
+                0% { transform: translateY(-10vh) translateX(0); opacity: 0; }
+                10% { opacity: 1; }
+                90% { opacity: 1; }
+                100% { transform: translateY(110vh) translateX(-20px); opacity: 0; }
+            }
+
+            .mosquito {
+                position: fixed;
+                width: 15px !important;
+                height: 15px !important;
+                background-color: var(--text-color) !important;
+                border-radius: 50%;
+                animation: mosquito-flight 8s infinite;
+                z-index: 9999;
+                opacity: 0.8;
+                box-shadow: 0 0 5px rgba(0,0,0,0.5);
+                pointer-events: none;
+            }
+
+            .mosquito::before,
+            .mosquito::after {
+                content: '';
+                position: absolute;
+                width: 12px;
+                height: 4px;
+                background: var(--text-color);
+                opacity: 0.6;
+                top: 50%;
+                left: 50%;
+                transform-origin: left center;
+            }
+
+            .mosquito::before {
+                transform: translateY(-50%) rotate(45deg);
+            }
+
+            .mosquito::after {
+                transform: translateY(-50%) rotate(-45deg);
+            }
+
+            .star {
+                position: fixed;
+                width: 3px;
+                height: 3px;
+                background-color: #FFD700;
+                border-radius: 50%;
+                animation: star-twinkle 2s infinite;
+                z-index: 9998;
+                box-shadow: 0 0 5px #FFD700;
+                pointer-events: none;
+            }
+
+            .raindrop {
+                position: fixed;
+                width: 2px;
+                height: 15px;
+                background: linear-gradient(transparent, rgba(135, 206, 235, 0.8));
+                animation: rainfall 1.5s linear infinite;
+                z-index: 9997;
+                pointer-events: none;
+            }
+
+            @keyframes confetti {
+                0% { transform: translateY(0) rotate(0deg); }
+                100% { transform: translateY(100vh) rotate(360deg); }
+            }
+
+            .confetti {
+                position: fixed;
+                animation: confetti 4s linear;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            @keyframes sparkle {
+                0% { transform: scale(0); opacity: 0; }
+                50% { transform: scale(1); opacity: 1; }
+                100% { transform: scale(0); opacity: 0; }
+            }
+
+            .sparkle {
+                position: fixed;
+                animation: sparkle 2s infinite;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            /* Page Layout Styles */
+            .stApp {
+                background-color: var(--bg-color) !important;
+                color: var(--text-color) !important;
+            }
+
+            [data-testid="stSidebar"] {
+                background-color: var(--sidebar-bg) !important;
+                border-right: 1px solid var(--border-color);
+            }
+
+            .stMarkdown, p, h1, h2, h3 {
+                color: var(--text-color) !important;
+            }
+
+            .section-card {
+                background: var(--card-bg) !important;
+                color: var(--text-color) !important;
+                box-shadow: 0 4px 6px var(--shadow-color) !important;
+                border-radius: 15px;
+                padding: 25px;
+                margin: 20px 0;
+                border-left: 5px solid var(--accent-color);
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                animation: slideIn 0.5s ease-out;
+            }
+
+            .section-card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 15px var(--shadow-color);
+                background: var(--card-hover-bg) !important;
+            }
+
+            .section-header {
+                font-size: 1.5rem;
+                font-weight: bold;
+                margin-bottom: 1rem;
+                color: var(--accent-color) !important;
+            }
+        </style>
+    """
+
+def create_mosquitoes(count=10):
+    for i in range(count):
         left = random.randint(0, 100)
         top = random.randint(20, 80)
         delay = i * 0.5
@@ -241,8 +223,8 @@ def create_automatic_mosquitoes():
             "></div>
         """, unsafe_allow_html=True)
 
-def create_automatic_stars():
-    for i in range(20):
+def create_stars(count=20):
+    for i in range(count):
         left = random.randint(0, 100)
         top = random.randint(0, 40)
         delay = random.uniform(0, 2)
@@ -258,8 +240,8 @@ def create_automatic_stars():
             "></div>
         """, unsafe_allow_html=True)
 
-def create_automatic_rainfall():
-    for i in range(30):
+def create_rainfall(count=30):
+    for i in range(count):
         left = random.randint(0, 100)
         delay = random.uniform(0, 2)
         st.markdown(f"""
@@ -270,30 +252,31 @@ def create_automatic_rainfall():
             "></div>
         """, unsafe_allow_html=True)
 
+def trigger_all_animations():
+    st.balloons()
+    st.snow()
+    create_mosquitoes()
+    create_stars()
+    create_rainfall()
+
+def cleanup_animations():
+    st.markdown("""
+        <style>
+            .mosquito, .star, .raindrop {
+                display: none;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    time.sleep(0.1)
+
 # Initialize session state
 if 'animations_initialized' not in st.session_state:
     st.session_state.animations_initialized = False
     st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
-# First load animations
-if st.session_state.first_load:
-    st.balloons()
-    st.snow()
-    create_automatic_mosquitoes()
-    create_automatic_stars()
-    welcome_placeholder = st.empty()
-    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
-    time.sleep(3)
-    welcome_placeholder.empty()
-    st.session_state.first_load = False
-
-# Initialize all animations
-if not st.session_state.animations_initialized:
-    create_automatic_mosquitoes()
-    create_automatic_stars()
-    create_automatic_rainfall()
-    st.session_state.animations_initialized = True
+# Apply base styles
+st.markdown(get_base_styles(), unsafe_allow_html=True)
 
 # Theme selection
 selected_theme = st.sidebar.selectbox(
@@ -302,6 +285,15 @@ selected_theme = st.sidebar.selectbox(
     index=st.session_state.theme_index,
     key='theme_selector'
 )
+
+# Theme change handler
+if 'previous_theme' not in st.session_state:
+    st.session_state.previous_theme = selected_theme
+
+if st.session_state.previous_theme != selected_theme:
+    cleanup_animations()
+    trigger_all_animations()
+    st.session_state.previous_theme = selected_theme
 
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
@@ -324,59 +316,56 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-# Periodic animations
-def show_periodic_animations():
-    while True:
-        time.sleep(random.uniform(15, 30))
-        random.choice([
-            create_automatic_mosquitoes,
-            create_automatic_stars,
-            create_automatic_rainfall
-        ])()
-
-# Start animation thread
-if not hasattr(st.session_state, 'animation_thread'):
-    st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
-    st.session_state.animation_thread.daemon = True
-    st.session_state.animation_thread.start()
+# First load animations
+if st.session_state.first_load:
+    trigger_all_animations()
+    welcome_placeholder = st.empty()
+    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
+    time.sleep(3)
+    welcome_placeholder.empty()
+    st.session_state.first_load = False
 
 # Main content
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
+# Map image
 st.markdown("""
-    <div class="img-container" style="text-align: center;">
+    <div style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
              style="width: 50%; max-width: 500px; margin: 20px auto;">
     </div>
 """, unsafe_allow_html=True)
 
+# Content sections
 sections = {
-    "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis. Based on the experience of the 2023 SNT implementation, we have developed an automated tool using the same validated codes with additional enhanced features. This innovation aims to build the capacity of National Malaria Control Program (NMCP) to conduct SNT easily on a yearly basis and monitor activities effectively using this tool. The tool is designed to be user-friendly and offers high processing speed.
-
-The integration of automation in geospatial analysis significantly enhances the efficiency and effectiveness of data management and visualization tasks. With the introduction of this automated system, analysis time has been drastically reduced from one year to one week. This shift not only streamlines operations but also allows analysts to focus on interpreting results rather than being bogged down by technical processes.""",
+    "Overview": """Before now, the Sub-National Tailoring (SNT) process took a considerable amount of time to complete analysis. Based on the experience of the 2023 SNT implementation, we have developed an automated tool using the same validated codes with additional enhanced features. This innovation aims to build the capacity of National Malaria Control Program (NMCP) to conduct SNT easily on a yearly basis and monitor activities effectively using this tool.""",
     
-    "Objectives": """The main objectives of implementing automated systems for geospatial analysis and data management are:
-    <div class='custom-bullet'>Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data, enabling quicker decision-making.</div>
-    <div class='custom-bullet'>Enhance Skill Accessibility: Provide tools that can be used effectively by individuals without extensive technical training.</div>
-    <div class='custom-bullet'>Improve Data Management Efficiency: Streamline data management processes that currently can take days to complete.</div>
-    <div class='custom-bullet'>Facilitate Rapid Analysis: Enable automated analysis of uploaded datasets within minutes.</div>""",
+    "Objectives": """
+    <div class='content-text'>
+        The main objectives of implementing automated systems for geospatial analysis and data management are:
+        <ul>
+            <li>Reduce Time and Effort: Significantly decrease the time required to create maps and analyze data.</li>
+            <li>Enhance Skill Accessibility: Provide tools that can be used effectively without extensive training.</li>
+            <li>Improve Data Management Efficiency: Streamline processes that currently take days to complete.</li>
+            <li>Facilitate Rapid Analysis: Enable automated analysis of datasets within minutes.</li>
+        </ul>
+    </div>
+    """,
     
-    "Scope": """
-    <div class='custom-bullet'>The development and implementation of an automated system that simplifies the creation of geospatial visualizations.</div>
-    <div class='custom-bullet'>A comprehensive automated data analysis tool that processes datasets quickly and efficiently, enabling analysts to obtain insights in less than 20 minutes.</div>
-    <div class='custom-bullet'>Training and support for users to maximize the benefits of these tools, ensuring that even those with limited technical skills can leverage automation for their analytical needs.</div>""",
-    
-    "Target Audience": """
-    <div class='custom-bullet'>Public health officials and analysts working within NMCPs who require efficient mapping and data analysis solutions.</div>
-    <div class='custom-bullet'>Data managers and decision-makers seeking to improve operational efficiency and responsiveness to health challenges.</div>
-    <div class='custom-bullet'>Organizations interested in integrating automation into their workflows to enhance data-driven decision-making capabilities.</div>""",
-    
-    "Conclusion": """The adoption of this automated system for SNT analysis represents a transformative opportunity for NMCPs. By significantly reducing the time and effort required for these tasks, programs can enhance their efficiency, improve the quality of their analyses, and ultimately lead to more timely and informed decision-making. This tool, built on the experience of the 2023 SNT implementation, not only addresses existing operational challenges but also empowers analysts to focus on deriving insights rather than getting lost in technical details. The user-friendly interface and high processing speed make it an invaluable asset for regular SNT updates and monitoring of malaria control activities."""
+    "Implementation": """
+    <div class='content-text'>
+        Key implementation aspects include:
+        <ul>
+            <li>Development of automated system for simplified geospatial visualizations</li>
+            <li>Comprehensive data analysis tools for quick insights</li>
+            <li>Training and support for users to maximize tool benefits</li>
+        </ul>
+    </div>
+    """
 }
 
-# Render sections with animations
-for i, (title, content) in enumerate(sections.items()):
-    time.sleep(0.2)
+# Render sections
+for title, content in sections.items():
     st.markdown(f"""
         <div class="section-card">
             <div class="section-header">{title}</div>
@@ -384,33 +373,152 @@ for i, (title, content) in enumerate(sections.items()):
         </div>
     """, unsafe_allow_html=True)
 
-# Add footer
+# Periodic animation handler
+def show_periodic_animations():
+    while True:
+        time.sleep(random.uniform(15, 30))
+        if st.session_state.previous_theme == selected_theme:
+            random.choice([
+                create_mosquitoes,
+                create_stars,
+                create_rainfall
+            ])()
+
+# Start animation thread
+if not hasattr(st.session_state, 'animation_thread'):
+    st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
+    st.session_state.animation_thread.daemon = True
+    st.session_state.animation_thread.start()
+
+# Footer with animation controls
 st.markdown("""
-    <div style='text-align: center; margin-top: 50px; padding: 20px;'>
+    <div style='position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg-color); padding: 10px; text-align: center; border-top: 1px solid var(--border-color);'>
         <p>© 2024 Geospatial Analysis Tool. All rights reserved.</p>
     </div>
 """, unsafe_allow_html=True)
 
-# Function to check and restart animations periodically
-def check_and_restart_animations():
-    while True:
-        time.sleep(45)  # Check every 45 seconds
-        if not st.session_state.animations_initialized:
-            create_automatic_mosquitoes()
-            create_automatic_stars()
-            create_automatic_rainfall()
-            st.session_state.animations_initialized = True
+# Add animation settings to sidebar
+with st.sidebar:
+    st.markdown("### 🎬 Animation Settings")
+    
+    # Animation controls
+    if st.button("🎯 Trigger New Animations"):
+        cleanup_animations()
+        trigger_all_animations()
+    
+    # Animation density controls
+    mosquito_count = st.slider("🦟 Mosquito Count", 5, 30, 10)
+    star_count = st.slider("⭐ Star Count", 10, 50, 20)
+    rain_count = st.slider("🌧️ Rain Density", 10, 50, 30)
+    
+    # Animation speed
+    animation_speed = st.slider("🚀 Animation Speed", 0.5, 2.0, 1.0, 0.1)
+    
+    # Apply animation settings
+    st.markdown(f"""
+        <style>
+            .mosquito {{
+                animation-duration: {8/animation_speed}s !important;
+            }}
+            .star {{
+                animation-duration: {2/animation_speed}s !important;
+            }}
+            .raindrop {{
+                animation-duration: {1.5/animation_speed}s !important;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Apply new counts when button is clicked
+    if st.button("📱 Apply Settings"):
+        cleanup_animations()
+        create_mosquitoes(mosquito_count)
+        create_stars(star_count)
+        create_rainfall(rain_count)
 
-# Start the animation checker thread
-if not hasattr(st.session_state, 'checker_thread'):
-    st.session_state.checker_thread = threading.Thread(target=check_and_restart_animations)
-    st.session_state.checker_thread.daemon = True
-    st.session_state.checker_thread.start()
+# Theme-specific adjustments
+if is_light_theme:
+    st.markdown("""
+        <style>
+            .mosquito {
+                background-color: rgba(0, 0, 0, 0.7) !important;
+            }
+            .mosquito::before,
+            .mosquito::after {
+                background: rgba(0, 0, 0, 0.7);
+            }
+            .star {
+                box-shadow: 0 0 3px #FFD700;
+            }
+            .raindrop {
+                background: linear-gradient(transparent, rgba(0, 0, 100, 0.4));
+            }
+        </style>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+        <style>
+            .mosquito {
+                background-color: rgba(255, 255, 255, 0.8) !important;
+            }
+            .mosquito::before,
+            .mosquito::after {
+                background: rgba(255, 255, 255, 0.8);
+            }
+            .star {
+                box-shadow: 0 0 5px #FFD700;
+            }
+            .raindrop {
+                background: linear-gradient(transparent, rgba(135, 206, 235, 0.8));
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
-# Additional automatic animations on page load
-if not hasattr(st.session_state, 'initial_animations_done'):
-    st.session_state.initial_animations_done = True
-    create_automatic_mosquitoes()
-    create_automatic_stars()
-    time.sleep(2)
-    create_automatic_rainfall()
+# Dynamic animation adjustments based on theme
+def adjust_animations_for_theme(theme_name):
+    is_dark = "Dark" in theme_name
+    st.markdown(f"""
+        <style>
+            .mosquito {{
+                opacity: {0.8 if is_dark else 0.6};
+                box-shadow: 0 0 {8 if is_dark else 5}px rgba({255 if is_dark else 0},
+                                                           {255 if is_dark else 0},
+                                                           {255 if is_dark else 0},
+                                                           0.3);
+            }}
+            
+            .star {{
+                opacity: {0.9 if is_dark else 0.7};
+            }}
+            
+            .raindrop {{
+                opacity: {0.7 if is_dark else 0.5};
+                height: {15 if is_dark else 12}px;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+
+# Apply theme-specific adjustments
+adjust_animations_for_theme(selected_theme)
+
+# Add help tooltip
+if st.sidebar.checkbox("Show Help"):
+    st.sidebar.markdown("""
+        ### 💡 Tips:
+        - Use the sliders to adjust animation density
+        - Change animation speed to control movement
+        - Click 'Trigger New Animations' for fresh effects
+        - Switch themes to see different styles
+        - Animations will continue automatically
+    """)
+
+# Performance optimization
+if st.sidebar.checkbox("🚀 Performance Mode", value=False):
+    st.markdown("""
+        <style>
+            .mosquito, .star, .raindrop {
+                will-change: transform;
+                transform: translateZ(0);
+            }
+        </style>
+    """, unsafe_allow_html=True)
