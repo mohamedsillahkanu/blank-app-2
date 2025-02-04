@@ -364,7 +364,7 @@ def main():
                 st.success("Files uploaded successfully!")
                 
                 # Display previews
-                st.
+                
                 st.subheader("Preview of Master HF List")
                 st.dataframe(st.session_state.master_hf_list.head())
                 st.subheader("Preview of DHIS2 HF List")
