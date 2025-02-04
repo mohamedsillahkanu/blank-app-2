@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from jellyfish import jaro_winkler_similarity
 from io import BytesIO
+import time
 
 # Page configuration
 st.set_page_config(
@@ -145,7 +146,8 @@ def main():
     # Initialize session state
     if 'step' not in st.session_state:
         st.session_state.step = 1
-        show_animations()  # Show animations on first load
+        st.balloons()  # Show balloons on first load
+        st.snow()  # Show snow effect on first load
     if 'master_hf_list' not in st.session_state:
         st.session_state.master_hf_list = None
     if 'health_facilities_dhis2_list' not in st.session_state:
@@ -174,7 +176,8 @@ def main():
                     
                     # Display previews
                     st.success("Files uploaded successfully!")
-                    show_animations()
+                    st.balloons()
+                    st.snow()
                     
                     st.subheader("Preview of Data")
                     col1, col2 = st.columns(2)
@@ -288,7 +291,8 @@ def main():
                 file_name="facility_matching_results.csv",
                 mime="text/csv"
             ):
-                show_animations()
+                st.balloons()
+                st.snow()
         
         if st.button("Perform Matching"):
             # Process data
