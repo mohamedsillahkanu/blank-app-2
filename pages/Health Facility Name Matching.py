@@ -83,7 +83,18 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-def prepare_facility_data(facility_data, source):
+def read_data_file(file):
+    """Read different types of data files"""
+    try:
+        if file.name.endswith('.csv'):
+            return pd.read_csv(file)
+        elif file.name.endswith(('.xlsx', '.xls')):
+            return pd.read_excel(file)
+        else:
+            raise ValueError(f"Unsupported file format: {file.name}")
+    except Exception as e:
+        st.error(f"Error reading file {file.name}: {str(e)}")
+        return None
     """
     Prepare facility data by adding appropriate suffixes to column names
     source: 'MFL' or 'DHIS2'
@@ -194,22 +205,24 @@ def process_map(shapefile_data, mfl_data, dhis2_data, config):
 def main():
     st.title("Health Facility Distribution Map Generator")
 
-    # File upload section in vertical format
-    st.write("Upload Files:")
-    
+    # Import required libraries for handling different file formats
     shp_file = st.file_uploader("Upload Shapefile (.shp)", type=["shp"])
     shx_file = st.file_uploader("Upload Shapefile Index (.shx)", type=["shx"])
     dbf_file = st.file_uploader("Upload Attribute Database (.dbf)", type=["dbf"])
-    mfl_file = st.file_uploader("Upload MFL Data (.xlsx)", type=["xlsx"], key="mfl")
-    dhis2_file = st.file_uploader("Upload DHIS2 Data (.xlsx)", type=["xlsx"], key="dhis2")
+    mfl_file = st.file_uploader("Upload MFL Data (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"], key="mfl")
+    dhis2_file = st.file_uploader("Upload DHIS2 Data (.xlsx, .xls, .csv)", type=["xlsx", "xls", "csv"], key="dhis2")
 
     # Process files if all are uploaded
     if all([shp_file, shx_file, dbf_file, mfl_file, dhis2_file]):
         try:
             # Read files
             shapefile = gpd.read_file(shp_file)
-            mfl_data = pd.read_excel(mfl_file)
-            dhis2_data = pd.read_excel(dhis2_file)
+            mfl_data = read_data_file(mfl_file)
+            dhis2_data = read_data_file(dhis2_file)
+            
+            if mfl_data is None or dhis2_data is None:
+                st.error("Error reading input files. Please check the file formats.")
+                return
             
             # Preview the data
             st.subheader("MFL Data Preview")
