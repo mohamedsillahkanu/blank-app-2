@@ -84,10 +84,255 @@ st.markdown("""
     <script>
     let audioCtx;
     let oscillator;
+    let gainNode;
     let isPlaying = false;
     
-    function playMosquitoSound() {
+    async function initAudio(volume = 0.3, pattern = 'normal') {
         if (isPlaying) return;
+        
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            await audioCtx.resume();
+            
+            oscillator = audioCtx.createOscillator();
+            gainNode = audioCtx.createGain();
+            
+            // Set base frequency based on pattern
+            let baseFreq = 600;
+            let modFreq = 30;
+            
+            switch(pattern) {
+                case 'aggressive':
+                    baseFreq = 800;
+                    modFreq = 40;
+                    break;
+                case 'distant':
+                    baseFreq = 400;
+                    modFreq = 20;
+                    break;
+                case 'swarm':
+                    baseFreq = 600;
+                    modFreq = 35;
+                    break;
+            }
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(baseFreq, audioCtx.currentTime);
+            
+            // Set volume
+            gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+            
+            // Wing buzz effect
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.setValueAtTime(modFreq, audioCtx.currentTime);
+            
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.setValueAtTime(20, audioCtx.currentTime);
+            
+            // Connect nodes
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillator.frequency);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Start sound
+            oscillator.start();
+            lfo.start();
+            isPlaying = true;
+            
+            // Update UI
+            document.getElementById('soundStatus').textContent = '🔊 Buzzing Active';
+            document.getElementById('soundStatus').style.backgroundColor = '#4CAF50';
+            document.getElementById('soundStatus').style.color = 'white';
+            
+            // Add variations based on pattern
+            const variationInterval = setInterval(() => {
+                if (isPlaying) {
+                    let variation = pattern === 'swarm' ? Math.random() * 100 : Math.random() * 50;
+                    oscillator.frequency.setValueAtTime(
+                        baseFreq + variation,
+                        audioCtx.currentTime
+                    );
+                }
+            }, pattern === 'aggressive' ? 50 : 100);
+            
+            // Stop after 1 minute
+            setTimeout(() => {
+                if (isPlaying) {
+                    clearInterval(variationInterval);
+                    stopSound();
+                }
+            }, 60000);
+        } catch (error) {
+            console.error('Audio error:', error);
+            document.getElementById('soundStatus').textContent = '❌ Error';
+            document.getElementById('soundStatus').style.backgroundColor = '#f44336';
+        }
+    }
+    
+    function stopSound() {
+        if (!isPlaying) return;
+        try {
+            oscillator.stop();
+            audioCtx.close();
+            isPlaying = false;
+            document.getElementById('soundStatus').textContent = '🔇 Sound Off';
+            document.getElementById('soundStatus').style.backgroundColor = '#9e9e9e';
+        } catch (error) {
+            console.error('Stop sound error:', error);
+        }
+    }
+
+    function updateVolume(value) {
+        if (gainNode && isPlaying) {
+            gainNode.gain.setValueAtTime(value / 100 * 0.5, audioCtx.currentTime);
+        }
+    }
+    </script>
+    
+    <div style="text-align: center; padding: 20px; background-color: #f5f5f5; border-radius: 12px; margin: 20px 0;">
+        <div style="margin-bottom: 20px;">
+            <button onclick="initAudio(0.3, 'normal')" 
+                    style="background-color: #2196F3; color: white; padding: 12px 24px; 
+                           border: none; border-radius: 8px; font-size: 16px; 
+                           cursor: pointer; margin: 5px;">
+                Single Mosquito 🦟
+            </button>
+            <button onclick="initAudio(0.4, 'aggressive')" 
+                    style="background-color: #f44336; color: white; padding: 12px 24px; 
+                           border: none; border-radius: 8px; font-size: 16px; 
+                           cursor: pointer; margin: 5px;">
+                Aggressive Buzz 😠
+            </button>
+            <button onclick="initAudio(0.2, 'distant')" 
+                    style="background-color: #4CAF50; color: white; padding: 12px 24px; 
+                           border: none; border-radius: 8px; font-size: 16px; 
+                           cursor: pointer; margin: 5px;">
+                Distant Mosquito 🦟
+            </button>
+            <button onclick="initAudio(0.5, 'swarm')" 
+                    style="background-color: #FF9800; color: white; padding: 12px 24px; 
+                           border: none; border-radius: 8px; font-size: 16px; 
+                           cursor: pointer; margin: 5px;">
+                Mosquito Swarm 🦟🦟🦟
+            </button>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <label for="volume" style="display: block; margin-bottom: 10px;">Volume Control:</label>
+            <input type="range" id="volume" min="0" max="100" value="60" 
+                   oninput="updateVolume(this.value)"
+                   style="width: 200px;">
+        </div>
+        
+        <button onclick="stopSound()" 
+                style="background-color: #9e9e9e; color: white; padding: 12px 24px; 
+                       border: none; border-radius: 8px; font-size: 16px; 
+                       cursor: pointer; margin: 5px;">
+            Stop Sound ⏹️
+        </button>
+        
+        <div id="soundStatus" 
+             style="margin-top: 15px; padding: 8px 16px; 
+                    background-color: #9e9e9e; color: white; 
+                    border-radius: 4px; display: inline-block; 
+                    font-weight: bold;">
+            🔇 Sound Off
+        </div>
+    </div>
+    
+    async function initAudio() {
+        if (isPlaying) return;
+        
+        try {
+            // Create and resume AudioContext
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            await audioCtx.resume();
+            
+            // Create and configure oscillator
+            oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            // Main buzz tone
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            
+            // Adjust volume
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime); // Increased volume
+            
+            // Wing buzz effect
+            const lfo = audioCtx.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.setValueAtTime(30, audioCtx.currentTime);
+            
+            const lfoGain = audioCtx.createGain();
+            lfoGain.gain.setValueAtTime(20, audioCtx.currentTime);
+            
+            // Connect audio nodes
+            lfo.connect(lfoGain);
+            lfoGain.connect(oscillator.frequency);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            // Start sound
+            oscillator.start();
+            lfo.start();
+            isPlaying = true;
+            
+            // Update UI to show sound is playing
+            document.getElementById('soundStatus').textContent = 'Sound is ON! 🔊';
+            
+            // Random variations
+            const variationInterval = setInterval(() => {
+                if (isPlaying) {
+                    oscillator.frequency.setValueAtTime(
+                        600 + Math.random() * 50,
+                        audioCtx.currentTime
+                    );
+                }
+            }, 100);
+            
+            // Stop after 1 minute
+            setTimeout(() => {
+                if (isPlaying) {
+                    clearInterval(variationInterval);
+                    stopSound();
+                    document.getElementById('soundStatus').textContent = 'Sound stopped ⏹️';
+                }
+            }, 60000);
+        } catch (error) {
+            console.error('Audio error:', error);
+            document.getElementById('soundStatus').textContent = 'Error starting sound ❌';
+        }
+    }
+    
+    function stopSound() {
+        if (!isPlaying) return;
+        try {
+            oscillator.stop();
+            audioCtx.close();
+            isPlaying = false;
+            document.getElementById('soundStatus').textContent = 'Sound is OFF 🔇';
+        } catch (error) {
+            console.error('Stop sound error:', error);
+        }
+    }
+    </script>
+    
+    <div style="text-align: center; padding: 20px;">
+        <button onclick="initAudio()" 
+                style="background-color: #FF7043; color: white; padding: 15px 30px; 
+                       border: none; border-radius: 8px; font-size: 18px; 
+                       cursor: pointer; margin: 10px;">
+            Start Mosquito Sound 🦟
+        </button>
+        <div id="soundStatus" 
+             style="margin-top: 10px; padding: 10px; background-color: #FFE0B2; 
+                    border-radius: 4px; display: inline-block;">
+            Click button to start sound 🔈
+        </div>
+    </div>
         
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
