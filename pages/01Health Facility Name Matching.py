@@ -221,7 +221,7 @@ def main():
                 
                 # Display previews
                 st.subheader("Preview of Data")
-                col1, col2 = st.columns(1)
+                col1, col2 = st.columns(2)
                 with col1:
                     st.write("Master Facility List Preview")
                     st.dataframe(mfl_data_processed.head())
