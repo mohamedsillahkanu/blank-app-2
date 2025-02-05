@@ -33,53 +33,40 @@ def find_adm3_column(df):
 
 def add_suffix_to_dhis2_duplicates(df):
     """
-    First, process DHIS2 dataframe to add ADM3 suffixes to duplicate facility names
-    If no ADM3 column exists, use incremental numbering
+    Process DHIS2 dataframe to add ADM3 suffixes to duplicate facility names
     """
     st.write("### Processing DHIS2 Dataframe")
     
-    # Create a copy of the dataframe
     df_new = df.copy()
     
-    # Find facility and ADM3 columns
     facility_col = find_facility_column(df_new)
     adm3_col = find_adm3_column(df_new)
     
-    # Log initial unique facility count
     st.write(f"Original DHIS2 Unique Facilities: {len(df_new[facility_col].unique())}")
     
-    # Identify duplicates
     duplicate_mask = df_new[facility_col].duplicated(keep=False)
     
     if duplicate_mask.any():
         if adm3_col:
-            # Create unique names by combining facility name and ADM3
             grouped = df_new[duplicate_mask].groupby(facility_col)
             
             for name, group in grouped:
-                # Find indices of duplicates for this specific name
                 dup_indices = group.index
                 
-                # Add unique suffixes using ADM3
                 for idx in dup_indices:
-                    # Use ADM3 or 'Unknown' if ADM3 is null
                     adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
                     df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
         else:
-            # If no ADM3 column, use incremental numbering
             for name in df_new[facility_col][duplicate_mask].unique():
                 mask = df_new[facility_col] == name
                 df_new.loc[mask, facility_col] = [
                     f"{name}*_{i+1}" for i in range(sum(mask))
                 ]
     
-    # Log processed unique facility count
     st.write(f"DHIS2 Unique Facilities after processing: {len(df_new[facility_col].unique())}")
     
-    # Display first few rows of processed DHIS2 dataframe
     st.dataframe(df_new.head())
     
-    # Add snow and balloons for fun visual effect
     st.snow()
     st.balloons()
     
@@ -87,57 +74,84 @@ def add_suffix_to_dhis2_duplicates(df):
 
 def add_suffix_to_mfl_duplicates(df):
     """
-    Next, process MFL dataframe to add ADM3 suffixes to duplicate facility names
-    If no ADM3 column exists, use incremental numbering
+    Process MFL dataframe to add ADM3 suffixes to duplicate facility names
     """
     st.write("### Processing MFL Dataframe")
     
-    # Create a copy of the dataframe
     df_new = df.copy()
     
-    # Find facility and ADM3 columns
     facility_col = find_facility_column(df_new)
     adm3_col = find_adm3_column(df_new)
     
-    # Log initial unique facility count
     st.write(f"Original MFL Unique Facilities: {len(df_new[facility_col].unique())}")
     
-    # Identify duplicates
     duplicate_mask = df_new[facility_col].duplicated(keep=False)
     
     if duplicate_mask.any():
         if adm3_col:
-            # Create unique names by combining facility name and ADM3
             grouped = df_new[duplicate_mask].groupby(facility_col)
             
             for name, group in grouped:
-                # Find indices of duplicates for this specific name
                 dup_indices = group.index
                 
-                # Add unique suffixes using ADM3
                 for idx in dup_indices:
-                    # Use ADM3 or 'Unknown' if ADM3 is null
                     adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
                     df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
         else:
-            # If no ADM3 column, use incremental numbering
             for name in df_new[facility_col][duplicate_mask].unique():
                 mask = df_new[facility_col] == name
                 df_new.loc[mask, facility_col] = [
                     f"{name}*_{i+1}" for i in range(sum(mask))
                 ]
     
-    # Log processed unique facility count
     st.write(f"MFL Unique Facilities after processing: {len(df_new[facility_col].unique())}")
     
-    # Display first few rows of processed MFL dataframe
     st.dataframe(df_new.head())
     
-    # Add snow and balloons for fun visual effect
     st.snow()
     st.balloons()
     
     return df_new
+
+def find_hf_not_in_mfl(dhis2_df, mfl_df):
+    """
+    Find health facilities in DHIS2 that are not in MFL
+    """
+    # Find facility columns
+    dhis2_facility_col = find_facility_column(dhis2_df)
+    mfl_facility_col = find_facility_column(mfl_df)
+    
+    # Get unique facility names
+    dhis2_facilities = set(dhis2_df[dhis2_facility_col])
+    mfl_facilities = set(mfl_df[mfl_facility_col])
+    
+    # Find facilities in DHIS2 not in MFL
+    hf_not_in_mfl = dhis2_facilities - mfl_facilities
+    
+    # Create a dataframe of DHIS2 facilities not in MFL
+    hf_not_in_mfl_df = dhis2_df[dhis2_df[dhis2_facility_col].isin(hf_not_in_mfl)].copy()
+    
+    # Add a column to mark these facilities
+    hf_not_in_mfl_df['HF_Status'] = 'Not in MFL'
+    
+    # Display findings
+    st.write("### Health Facilities in DHIS2 Not in MFL")
+    st.write(f"Number of facilities in DHIS2 not in MFL: {len(hf_not_in_mfl_df)}")
+    
+    # Display column lengths
+    st.write("### Column Lengths for DHIS2 Facilities Not in MFL")
+    column_lengths = pd.DataFrame({
+        'Column': hf_not_in_mfl_df.columns,
+        'Non-Null Count': hf_not_in_mfl_df.count(),
+        'Null Count': hf_not_in_mfl_df.isnull().sum(),
+        'Percentage Filled': round(hf_not_in_mfl_df.count() / len(hf_not_in_mfl_df) * 100, 2)
+    })
+    st.dataframe(column_lengths)
+    
+    # Display the dataframe
+    st.dataframe(hf_not_in_mfl_df)
+    
+    return hf_not_in_mfl_df
 
 def main():
     st.title("Health Facility Name Matching with ADM3 Suffixes")
@@ -158,6 +172,19 @@ def main():
             # Then, read and process MFL dataframe
             mfl_df = read_data_file(mfl_file)
             mfl_df_processed = add_suffix_to_mfl_duplicates(mfl_df)
+            
+            # Find health facilities in DHIS2 not in MFL
+            hf_not_in_mfl_df = find_hf_not_in_mfl(dhis2_df_processed, mfl_df_processed)
+            
+            # Option to download DHIS2 facilities not in MFL
+            if not hf_not_in_mfl_df.empty:
+                csv = hf_not_in_mfl_df.to_csv(index=False)
+                st.download_button(
+                    label="Download DHIS2 Facilities Not in MFL",
+                    data=csv,
+                    file_name="dhis2_facilities_not_in_mfl.csv",
+                    mime="text/csv"
+                )
             
             # Perform matching
             st.write("### Matching Process")
@@ -198,7 +225,6 @@ def main():
             st.write("### Matching Results")
             st.dataframe(matches_df)
             
-            # Add snow and balloons after matching
             st.snow()
             st.balloons()
             
@@ -207,6 +233,7 @@ def main():
             stats = {
                 'Total MFL Facilities': len(mfl_df_processed),
                 'Total DHIS2 Facilities': len(dhis2_df_processed),
+                'DHIS2 Facilities Not in MFL': len(hf_not_in_mfl_df),
                 'Exact Matches': len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
                 'High Matches (≥70%)': len(matches_df[matches_df['Match_Status'] == 'High Match']),
                 'Low Matches (<70%)': len(matches_df[matches_df['Match_Status'] == 'Low Match'])
