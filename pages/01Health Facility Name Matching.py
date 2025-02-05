@@ -31,83 +31,58 @@ def find_adm3_column(df):
             return col
     return None
 
-def add_suffix_to_dhis2_duplicates(df):
+def handle_duplicate_facilities(df):
     """
-    Process DHIS2 dataframe to add ADM3 suffixes to duplicate facility names
+    Handle duplicate facilities by identifying and marking duplicates
     """
-    st.write("### Processing DHIS2 Dataframe")
-    
+    # Create a copy of the dataframe
     df_new = df.copy()
     
+    # Find facility and ADM3 columns
     facility_col = find_facility_column(df_new)
     adm3_col = find_adm3_column(df_new)
     
-    st.write(f"Original DHIS2 Unique Facilities: {len(df_new[facility_col].unique())}")
+    # Log initial unique facility count
+    original_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Original Unique Facilities: {original_unique_count}")
     
+    # Identify duplicates
     duplicate_mask = df_new[facility_col].duplicated(keep=False)
     
+    # If duplicates exist
     if duplicate_mask.any():
+        # Find which facilities are duplicated
+        duplicated_facilities = df_new[facility_col][duplicate_mask]
+        
+        # If ADM3 column exists, use it for disambiguation
         if adm3_col:
+            # Group duplicate facilities
             grouped = df_new[duplicate_mask].groupby(facility_col)
             
             for name, group in grouped:
-                dup_indices = group.index
-                
-                for idx in dup_indices:
-                    adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
-                    df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
+                # If multiple facilities with same name have different ADM3
+                if len(group[adm3_col].unique()) > 1:
+                    # Mark these duplicates with ADM3 suffix
+                    dup_indices = group.index
+                    for idx in dup_indices:
+                        adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
+                        df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
         else:
+            # If no ADM3, add incremental suffix to duplicates
             for name in df_new[facility_col][duplicate_mask].unique():
                 mask = df_new[facility_col] == name
                 df_new.loc[mask, facility_col] = [
                     f"{name}*_{i+1}" for i in range(sum(mask))
                 ]
     
-    st.write(f"DHIS2 Unique Facilities after processing: {len(df_new[facility_col].unique())}")
+    # Log final unique facility count
+    final_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Unique Facilities after processing: {final_unique_count}")
     
+    # Display first few rows
     st.dataframe(df_new.head())
     
-    st.snow()
-    st.balloons()
-    
-    return df_new
-
-def add_suffix_to_mfl_duplicates(df):
-    """
-    Process MFL dataframe to add ADM3 suffixes to duplicate facility names
-    """
-    st.write("### Processing MFL Dataframe")
-    
-    df_new = df.copy()
-    
-    facility_col = find_facility_column(df_new)
-    adm3_col = find_adm3_column(df_new)
-    
-    st.write(f"Original MFL Unique Facilities: {len(df_new[facility_col].unique())}")
-    
-    duplicate_mask = df_new[facility_col].duplicated(keep=False)
-    
-    if duplicate_mask.any():
-        if adm3_col:
-            grouped = df_new[duplicate_mask].groupby(facility_col)
-            
-            for name, group in grouped:
-                dup_indices = group.index
-                
-                for idx in dup_indices:
-                    adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
-                    df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
-        else:
-            for name in df_new[facility_col][duplicate_mask].unique():
-                mask = df_new[facility_col] == name
-                df_new.loc[mask, facility_col] = [
-                    f"{name}*_{i+1}" for i in range(sum(mask))
-                ]
-    
-    st.write(f"MFL Unique Facilities after processing: {len(df_new[facility_col].unique())}")
-    
-    st.dataframe(df_new.head())
-    
+    # Visual effects
     st.snow()
     st.balloons()
     
@@ -121,15 +96,15 @@ def find_hf_not_in_mfl(dhis2_df, mfl_df):
     dhis2_facility_col = find_facility_column(dhis2_df)
     mfl_facility_col = find_facility_column(mfl_df)
     
-    # Get unique facility names
-    dhis2_facilities = set(dhis2_df[dhis2_facility_col])
-    mfl_facilities = set(mfl_df[mfl_facility_col])
+    # Get unique facility names (removing * and suffixes for comparison)
+    dhis2_facilities = set(name.split('*')[0] for name in dhis2_df[dhis2_facility_col])
+    mfl_facilities = set(name.split('*')[0] for name in mfl_df[mfl_facility_col])
     
     # Find facilities in DHIS2 not in MFL
     hf_not_in_mfl = dhis2_facilities - mfl_facilities
     
     # Create a dataframe of DHIS2 facilities not in MFL
-    hf_not_in_mfl_df = dhis2_df[dhis2_df[dhis2_facility_col].isin(hf_not_in_mfl)].copy()
+    hf_not_in_mfl_df = dhis2_df[dhis2_df[dhis2_facility_col].apply(lambda x: x.split('*')[0] in hf_not_in_mfl)].copy()
     
     # Add a column to mark these facilities
     hf_not_in_mfl_df['HF_Status'] = 'Not in MFL'
@@ -154,7 +129,7 @@ def find_hf_not_in_mfl(dhis2_df, mfl_df):
     return hf_not_in_mfl_df
 
 def main():
-    st.title("Health Facility Name Matching with ADM3 Suffixes")
+    st.title("Health Facility Name Matching with Duplicate Handling")
 
     # File Upload
     st.write("Upload Files:")
@@ -167,11 +142,11 @@ def main():
             dhis2_df = read_data_file(dhis2_file)
             
             # First, process DHIS2 dataframe
-            dhis2_df_processed = add_suffix_to_dhis2_duplicates(dhis2_df)
+            dhis2_df_processed = handle_duplicate_facilities(dhis2_df)
             
             # Then, read and process MFL dataframe
             mfl_df = read_data_file(mfl_file)
-            mfl_df_processed = add_suffix_to_mfl_duplicates(mfl_df)
+            mfl_df_processed = handle_duplicate_facilities(mfl_df)
             
             # Find health facilities in DHIS2 not in MFL
             hf_not_in_mfl_df = find_hf_not_in_mfl(dhis2_df_processed, mfl_df_processed)
@@ -201,7 +176,11 @@ def main():
                 
                 for dhis2_name in dhis2_df_processed[dhis2_facility_col]:
                     # Calculate similarity score
-                    score = jaro_winkler_similarity(str(mfl_name), str(dhis2_name)) * 100
+                    # Compare base names (without suffixes)
+                    mfl_base = mfl_name.split('*')[0]
+                    dhis2_base = dhis2_name.split('*')[0]
+                    
+                    score = jaro_winkler_similarity(str(mfl_base), str(dhis2_base)) * 100
                     
                     if score > best_score:
                         best_score = score
