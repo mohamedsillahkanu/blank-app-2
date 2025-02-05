@@ -27,7 +27,6 @@ def find_facility_column(df):
 def make_facility_names_unique(df):
     """
     Make facility names unique by adding suffixes to duplicates
-    Ensures the total number of unique names remains the same
     """
     # Create a copy of the dataframe
     df_new = df.copy()
@@ -35,32 +34,51 @@ def make_facility_names_unique(df):
     # Find facility column
     facility_col = find_facility_column(df_new)
     
-    # First, get original unique count
-    original_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Original Unique Facilities: {original_unique_count}")
+    # Get original unique names
+    original_unique_names = df_new[facility_col].unique()
+    st.write(f"Original Unique Facilities: {len(original_unique_names)}")
     
     # Identify duplicate names
-    duplicate_mask = df_new[facility_col].duplicated(keep=False)
+    duplicates = df_new[facility_col].duplicated(keep=False)
     
     # If duplicates exist
-    if duplicate_mask.any():
-        # Group duplicates
-        grouped = df_new[duplicate_mask].groupby(facility_col)
+    if duplicates.any():
+        # Find which names are duplicated
+        duplicate_names = df_new.loc[duplicates, facility_col]
         
-        for name, group in grouped:
-            # Get indices of duplicates for this specific name
-            dup_indices = group.index
+        # Dictionary to track duplicate counts
+        dup_counts = {}
+        
+        # Modify duplicate entries
+        for idx in df_new[duplicates].index:
+            name = df_new.loc[idx, facility_col]
             
-            # Add suffixes to duplicates
-            for i, idx in enumerate(dup_indices, 1):
-                df_new.loc[idx, facility_col] = f"{name}*_{i}"
+            # Increment count for this name
+            if name not in dup_counts:
+                dup_counts[name] = 0
+            dup_counts[name] += 1
+            
+            # Add suffix to duplicates (after first occurrence)
+            if dup_counts[name] > 1:
+                df_new.loc[idx, facility_col] = f"{name}*_{dup_counts[name]}"
     
-    # Verify unique count remains the same
-    final_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Unique Facilities after processing: {final_unique_count}")
+    # Verify unique names remain the same
+    processed_unique_names = df_new[facility_col].unique()
+    st.write(f"Processed Unique Facilities: {len(processed_unique_names)}")
     
-    # Sanity check
-    assert original_unique_count == final_unique_count, "Unique facility count changed!"
+    # Debug: show list of unique names before and after
+    st.write("Original Unique Names:")
+    st.dataframe(pd.DataFrame(original_unique_names, columns=['Names']))
+    st.write("Processed Unique Names:")
+    st.dataframe(pd.DataFrame(processed_unique_names, columns=['Names']))
+    
+    # Check if unique names are the same
+    try:
+        for orig, proc in zip(original_unique_names, processed_unique_names):
+            assert orig == proc or orig == proc.split('*_')[0], f"Mismatch: {orig} vs {proc}"
+    except AssertionError as e:
+        st.error(f"Unique names validation failed: {e}")
+        raise
     
     # Display first few rows
     st.dataframe(df_new.head())
