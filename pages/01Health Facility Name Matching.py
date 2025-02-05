@@ -123,11 +123,14 @@ def display_initial_counts(mfl_data, dhis2_data):
         }))
 
 def process_all_facilities(mfl_data_processed, dhis2_data_processed, matches_df, mfl_col_with_suffix, dhis2_col_with_suffix):
-    """Process all facilities including unmatched DHIS2 facilities"""
+    """Process all facilities including unmatched facilities from both MFL and DHIS2"""
     # Get all DHIS2 facilities that weren't matched
     matched_dhis2 = matches_df['DHIS2_Name'].unique()
     all_dhis2 = dhis2_data_processed[dhis2_col_with_suffix].unique()
     unmatched_dhis2 = [f for f in all_dhis2 if f not in matched_dhis2]
+    
+    # Get all MFL facilities that weren't matched
+    low_match_mfl = matches_df[matches_df['Match_Score'] < 70]['MFL_Name'].unique()
     
     # Create entries for unmatched DHIS2 facilities
     unmatched_entries = []
@@ -140,6 +143,11 @@ def process_all_facilities(mfl_data_processed, dhis2_data_processed, matches_df,
             'Match_Status': 'HF in DHIS2 not in MFL'
         })
     
+    # Mark low matching MFL facilities
+    for mfl_name in low_match_mfl:
+        if not matches_df[matches_df['MFL_Name'] == mfl_name]['Match_Score'].max() >= 70:
+            matches_df.loc[matches_df['MFL_Name'] == mfl_name, 'Match_Status'] = 'HF in MFL not in DHIS2'
+    
     # Add unmatched entries to matches DataFrame
     if unmatched_entries:
         unmatched_df = pd.DataFrame(unmatched_entries)
@@ -151,11 +159,30 @@ def process_all_facilities(mfl_data_processed, dhis2_data_processed, matches_df,
         'Total DHIS2 Facilities': len(dhis2_data_processed),
         'Matched Facilities': len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
         'Similar Facilities (≥70%)': len(matches_df[matches_df['Match_Score'] >= 70]) - len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
-        'HF in DHIS2 not in MFL': len(unmatched_dhis2),
+        'HF in MFL not in DHIS2': len(matches_df[matches_df['Match_Status'] == 'HF in MFL not in DHIS2']),
+        'HF in DHIS2 not in MFL': len(matches_df[matches_df['Match_Status'] == 'HF in DHIS2 not in MFL']),
         'Total Unique Facilities': len(matches_df)
     }
     
     return matches_df, stats
+
+def display_column_lengths(df, title="Dataset Column Lengths"):
+    """Display lengths of all columns in a DataFrame"""
+    st.write(f"### {title}")
+    
+    # Calculate lengths for all columns
+    lengths = pd.DataFrame({
+        'Column': df.columns,
+        'Non-Null Count': df.count(),
+        'Null Count': df.isnull().sum(),
+        'Total Length': len(df)
+    })
+    
+    # Add percentage of non-null values
+    lengths['Percentage Filled'] = round((lengths['Non-Null Count'] / lengths['Total Length']) * 100, 2)
+    
+    # Display the lengths
+    st.dataframe(lengths)
 
 def main():
     st.title("Health Facility Name Matching")
@@ -194,7 +221,7 @@ def main():
                 
                 # Display previews
                 st.subheader("Preview of Data")
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(1)
                 with col1:
                     st.write("Master Facility List Preview")
                     st.dataframe(mfl_data_processed.head())
