@@ -24,60 +24,33 @@ def find_facility_column(df):
             return col
     return df.columns[0]
 
-def find_adm3_column(df):
-    """Find the ADM3 column"""
-    for col in df.columns:
-        if 'adm3' in col.lower() or 'district' in col.lower():
-            return col
-    return None
-
-def handle_duplicate_facilities(df):
+def make_facility_names_unique(df):
     """
-    Handle duplicate facilities by identifying and marking duplicates
+    Make facility names unique by adding incremental suffixes
     """
     # Create a copy of the dataframe
     df_new = df.copy()
     
-    # Find facility and ADM3 columns
+    # Find facility column
     facility_col = find_facility_column(df_new)
-    adm3_col = find_adm3_column(df_new)
     
-    # Log initial unique facility count
-    original_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Original Unique Facilities: {original_unique_count}")
+    # Create a counter to track duplicate names
+    name_counts = {}
     
-    # Identify duplicates
-    duplicate_mask = df_new[facility_col].duplicated(keep=False)
-    
-    # If duplicates exist
-    if duplicate_mask.any():
-        # Find which facilities are duplicated
-        duplicated_facilities = df_new[facility_col][duplicate_mask]
+    # Function to generate unique name
+    def get_unique_name(name):
+        if name not in name_counts:
+            name_counts[name] = 0
+            return name
         
-        # If ADM3 column exists, use it for disambiguation
-        if adm3_col:
-            # Group duplicate facilities
-            grouped = df_new[duplicate_mask].groupby(facility_col)
-            
-            for name, group in grouped:
-                # If multiple facilities with same name have different ADM3
-                if len(group[adm3_col].unique()) > 1:
-                    # Mark these duplicates with ADM3 suffix
-                    dup_indices = group.index
-                    for idx in dup_indices:
-                        adm3_suffix = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
-                        df_new.loc[idx, facility_col] = f"{name}*_{adm3_suffix}"
-        else:
-            # If no ADM3, add incremental suffix to duplicates
-            for name in df_new[facility_col][duplicate_mask].unique():
-                mask = df_new[facility_col] == name
-                df_new.loc[mask, facility_col] = [
-                    f"{name}*_{i+1}" for i in range(sum(mask))
-                ]
+        name_counts[name] += 1
+        return f"{name}*_{name_counts[name]}"
     
-    # Log final unique facility count
-    final_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Unique Facilities after processing: {final_unique_count}")
+    # Make facility names unique
+    df_new[facility_col] = df_new[facility_col].apply(get_unique_name)
+    
+    # Display unique count after processing
+    st.write(f"Unique Facilities after processing: {len(df_new[facility_col].unique())}")
     
     # Display first few rows
     st.dataframe(df_new.head())
@@ -88,48 +61,8 @@ def handle_duplicate_facilities(df):
     
     return df_new
 
-def find_hf_not_in_mfl(dhis2_df, mfl_df):
-    """
-    Find health facilities in DHIS2 that are not in MFL
-    """
-    # Find facility columns
-    dhis2_facility_col = find_facility_column(dhis2_df)
-    mfl_facility_col = find_facility_column(mfl_df)
-    
-    # Get unique facility names (removing * and suffixes for comparison)
-    dhis2_facilities = set(name.split('*')[0] for name in dhis2_df[dhis2_facility_col])
-    mfl_facilities = set(name.split('*')[0] for name in mfl_df[mfl_facility_col])
-    
-    # Find facilities in DHIS2 not in MFL
-    hf_not_in_mfl = dhis2_facilities - mfl_facilities
-    
-    # Create a dataframe of DHIS2 facilities not in MFL
-    hf_not_in_mfl_df = dhis2_df[dhis2_df[dhis2_facility_col].apply(lambda x: x.split('*')[0] in hf_not_in_mfl)].copy()
-    
-    # Add a column to mark these facilities
-    hf_not_in_mfl_df['HF_Status'] = 'Not in MFL'
-    
-    # Display findings
-    st.write("### Health Facilities in DHIS2 Not in MFL")
-    st.write(f"Number of facilities in DHIS2 not in MFL: {len(hf_not_in_mfl_df)}")
-    
-    # Display column lengths
-    st.write("### Column Lengths for DHIS2 Facilities Not in MFL")
-    column_lengths = pd.DataFrame({
-        'Column': hf_not_in_mfl_df.columns,
-        'Non-Null Count': hf_not_in_mfl_df.count(),
-        'Null Count': hf_not_in_mfl_df.isnull().sum(),
-        'Percentage Filled': round(hf_not_in_mfl_df.count() / len(hf_not_in_mfl_df) * 100, 2)
-    })
-    st.dataframe(column_lengths)
-    
-    # Display the dataframe
-    st.dataframe(hf_not_in_mfl_df)
-    
-    return hf_not_in_mfl_df
-
 def main():
-    st.title("Health Facility Name Matching with Duplicate Handling")
+    st.title("Health Facility Name Matching")
 
     # File Upload
     st.write("Upload Files:")
@@ -142,32 +75,19 @@ def main():
             dhis2_df = read_data_file(dhis2_file)
             
             # First, process DHIS2 dataframe
-            dhis2_df_processed = handle_duplicate_facilities(dhis2_df)
+            dhis2_facility_col = find_facility_column(dhis2_df)
+            st.write(f"Original DHIS2 Unique Facilities: {len(dhis2_df[dhis2_facility_col].unique())}")
+            dhis2_df_processed = make_facility_names_unique(dhis2_df)
             
             # Then, read and process MFL dataframe
             mfl_df = read_data_file(mfl_file)
-            mfl_df_processed = handle_duplicate_facilities(mfl_df)
-            
-            # Find health facilities in DHIS2 not in MFL
-            hf_not_in_mfl_df = find_hf_not_in_mfl(dhis2_df_processed, mfl_df_processed)
-            
-            # Option to download DHIS2 facilities not in MFL
-            if not hf_not_in_mfl_df.empty:
-                csv = hf_not_in_mfl_df.to_csv(index=False)
-                st.download_button(
-                    label="Download DHIS2 Facilities Not in MFL",
-                    data=csv,
-                    file_name="dhis2_facilities_not_in_mfl.csv",
-                    mime="text/csv"
-                )
+            mfl_facility_col = find_facility_column(mfl_df)
+            st.write(f"Original MFL Unique Facilities: {len(mfl_df[mfl_facility_col].unique())}")
+            mfl_df_processed = make_facility_names_unique(mfl_df)
             
             # Perform matching
             st.write("### Matching Process")
             matches = []
-            
-            # Find facility columns
-            dhis2_facility_col = find_facility_column(dhis2_df_processed)
-            mfl_facility_col = find_facility_column(mfl_df_processed)
             
             # Matching logic
             for mfl_name in mfl_df_processed[mfl_facility_col]:
@@ -175,11 +95,11 @@ def main():
                 best_score = 0
                 
                 for dhis2_name in dhis2_df_processed[dhis2_facility_col]:
-                    # Calculate similarity score
-                    # Compare base names (without suffixes)
-                    mfl_base = mfl_name.split('*')[0]
-                    dhis2_base = dhis2_name.split('*')[0]
+                    # Remove suffixes for comparison
+                    mfl_base = mfl_name.split('*_')[0]
+                    dhis2_base = dhis2_name.split('*_')[0]
                     
+                    # Calculate similarity score
                     score = jaro_winkler_similarity(str(mfl_base), str(dhis2_base)) * 100
                     
                     if score > best_score:
@@ -212,7 +132,6 @@ def main():
             stats = {
                 'Total MFL Facilities': len(mfl_df_processed),
                 'Total DHIS2 Facilities': len(dhis2_df_processed),
-                'DHIS2 Facilities Not in MFL': len(hf_not_in_mfl_df),
                 'Exact Matches': len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
                 'High Matches (≥70%)': len(matches_df[matches_df['Match_Status'] == 'High Match']),
                 'Low Matches (<70%)': len(matches_df[matches_df['Match_Status'] == 'Low Match'])
