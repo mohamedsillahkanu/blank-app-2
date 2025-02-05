@@ -4,6 +4,15 @@ import plotly.express as px
 import plotly.graph_objects as go
 import io
 
+# Page configuration
+st.set_page_config(page_title="Health Facility Matching Analysis", layout="wide")
+
+# Show welcome animations if first load
+if 'first_load' not in st.session_state:
+    st.session_state.first_load = True
+    st.balloons()
+    st.snow()
+
 def read_file(uploaded_file):
     """Read different file formats"""
     try:
@@ -19,33 +28,68 @@ def read_file(uploaded_file):
         return None
 
 def process_health_facility_data(df):
-    # Get all unique names from both columns
-    all_unique_names = pd.DataFrame({
-        'Health_Facility_Name': pd.unique(
-            pd.concat([
-                df['hf_DHIS2'].dropna(),
-                df['New_MFL'].dropna()
-            ])
-        )
-    })
+    """Improved health facility data processing with detailed calculations"""
     
-    # Classify each facility
-    all_unique_names['Classification'] = all_unique_names['Health_Facility_Name'].apply(
-        lambda x: (
-            "HF in both DHIS2 and MFL" if (x in df['hf_DHIS2'].values and x in df['New_MFL'].values)
-            else "HF in MFL and not in DHIS2" if (x in df['New_MFL'].values and x not in df['hf_DHIS2'].values)
-            else "HF in DHIS2 and not in MFL" if (x in df['hf_DHIS2'].values and x not in df['New_MFL'].values)
-            else "Unclassified"
-        )
-    )
+    # Display column lengths and null counts
+    st.write("### Column Information")
+    col_info = pd.DataFrame({
+        'Column': df.columns,
+        'Total Count': len(df),
+        'Non-Null Count': df.count(),
+        'Null Count': df.isnull().sum(),
+        'Percentage Filled': round((df.count() / len(df)) * 100, 2)
+    })
+    st.dataframe(col_info)
+    
+    # Get unique facilities from both sources
+    dhis2_facilities = set(df['hf_DHIS2'].dropna().unique())
+    mfl_facilities = set(df['New_MFL'].dropna().unique())
+    
+    # Calculate intersection and differences
+    both_systems = dhis2_facilities.intersection(mfl_facilities)
+    only_mfl = mfl_facilities - dhis2_facilities
+    only_dhis2 = dhis2_facilities - mfl_facilities
+    
+    # Create classification DataFrame
+    classifications = []
+    
+    # Add facilities in both systems
+    for facility in both_systems:
+        classifications.append({
+            'Health_Facility_Name': facility,
+            'Classification': 'HF in both DHIS2 and MFL',
+            'Source': 'Both'
+        })
+    
+    # Add MFL-only facilities
+    for facility in only_mfl:
+        classifications.append({
+            'Health_Facility_Name': facility,
+            'Classification': 'HF in MFL and not in DHIS2',
+            'Source': 'MFL'
+        })
+    
+    # Add DHIS2-only facilities
+    for facility in only_dhis2:
+        classifications.append({
+            'Health_Facility_Name': facility,
+            'Classification': 'HF in DHIS2 and not in MFL',
+            'Source': 'DHIS2'
+        })
+    
+    # Create DataFrame from classifications
+    all_unique_names = pd.DataFrame(classifications)
     
     # Create summary table
-    summary_table = (
-        all_unique_names.groupby('Classification')
-        .size()
-        .reset_index(name='Count')
-    )
-    summary_table['Percentage'] = round((summary_table['Count'] / summary_table['Count'].sum()) * 100, 2)
+    summary_table = pd.DataFrame([
+        {'Classification': 'HF in both DHIS2 and MFL', 'Count': len(both_systems)},
+        {'Classification': 'HF in MFL and not in DHIS2', 'Count': len(only_mfl)},
+        {'Classification': 'HF in DHIS2 and not in MFL', 'Count': len(only_dhis2)}
+    ])
+    
+    # Calculate percentages
+    total_facilities = len(both_systems) + len(only_mfl) + len(only_dhis2)
+    summary_table['Percentage'] = round((summary_table['Count'] / total_facilities) * 100, 2)
     
     return all_unique_names, summary_table
 
@@ -86,7 +130,7 @@ def create_pie_chart(summary_table):
 
 def display_additional_stats(df):
     """Display additional statistics about the matching"""
-    st.subheader("Detailed Statistics")
+    st.subheader("Match Quality Distribution")
     
     col1, col2, col3 = st.columns(3)
     
@@ -103,7 +147,7 @@ def display_additional_stats(df):
         st.metric("Low Similarity (<70%)", low_matches)
 
 def main():
-    st.title("Summary of Matching Outcomes")
+    st.title("Health Facility Matching Analysis")
     
     # File upload with multiple formats
     uploaded_file = st.file_uploader(
@@ -112,10 +156,15 @@ def main():
     )
     
     if uploaded_file is not None:
+        # Show animation on file upload
+        st.balloons()
+        
         # Read the uploaded file
         df = read_file(uploaded_file)
         
         if df is not None:
+            st.snow()  # Show snow after successful file read
+            
             # Display initial counts
             st.header("Initial Data Overview")
             total_records = len(df)
@@ -204,20 +253,22 @@ def main():
             
             col1, col2 = st.columns(2)
             with col1:
-                st.download_button(
+                if st.download_button(
                     label="Download Detailed Results",
                     data=classified_buffer.getvalue(),
                     file_name="health_facility_classification_results.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                ):
+                    st.snow()  # Show snow on download
             
             with col2:
-                st.download_button(
+                if st.download_button(
                     label="Download Summary Results",
                     data=summary_buffer.getvalue(),
                     file_name="health_facility_summary_results.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
+                ):
+                    st.balloons()  # Show balloons on download
 
 if __name__ == "__main__":
     main()
