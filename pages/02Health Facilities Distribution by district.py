@@ -7,7 +7,7 @@ import numpy as np
 
 st.set_page_config(layout="wide", page_title="Health Facility Map Generator")
 
-st.title("Interactive Health Facility Map Generator")
+st.title("Health Facilities Distribution by district")
 st.write("Upload your shapefiles and health facility data to generate a customized map.")
 
 # Create two columns for file uploads
@@ -26,6 +26,9 @@ with col2:
 # Customization options
 st.header("Map Customization")
 col3, col4, col5 = st.columns(3)
+st.snow()
+st.balloons()
+st.toast('Hooray!', icon='🎉')
 
 with col3:
     # Visual customization
@@ -151,6 +154,9 @@ if all([shp_file, shx_file, dbf_file, facility_file]):
         
         # Display the map
         st.pyplot(fig)
+        st.snow()
+        st.balloons()
+        st.toast('Hooray!', icon='🎉')
 
         # Download options
         col6, col7 = st.columns(2)
@@ -185,16 +191,4 @@ if all([shp_file, shx_file, dbf_file, facility_file]):
 else:
     st.info("Please upload all required files to generate the map.")
     
-    # Show example data format
-    st.subheader("Expected Data Format")
-    st.write("""
-    Shapefile should contain:
-    - FIRST_DNAM (District Name)
-    - FIRST_CHIE (Chiefdom Name)
-    
-    Excel file should contain:
-    - w_long (Longitude)
-    - w_lat (Latitude)
-    
-    The coordinates should be in decimal degrees format.
-    """)
+   
