@@ -6,9 +6,9 @@ from shapely.geometry import Point
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 
-st.set_page_config(layout="wide", page_title="Health Facility Map Generator")
+st.set_page_config(layout="wide", page_title="Health Facilities Distribution")
 
-st.title("Interactive Health Facility Map Generator")
+st.title("Health Facilities Distribution")
 st.write("Upload your shapefiles and health facility data to generate a customized map.")
 
 # Create two columns for file uploads
@@ -46,7 +46,8 @@ if all([shp_file, shx_file, dbf_file, facility_file]):
         # Map customization options
         st.header("Map Customization")
         st.snow()
-        st.balloon()
+        st.balloons()
+        st.toast('Hooray!', icon='🎉')
         col3, col4, col5 = st.columns(3)
         
         with col3:
@@ -144,6 +145,9 @@ if all([shp_file, shx_file, dbf_file, facility_file]):
 
         # Display the map
         st.pyplot(fig)
+        st.snow()
+        st.balloons()
+        st.toast('Hooray!', icon='🎉')
 
         # Download options
         col6, col7 = st.columns(2)
