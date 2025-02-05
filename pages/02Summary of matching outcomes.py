@@ -23,7 +23,7 @@ def process_health_facility_data(df):
     all_unique_names = pd.DataFrame({
         'Health_Facility_Name': pd.unique(
             pd.concat([
-                df['DHIS2_Name'].dropna(),
+                df['hf_DHIS2'].dropna(),
                 df['New_MFL'].dropna()
             ])
         )
@@ -32,9 +32,9 @@ def process_health_facility_data(df):
     # Classify each facility
     all_unique_names['Classification'] = all_unique_names['Health_Facility_Name'].apply(
         lambda x: (
-            "HF in both DHIS2 and MFL" if (x in df['DHIS2_Name'].values and x in df['New_MFL'].values)
-            else "HF in MFL and not in DHIS2" if (x in df['New_MFL'].values and x not in df['DHIS2_Name'].values)
-            else "HF in DHIS2 and not in MFL" if (x in df['DHIS2_Name'].values and x not in df['New_MFL'].values)
+            "HF in both DHIS2 and MFL" if (x in df['hf_DHIS2'].values and x in df['New_MFL'].values)
+            else "HF in MFL and not in DHIS2" if (x in df['New_MFL'].values and x not in df['hf_DHIS2'].values)
+            else "HF in DHIS2 and not in MFL" if (x in df['hf_DHIS2'].values and x not in df['New_MFL'].values)
             else "Unclassified"
         )
     )
