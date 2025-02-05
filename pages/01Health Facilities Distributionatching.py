@@ -45,7 +45,8 @@ if all([shp_file, shx_file, dbf_file, facility_file]):
 
         # Map customization options
         st.header("Map Customization")
-        
+        st.snow()
+        st.balloon()
         col3, col4, col5 = st.columns(3)
         
         with col3:
