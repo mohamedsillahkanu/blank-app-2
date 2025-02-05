@@ -2,200 +2,298 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from jellyfish import jaro_winkler_similarity
-import time
+from io import BytesIO
 
-def read_data_file(file):
-    """Read different types of data files"""
-    try:
-        if file.name.endswith('.csv'):
-            return pd.read_csv(file)
-        elif file.name.endswith(('.xlsx', '.xls')):
-            return pd.read_excel(file)
-        else:
-            raise ValueError(f"Unsupported file format: {file.name}")
-    except Exception as e:
-        st.error(f"Error reading file {file.name}: {str(e)}")
-        return None
-
-def find_facility_column(df):
-    """Find the health facility name column"""
-    for col in df.columns:
-        if 'hf' in col.lower() or 'facility' in col.lower() or 'name' in col.lower():
-            return col
-    return df.columns[0]
-
-def find_adm3_column(df):
-    """Find the ADM3 column"""
-    for col in df.columns:
-        if 'adm3' in col.lower() or 'district' in col.lower():
-            return col
-    return None
-
-def add_unique_suffixes(df):
+def add_suffixes_to_duplicate_hf_names(df, hf_column):
     """
-    Add unique suffixes to facility names using ADM3 if available
+    Add suffixes to duplicate health facility names while preserving all columns
     """
     # Create a copy of the dataframe
-    df_new = df.copy()
+    df_processed = df.copy()
     
-    # Find facility and ADM3 columns
-    facility_col = find_facility_column(df_new)
-    adm3_col = find_adm3_column(df_new)
+    # Count occurrences of each facility name
+    name_counts = df_processed[hf_column].value_counts()
     
-    # Log original unique count
-    original_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Original Unique Facilities: {original_unique_count}")
+    # Identify duplicate names
+    duplicates = name_counts[name_counts > 1]
     
-    # Identify duplicates
-    duplicates = df_new[facility_col].duplicated(keep=False)
+    # Track suffixes for each unique name
+    suffix_trackers = {}
     
-    # If duplicates exist
-    if duplicates.any():
-        # If ADM3 column exists, use it for disambiguation
-        if adm3_col:
-            # Group duplicates
-            dup_groups = df_new[duplicates].groupby(facility_col)
+    # Process each row
+    for index, row in df_processed.iterrows():
+        current_name = row[hf_column]
+        
+        # If this name appears more than once
+        if current_name in duplicates.index:
+            # Initialize suffix tracker for this name if not exists
+            if current_name not in suffix_trackers:
+                suffix_trackers[current_name] = 1
             
-            for name, group in dup_groups:
-                # Find indices of duplicates for this specific name
-                dup_indices = group.index
-                
-                # Track suffixes for this name
-                suffix_count = 1
-                
-                for idx in dup_indices:
-                    # Get ADM3 value or use 'Unknown'
-                    adm3_val = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
-                    
-                    # Add unique suffix
-                    if suffix_count > 1:
-                        df_new.loc[idx, facility_col] = f"{name} ({adm3_val})*_{suffix_count}"
-                    
-                    suffix_count += 1
+            # Add suffix to the name
+            df_processed.at[index, hf_column] = f"{current_name}*_{suffix_trackers[current_name]}"
+            
+            # Increment suffix tracker
+            suffix_trackers[current_name] += 1
+    
+    # Logging
+    st.write(f"Original Unique Facilities: {len(df[hf_column].unique())}")
+    st.write(f"Processed Unique Facilities: {len(df_processed[hf_column].unique())}")
+    
+    return df_processed
+
+def calculate_match(column1, column2, threshold):
+    """Calculate matching scores between two columns using Jaro-Winkler similarity."""
+    results = []
+    
+    for value1 in column1:
+        if value1 in column2.values:
+            results.append({
+                'Col1': value1,
+                'Col2': value1,
+                'Match_Score': 100,
+                'Match_Status': 'Match'
+            })
         else:
-            # If no ADM3, use incremental numbering
-            dup_groups = df_new[duplicates].groupby(facility_col)
-            
-            for name, group in dup_groups:
-                # Find indices of duplicates for this specific name
-                dup_indices = group.index
-                
-                # Track suffixes for this name
-                suffix_count = 1
-                
-                for idx in dup_indices:
-                    # Add unique suffix
-                    if suffix_count > 1:
-                        df_new.loc[idx, facility_col] = f"{name}*_{suffix_count}"
-                    
-                    suffix_count += 1
+            best_score = 0
+            best_match = None
+            for value2 in column2:
+                similarity = jaro_winkler_similarity(str(value1), str(value2)) * 100
+                if similarity > best_score:
+                    best_score = similarity
+                    best_match = value2
+            results.append({
+                'Col1': value1,
+                'Col2': best_match,
+                'Match_Score': round(best_score, 2),
+                'Match_Status': 'Unmatch' if best_score < threshold else 'Match'
+            })
     
-    # Verify unique count
-    final_unique_count = len(df_new[facility_col].unique())
-    st.write(f"Unique Facilities after processing: {final_unique_count}")
+    for value2 in column2:
+        if value2 not in [r['Col2'] for r in results]:
+            results.append({
+                'Col1': None,
+                'Col2': value2,
+                'Match_Score': 0,
+                'Match_Status': 'Unmatch'
+            })
     
-    # Sanity check
-    assert original_unique_count == final_unique_count, "Unique facility count changed!"
-    
-    # Display first few rows
-    st.dataframe(df_new.head())
-    
-    # Visual effects
-    st.snow()
-    st.balloons()
-    
-    return df_new
+    return pd.DataFrame(results)
 
 def main():
     st.title("Health Facility Name Matching")
 
-    # File Upload
-    st.write("Upload Files:")
-    mfl_file = st.file_uploader("Upload Master HF List:", type=['csv', 'xlsx', 'xls'])
-    dhis2_file = st.file_uploader("Upload DHIS2 HF List:", type=['csv', 'xlsx', 'xls'])
+    # Initialize session state
+    if 'step' not in st.session_state:
+        st.session_state.step = 1
+    if 'master_hf_list' not in st.session_state:
+        st.session_state.master_hf_list = None
+    if 'health_facilities_dhis2_list' not in st.session_state:
+        st.session_state.health_facilities_dhis2_list = None
+    if 'dhis2_hf_column' not in st.session_state:
+        st.session_state.dhis2_hf_column = None
+    if 'mfl_hf_column' not in st.session_state:
+        st.session_state.mfl_hf_column = None
 
-    if mfl_file and dhis2_file:
-        try:
-            # Read data files
-            dhis2_df = read_data_file(dhis2_file)
+    # Step 1: File Upload
+    if st.session_state.step == 1:
+        st.header("Step 1: Upload Files")
+        mfl_file = st.file_uploader("Upload Master HF List (CSV, Excel):", type=['csv', 'xlsx', 'xls'])
+        dhis2_file = st.file_uploader("Upload DHIS2 HF List (CSV, Excel):", type=['csv', 'xlsx', 'xls'])
+
+        if mfl_file and dhis2_file:
+            try:
+                # Read files
+                if mfl_file.name.endswith('.csv'):
+                    st.session_state.master_hf_list = pd.read_csv(mfl_file)
+                else:
+                    st.session_state.master_hf_list = pd.read_excel(mfl_file)
+
+                if dhis2_file.name.endswith('.csv'):
+                    st.session_state.health_facilities_dhis2_list = pd.read_csv(dhis2_file)
+                else:
+                    st.session_state.health_facilities_dhis2_list = pd.read_excel(dhis2_file)
+
+                st.success("Files uploaded successfully!")
+                
+                # Display previews
+                st.subheader("Preview of Master HF List")
+                st.dataframe(st.session_state.master_hf_list.head())
+                st.subheader("Preview of DHIS2 HF List")
+                st.dataframe(st.session_state.health_facilities_dhis2_list.head())
+
+                if st.button("Proceed to DHIS2 Duplicate Handling"):
+                    st.session_state.step = 2
+                    st.experimental_rerun()
+
+            except Exception as e:
+                st.error(f"Error reading files: {e}")
+
+    # Step 2: Handle DHIS2 Duplicates
+    elif st.session_state.step == 2:
+        st.header("Step 2: Handle DHIS2 Duplicate Facility Names")
+        
+        # Select HF name column for DHIS2
+        dhis2_col = st.selectbox("Select HF Name column in DHIS2 List:", 
+                                st.session_state.health_facilities_dhis2_list.columns)
+        
+        if st.button("Process DHIS2 Duplicates"):
+            # Process DHIS2 facility names to handle duplicates
+            st.write("### Processing DHIS2 Facility Names")
+            dhis2_list_clean = add_suffixes_to_duplicate_hf_names(
+                st.session_state.health_facilities_dhis2_list, 
+                dhis2_col
+            )
             
-            # First, process DHIS2 dataframe
-            dhis2_df_processed = add_unique_suffixes(dhis2_df)
+            # Update session state with processed DHIS2 list
+            st.session_state.health_facilities_dhis2_list = dhis2_list_clean
+            st.session_state.dhis2_hf_column = dhis2_col
             
-            # Then, read and process MFL dataframe
-            mfl_df = read_data_file(mfl_file)
-            mfl_df_processed = add_unique_suffixes(mfl_df)
+            # Move to next step (MFL Duplicates)
+            st.session_state.step = 3
+            st.experimental_rerun()
+
+        if st.button("Start Over"):
+            st.session_state.step = 1
+            st.session_state.master_hf_list = None
+            st.session_state.health_facilities_dhis2_list = None
+            st.experimental_rerun()
+
+    # Step 3: Handle MFL Duplicates
+    elif st.session_state.step == 3:
+        st.header("Step 3: Handle MFL Duplicate Facility Names")
+        
+        # Select HF name column for MFL
+        mfl_col = st.selectbox("Select HF Name column in Master HF List:", 
+                              st.session_state.master_hf_list.columns)
+        
+        if st.button("Process MFL Duplicates"):
+            # Process MFL facility names to handle duplicates
+            st.write("### Processing MFL Facility Names")
+            mfl_list_clean = add_suffixes_to_duplicate_hf_names(
+                st.session_state.master_hf_list, 
+                mfl_col
+            )
+            
+            # Update session state with processed MFL list
+            st.session_state.master_hf_list = mfl_list_clean
+            st.session_state.mfl_hf_column = mfl_col
+            
+            # Move to matching step
+            st.session_state.step = 4
+            st.experimental_rerun()
+
+        if st.button("Back to DHIS2 Duplicates"):
+            st.session_state.step = 2
+            st.experimental_rerun()
+
+    # Step 4: Matching Process
+    elif st.session_state.step == 4:
+        st.header("Step 4: Matching Process")
+        
+        threshold = st.slider("Set Match Threshold (0-100):", 
+                            min_value=0, max_value=100, value=70)
+        
+        if st.button("Perform Matching"):
+            # Convert name columns to string 
+            master_hf_list_clean = st.session_state.master_hf_list.copy()
+            dhis2_list_clean = st.session_state.health_facilities_dhis2_list.copy()
+            
+            master_hf_list_clean[st.session_state.mfl_hf_column] = master_hf_list_clean[st.session_state.mfl_hf_column].astype(str)
+            dhis2_list_clean[st.session_state.dhis2_hf_column] = dhis2_list_clean[st.session_state.dhis2_hf_column].astype(str)
+            
+            # Display facility counts
+            st.write("### Counts of Health Facilities")
+            st.write(f"Count of HFs in DHIS2 list: {len(dhis2_list_clean)}")
+            st.write(f"Count of HFs in MFL list: {len(master_hf_list_clean)}")
             
             # Perform matching
-            st.write("### Matching Process")
-            matches = []
-            
-            # Find facility columns
-            dhis2_facility_col = find_facility_column(dhis2_df_processed)
-            mfl_facility_col = find_facility_column(mfl_df_processed)
-            
-            # Matching logic
-            for mfl_name in mfl_df_processed[mfl_facility_col]:
-                best_match = None
-                best_score = 0
+            with st.spinner("Performing matching..."):
+                # Get initial matching results
+                hf_name_match_results = calculate_match(
+                    master_hf_list_clean[st.session_state.mfl_hf_column],
+                    dhis2_list_clean[st.session_state.dhis2_hf_column],
+                    threshold
+                )
                 
-                for dhis2_name in dhis2_df_processed[dhis2_facility_col]:
-                    # Remove suffixes for comparison
-                    mfl_base = mfl_name.split('*_')[0].split(' (')[0]
-                    dhis2_base = dhis2_name.split('*_')[0].split(' (')[0]
-                    
-                    # Calculate similarity score
-                    score = jaro_winkler_similarity(str(mfl_base), str(dhis2_base)) * 100
-                    
-                    if score > best_score:
-                        best_score = score
-                        best_match = dhis2_name
+                # Rename the matching columns for clarity
+                hf_name_match_results = hf_name_match_results.rename(
+                    columns={
+                        'Col1': 'HF_Name_in_MFL',
+                        'Col2': 'HF_Name_in_DHIS2'
+                    }
+                )
                 
-                # Create match record
-                match_record = {
-                    'MFL_Name': mfl_name,
-                    'DHIS2_Name': best_match,
-                    'Match_Score': round(best_score, 2),
-                    'Match_Status': 'Exact Match' if best_score == 100 else 
-                                    'High Match' if best_score >= 70 else 
-                                    'Low Match'
-                }
-                matches.append(match_record)
-            
-            # Convert matches to DataFrame
-            matches_df = pd.DataFrame(matches)
-            
-            # Display matching results
-            st.write("### Matching Results")
-            st.dataframe(matches_df)
-            
-            st.snow()
-            st.balloons()
-            
-            # Matching statistics
-            st.write("### Matching Statistics")
-            stats = {
-                'Total MFL Facilities': len(mfl_df_processed),
-                'Total DHIS2 Facilities': len(dhis2_df_processed),
-                'Exact Matches': len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
-                'High Matches (≥70%)': len(matches_df[matches_df['Match_Status'] == 'High Match']),
-                'Low Matches (<70%)': len(matches_df[matches_df['Match_Status'] == 'Low Match'])
-            }
-            
-            stats_df = pd.DataFrame(list(stats.items()), columns=['Metric', 'Value'])
-            st.dataframe(stats_df)
-            
-            # Download results
-            csv = matches_df.to_csv(index=False)
-            st.download_button(
-                label="Download Matching Results",
-                data=csv,
-                file_name="facility_matching_results.csv",
-                mime="text/csv"
-            )
+                # Add the replacement column based on threshold
+                hf_name_match_results['New_HF_Name_in_MFL'] = np.where(
+                    hf_name_match_results['Match_Score'] >= threshold,
+                    hf_name_match_results['HF_Name_in_DHIS2'],
+                    hf_name_match_results['HF_Name_in_MFL']
+                )
+                
+                # Create separate dataframes with suffix for each source
+                master_hf_cols = {col: f"{col}_MFL" for col in master_hf_list_clean.columns if col != st.session_state.mfl_hf_column}
+                dhis2_cols = {col: f"{col}_DHIS2" for col in dhis2_list_clean.columns if col != st.session_state.dhis2_hf_column}
+                
+                # Rename columns in original dataframes
+                master_hf_list_clean = master_hf_list_clean.rename(columns=master_hf_cols)
+                dhis2_list_clean = dhis2_list_clean.rename(columns=dhis2_cols)
+                
+                # Merge matching results with original dataframes
+                merged_results = (
+                    hf_name_match_results
+                    .merge(
+                        master_hf_list_clean,
+                        left_on='HF_Name_in_MFL',
+                        right_on=f"{st.session_state.mfl_hf_column}_MFL",
+                        how='left'
+                    )
+                    .merge(
+                        dhis2_list_clean,
+                        left_on='HF_Name_in_DHIS2',
+                        right_on=f"{st.session_state.dhis2_hf_column}_DHIS2",
+                        how='left'
+                    )
+                )
+                
+                # Drop duplicate columns from the merge
+                if f"{st.session_state.mfl_hf_column}_MFL" in merged_results.columns:
+                    merged_results = merged_results.drop(columns=[f"{st.session_state.mfl_hf_column}_MFL"])
+                if f"{st.session_state.dhis2_hf_column}_DHIS2" in merged_results.columns:
+                    merged_results = merged_results.drop(columns=[f"{st.session_state.dhis2_hf_column}_DHIS2"])
+                
+                # Reorder columns to put matching-related columns first
+                matching_cols = [
+                    'HF_Name_in_MFL',
+                    'HF_Name_in_DHIS2',
+                    'New_HF_Name_in_MFL',
+                    'Match_Score'
+                ]
+                other_cols = [col for col in merged_results.columns if col not in matching_cols]
+                final_col_order = matching_cols + other_cols
+                merged_results = merged_results[final_col_order]
+                
+                # Display results
+                st.write("### Matching Results")
+                st.write("The results include all columns from both datasets with suffixes:")
+                st.write("- '_MFL' for columns from the Master Facility List")
+                st.write("- '_DHIS2' for columns from the DHIS2 list")
+                st.dataframe(merged_results)
+                
+                # Add download button for the results
+                csv = merged_results.to_csv(index=False)
+                st.download_button(
+                    label="Download Matching Results",
+                    data=csv,
+                    file_name="facility_matching_results.csv",
+                    mime="text/csv"
+                )  
 
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
+        if st.button("Start Over"):
+            st.session_state.step = 1
+            st.session_state.master_hf_list = None
+            st.session_state.health_facilities_dhis2_list = None
+            st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
