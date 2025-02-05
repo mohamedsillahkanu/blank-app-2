@@ -22,8 +22,8 @@ def process_health_facility_data(df):
     all_unique_names = pd.DataFrame({
         'Health_Facility_Name': pd.unique(
             pd.concat([
-                df['HF_Name_in_DHIS2'].dropna(),
-                df['New_HF_Name_in_MFL'].dropna()
+                df['DHIS2_Name'].dropna(),
+                df['New_MFL'].dropna()
             ])
         )
     })
