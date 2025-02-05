@@ -24,61 +24,78 @@ def find_facility_column(df):
             return col
     return df.columns[0]
 
-def make_facility_names_unique(df):
+def find_adm3_column(df):
+    """Find the ADM3 column"""
+    for col in df.columns:
+        if 'adm3' in col.lower() or 'district' in col.lower():
+            return col
+    return None
+
+def add_unique_suffixes(df):
     """
-    Make facility names unique by adding suffixes to duplicates
+    Add unique suffixes to facility names using ADM3 if available
     """
     # Create a copy of the dataframe
     df_new = df.copy()
     
-    # Find facility column
+    # Find facility and ADM3 columns
     facility_col = find_facility_column(df_new)
+    adm3_col = find_adm3_column(df_new)
     
-    # Get original unique names
-    original_unique_names = df_new[facility_col].unique()
-    st.write(f"Original Unique Facilities: {len(original_unique_names)}")
+    # Log original unique count
+    original_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Original Unique Facilities: {original_unique_count}")
     
-    # Identify duplicate names
+    # Identify duplicates
     duplicates = df_new[facility_col].duplicated(keep=False)
     
     # If duplicates exist
     if duplicates.any():
-        # Find which names are duplicated
-        duplicate_names = df_new.loc[duplicates, facility_col]
-        
-        # Dictionary to track duplicate counts
-        dup_counts = {}
-        
-        # Modify duplicate entries
-        for idx in df_new[duplicates].index:
-            name = df_new.loc[idx, facility_col]
+        # If ADM3 column exists, use it for disambiguation
+        if adm3_col:
+            # Group duplicates
+            dup_groups = df_new[duplicates].groupby(facility_col)
             
-            # Increment count for this name
-            if name not in dup_counts:
-                dup_counts[name] = 0
-            dup_counts[name] += 1
+            for name, group in dup_groups:
+                # Find indices of duplicates for this specific name
+                dup_indices = group.index
+                
+                # Track suffixes for this name
+                suffix_count = 1
+                
+                for idx in dup_indices:
+                    # Get ADM3 value or use 'Unknown'
+                    adm3_val = str(df_new.loc[idx, adm3_col]) if pd.notna(df_new.loc[idx, adm3_col]) else 'Unknown'
+                    
+                    # Add unique suffix
+                    if suffix_count > 1:
+                        df_new.loc[idx, facility_col] = f"{name} ({adm3_val})*_{suffix_count}"
+                    
+                    suffix_count += 1
+        else:
+            # If no ADM3, use incremental numbering
+            dup_groups = df_new[duplicates].groupby(facility_col)
             
-            # Add suffix to duplicates (after first occurrence)
-            if dup_counts[name] > 1:
-                df_new.loc[idx, facility_col] = f"{name}*_{dup_counts[name]}"
+            for name, group in dup_groups:
+                # Find indices of duplicates for this specific name
+                dup_indices = group.index
+                
+                # Track suffixes for this name
+                suffix_count = 1
+                
+                for idx in dup_indices:
+                    # Add unique suffix
+                    if suffix_count > 1:
+                        df_new.loc[idx, facility_col] = f"{name}*_{suffix_count}"
+                    
+                    suffix_count += 1
     
-    # Verify unique names remain the same
-    processed_unique_names = df_new[facility_col].unique()
-    st.write(f"Processed Unique Facilities: {len(processed_unique_names)}")
+    # Verify unique count
+    final_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Unique Facilities after processing: {final_unique_count}")
     
-    # Debug: show list of unique names before and after
-    st.write("Original Unique Names:")
-    st.dataframe(pd.DataFrame(original_unique_names, columns=['Names']))
-    st.write("Processed Unique Names:")
-    st.dataframe(pd.DataFrame(processed_unique_names, columns=['Names']))
-    
-    # Check if unique names are the same
-    try:
-        for orig, proc in zip(original_unique_names, processed_unique_names):
-            assert orig == proc or orig == proc.split('*_')[0], f"Mismatch: {orig} vs {proc}"
-    except AssertionError as e:
-        st.error(f"Unique names validation failed: {e}")
-        raise
+    # Sanity check
+    assert original_unique_count == final_unique_count, "Unique facility count changed!"
     
     # Display first few rows
     st.dataframe(df_new.head())
@@ -103,11 +120,11 @@ def main():
             dhis2_df = read_data_file(dhis2_file)
             
             # First, process DHIS2 dataframe
-            dhis2_df_processed = make_facility_names_unique(dhis2_df)
+            dhis2_df_processed = add_unique_suffixes(dhis2_df)
             
             # Then, read and process MFL dataframe
             mfl_df = read_data_file(mfl_file)
-            mfl_df_processed = make_facility_names_unique(mfl_df)
+            mfl_df_processed = add_unique_suffixes(mfl_df)
             
             # Perform matching
             st.write("### Matching Process")
@@ -124,8 +141,8 @@ def main():
                 
                 for dhis2_name in dhis2_df_processed[dhis2_facility_col]:
                     # Remove suffixes for comparison
-                    mfl_base = mfl_name.split('*_')[0]
-                    dhis2_base = dhis2_name.split('*_')[0]
+                    mfl_base = mfl_name.split('*_')[0].split(' (')[0]
+                    dhis2_base = dhis2_name.split('*_')[0].split(' (')[0]
                     
                     # Calculate similarity score
                     score = jaro_winkler_similarity(str(mfl_base), str(dhis2_base)) * 100
