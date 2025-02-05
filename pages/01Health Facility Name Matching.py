@@ -91,6 +91,72 @@ def prepare_facility_data(df, source):
     renamed_df.columns = [f"{col}{suffix}" for col in renamed_df.columns]
     return renamed_df
 
+def display_initial_counts(mfl_data, dhis2_data):
+    """Display initial facility counts for both datasets"""
+    st.write("### Initial Facility Counts")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(
+            label="MFL Facilities Count",
+            value=len(mfl_data),
+            help="Total number of facilities in Master Facility List"
+        )
+        st.write("MFL Data Counts:")
+        mfl_counts = mfl_data.count()
+        st.dataframe(pd.DataFrame({
+            'Column': mfl_counts.index,
+            'Count': mfl_counts.values
+        }))
+        
+    with col2:
+        st.metric(
+            label="DHIS2 Facilities Count",
+            value=len(dhis2_data),
+            help="Total number of facilities in DHIS2 List"
+        )
+        st.write("DHIS2 Data Counts:")
+        dhis2_counts = dhis2_data.count()
+        st.dataframe(pd.DataFrame({
+            'Column': dhis2_counts.index,
+            'Count': dhis2_counts.values
+        }))
+
+def process_all_facilities(mfl_data_processed, dhis2_data_processed, matches_df, mfl_col_with_suffix, dhis2_col_with_suffix):
+    """Process all facilities including unmatched DHIS2 facilities"""
+    # Get all DHIS2 facilities that weren't matched
+    matched_dhis2 = matches_df['DHIS2_Name'].unique()
+    all_dhis2 = dhis2_data_processed[dhis2_col_with_suffix].unique()
+    unmatched_dhis2 = [f for f in all_dhis2 if f not in matched_dhis2]
+    
+    # Create entries for unmatched DHIS2 facilities
+    unmatched_entries = []
+    for dhis2_name in unmatched_dhis2:
+        unmatched_entries.append({
+            'MFL_Name': None,
+            'DHIS2_Name': dhis2_name,
+            'New_MFL': dhis2_name,
+            'Match_Score': 0,
+            'Match_Status': 'HF in DHIS2 not in MFL'
+        })
+    
+    # Add unmatched entries to matches DataFrame
+    if unmatched_entries:
+        unmatched_df = pd.DataFrame(unmatched_entries)
+        matches_df = pd.concat([matches_df, unmatched_df], ignore_index=True)
+    
+    # Calculate statistics
+    stats = {
+        'Total MFL Facilities': len(mfl_data_processed),
+        'Total DHIS2 Facilities': len(dhis2_data_processed),
+        'Matched Facilities': len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
+        'Similar Facilities (≥70%)': len(matches_df[matches_df['Match_Score'] >= 70]) - len(matches_df[matches_df['Match_Status'] == 'Exact Match']),
+        'HF in DHIS2 not in MFL': len(unmatched_dhis2),
+        'Total Unique Facilities': len(matches_df)
+    }
+    
+    return matches_df, stats
+
 def main():
     st.title("Health Facility Name Matching")
 
@@ -106,6 +172,9 @@ def main():
             dhis2_data = read_data_file(dhis2_file)
             
             if mfl_data is not None and dhis2_data is not None:
+                # Display initial counts
+                display_initial_counts(mfl_data, dhis2_data)
+                
                 # Find facility columns
                 mfl_col = find_facility_column(mfl_data)
                 dhis2_col = find_facility_column(dhis2_data)
@@ -118,18 +187,14 @@ def main():
                 mfl_data_processed = prepare_facility_data(mfl_data, "MFL")
                 dhis2_data_processed = prepare_facility_data(dhis2_data, "DHIS2")
                 
-                # Display previews
+                # Display success and animations
                 st.success("Files uploaded successfully!")
                 st.balloons()
                 st.snow()
-
-
-                st.write("MFL Data Statistics")
-                total_mfl = mfl_data_processed.count()
-                total_dhis2 = dhis2_data_processed.count()
                 
+                # Display previews
                 st.subheader("Preview of Data")
-                col1, col2 = st.columns(1)
+                col1, col2 = st.columns(2)
                 with col1:
                     st.write("Master Facility List Preview")
                     st.dataframe(mfl_data_processed.head())
@@ -151,7 +216,7 @@ def main():
                                 'DHIS2_Name': mfl_name,
                                 'Match_Score': 100,
                                 'Match_Status': 'Exact Match',
-                                'New_MFL': mfl_name  # Same name for exact matches
+                                'New_MFL': mfl_name
                             })
                             continue
                         
@@ -168,11 +233,28 @@ def main():
                             'DHIS2_Name': best_match,
                             'Match_Score': round(best_score, 2),
                             'Match_Status': 'Match' if best_score >= 70 else 'No Match',
-                            'New_MFL': best_match if best_score >= 70 else mfl_name  # Use DHIS2 name if good match, else keep MFL name
+                            'New_MFL': best_match if best_score >= 70 else mfl_name
                         })
                     
-                    # Create final results
+                    # Process all facilities including unmatched ones
                     matches_df = pd.DataFrame(matches)
+                    matches_df, statistics = process_all_facilities(
+                        mfl_data_processed, 
+                        dhis2_data_processed, 
+                        matches_df,
+                        mfl_col_with_suffix,
+                        dhis2_col_with_suffix
+                    )
+                    
+                    # Display statistics
+                    st.write("### Facility Matching Statistics")
+                    stats_df = pd.DataFrame({
+                        'Metric': statistics.keys(),
+                        'Count': statistics.values()
+                    })
+                    st.dataframe(stats_df)
+                    
+                    # Create final results
                     final_results = matches_df.merge(
                         mfl_data_processed, 
                         left_on='MFL_Name',
@@ -185,7 +267,7 @@ def main():
                         how='left'
                     )
                     
-                    # Sort columns to put matching columns first
+                    # Sort columns
                     column_order = [
                         'MFL_Name',
                         'DHIS2_Name',
@@ -193,11 +275,8 @@ def main():
                         'Match_Score',
                         'Match_Status'
                     ]
-                    # Add remaining columns
                     remaining_cols = [col for col in final_results.columns if col not in column_order]
                     column_order.extend(remaining_cols)
-                    
-                    # Reorder columns
                     final_results = final_results[column_order]
                     
                     # Display results
