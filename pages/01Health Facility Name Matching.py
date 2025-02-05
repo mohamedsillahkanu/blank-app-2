@@ -122,9 +122,14 @@ def main():
                 st.success("Files uploaded successfully!")
                 st.balloons()
                 st.snow()
+
+
+                st.write("MFL Data Statistics")
+                total_mfl = mfl_data_processed.count()
+                total_dhis2 = dhis2_data_processed.count()
                 
                 st.subheader("Preview of Data")
-                col1, col2 = st.columns(2)
+                col1, col2 = st.columns(1)
                 with col1:
                     st.write("Master Facility List Preview")
                     st.dataframe(mfl_data_processed.head())
