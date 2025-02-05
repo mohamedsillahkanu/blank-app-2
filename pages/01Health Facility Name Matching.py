@@ -26,7 +26,8 @@ def find_facility_column(df):
 
 def make_facility_names_unique(df):
     """
-    Make facility names unique by adding incremental suffixes
+    Make facility names unique by adding suffixes to duplicates
+    Ensures the total number of unique names remains the same
     """
     # Create a copy of the dataframe
     df_new = df.copy()
@@ -34,23 +35,32 @@ def make_facility_names_unique(df):
     # Find facility column
     facility_col = find_facility_column(df_new)
     
-    # Create a counter to track duplicate names
-    name_counts = {}
+    # First, get original unique count
+    original_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Original Unique Facilities: {original_unique_count}")
     
-    # Function to generate unique name
-    def get_unique_name(name):
-        if name not in name_counts:
-            name_counts[name] = 0
-            return name
+    # Identify duplicate names
+    duplicate_mask = df_new[facility_col].duplicated(keep=False)
+    
+    # If duplicates exist
+    if duplicate_mask.any():
+        # Group duplicates
+        grouped = df_new[duplicate_mask].groupby(facility_col)
         
-        name_counts[name] += 1
-        return f"{name}*_{name_counts[name]}"
+        for name, group in grouped:
+            # Get indices of duplicates for this specific name
+            dup_indices = group.index
+            
+            # Add suffixes to duplicates
+            for i, idx in enumerate(dup_indices, 1):
+                df_new.loc[idx, facility_col] = f"{name}*_{i}"
     
-    # Make facility names unique
-    df_new[facility_col] = df_new[facility_col].apply(get_unique_name)
+    # Verify unique count remains the same
+    final_unique_count = len(df_new[facility_col].unique())
+    st.write(f"Unique Facilities after processing: {final_unique_count}")
     
-    # Display unique count after processing
-    st.write(f"Unique Facilities after processing: {len(df_new[facility_col].unique())}")
+    # Sanity check
+    assert original_unique_count == final_unique_count, "Unique facility count changed!"
     
     # Display first few rows
     st.dataframe(df_new.head())
@@ -75,19 +85,19 @@ def main():
             dhis2_df = read_data_file(dhis2_file)
             
             # First, process DHIS2 dataframe
-            dhis2_facility_col = find_facility_column(dhis2_df)
-            st.write(f"Original DHIS2 Unique Facilities: {len(dhis2_df[dhis2_facility_col].unique())}")
             dhis2_df_processed = make_facility_names_unique(dhis2_df)
             
             # Then, read and process MFL dataframe
             mfl_df = read_data_file(mfl_file)
-            mfl_facility_col = find_facility_column(mfl_df)
-            st.write(f"Original MFL Unique Facilities: {len(mfl_df[mfl_facility_col].unique())}")
             mfl_df_processed = make_facility_names_unique(mfl_df)
             
             # Perform matching
             st.write("### Matching Process")
             matches = []
+            
+            # Find facility columns
+            dhis2_facility_col = find_facility_column(dhis2_df_processed)
+            mfl_facility_col = find_facility_column(mfl_df_processed)
             
             # Matching logic
             for mfl_name in mfl_df_processed[mfl_facility_col]:
