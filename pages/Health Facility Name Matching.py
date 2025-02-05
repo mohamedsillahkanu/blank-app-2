@@ -204,7 +204,7 @@ def main():
                     st.download_button(
                         label="Download Results",
                         data=csv,
-                        file_name="facility_matching_results.csv",
+                        file_name="Facility_matching_results.csv",
                         mime="text/csv"
                     )
 
