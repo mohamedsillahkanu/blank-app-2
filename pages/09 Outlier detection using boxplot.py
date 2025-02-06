@@ -42,7 +42,7 @@ def generate_box_plot(df, column, hf_uid, year):
 # Streamlit app setup
 st.title("Box Plot for Original and Winsorized Columns")
 
-uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Upload the outlier_corrected_data.csv:", type=["csv", "xlsx"])
 
 if uploaded_file:
     if uploaded_file.name.endswith(".csv"):
