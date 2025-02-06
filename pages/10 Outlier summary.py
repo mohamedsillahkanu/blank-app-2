@@ -78,7 +78,7 @@ def generate_outlier_charts(df, column, chart_type):
 
 def main():
     st.title("Outlier Analysis with Charts by Year")
-    uploaded_file = st.file_uploader("Upload your dataset (CSV/Excel):", type=["csv", "xlsx"])
+    uploaded_file = st.file_uploader("Upload the outlier_corrected_data.csv:", type=["csv", "xlsx"])
     
     if uploaded_file:
         try:
