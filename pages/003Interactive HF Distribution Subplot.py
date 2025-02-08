@@ -16,26 +16,33 @@ try:
     shapefile = gpd.read_file("Chiefdom 2021.shp")
     facility_data = pd.read_excel("master_hf_list.xlsx")
 
+    # Map title in its own row
+    map_title = st.text_input("Map Title", "Health Facility Distribution by Chiefdom")
+
     # Customization options
     st.header("Map Customization")
-    col6, col7, col8 = st.columns(3)
+    col6, col7 = st.columns(2)
 
     with col6:
         # Title customization
-        map_title = st.text_input("Map Title", "Health Facility Distribution by Chiefdom")
         title_font_size = st.slider("Title Font Size", 12, 48, 24)
-        title_spacing = st.slider("Title Top Spacing", 0, 200, 50, help="Adjust space above the title")
         point_size = st.slider("Point Size", 5, 20, 10)
 
     with col7:
-        # Color selection
-        point_color = st.color_picker("Point Color", "#FF4B4B")
-        background_color = st.color_picker("Background Color", "#FFFFFF")
+        # Point color dropdown
+        point_colors = {
+            "Blue": "#47B5FF",
+            "Red": "#FF4B4B",
+            "Green": "#00FF00",
+            "Purple": "#800080",
+            "Orange": "#FFA500"
+        }
+        selected_color = st.selectbox("Point Color", list(point_colors.keys()))
+        point_color = point_colors[selected_color]
 
-    with col8:
-        # Additional options
-        show_facility_count = st.checkbox("Show Facility Count", value=True)
-        show_chiefdom_name = st.checkbox("Show Chiefdom Name", value=True)
+    # Get unique districts from shapefile
+    districts = sorted(shapefile['FIRST_DNAM'].unique())
+    selected_district = st.selectbox("Select District", districts)
 
     # Convert facility data to GeoDataFrame
     geometry = [Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])]
@@ -44,10 +51,6 @@ try:
         geometry=geometry,
         crs="EPSG:4326"
     )
-
-    # Get unique districts from shapefile
-    districts = sorted(shapefile['FIRST_DNAM'].unique())
-    selected_district = st.selectbox("Select District", districts)
 
     # Filter shapefile for selected district
     district_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district]
@@ -135,7 +138,8 @@ try:
             'font': {'size': title_font_size}
         },
         showlegend=False,
-        margin=dict(t=title_spacing + title_font_size + 10, r=10, l=10, b=10)
+        margin=dict(t=title_font_size + 60, r=10, l=10, b=10),
+        paper_bgcolor='white'
     )
 
     # Display the map
