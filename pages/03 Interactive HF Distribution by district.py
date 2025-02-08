@@ -54,6 +54,9 @@ try:
 
     # Generate Map button
     if st.button("Generate Map"):
+        # Filter shapefile for selected district first
+        district_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district].copy()
+        
         # Create GeoDataFrame from facility data
         geometry = [Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])]
         facilities_gdf = gpd.GeoDataFrame(
@@ -61,20 +64,21 @@ try:
             geometry=geometry,
             crs="EPSG:4326"
         )
-
-        # Filter for selected district
-        district_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district]
         
-        # Get district boundary coordinates
-        bounds = district_shapefile.total_bounds
-        
-        # Spatial join to get facilities within the district
+        # Spatial join to get only facilities within the district
         district_facilities = gpd.sjoin(
             facilities_gdf,
             district_shapefile,
             how="inner",
             predicate="within"
         )
+
+        if len(district_facilities) == 0:
+            st.warning(f"No facilities found within {selected_district} District boundaries.")
+            st.stop()
+
+        # Get district boundary coordinates
+        bounds = district_shapefile.total_bounds
         
         # Create figure
         fig = go.Figure()
@@ -98,26 +102,25 @@ try:
             )
         
         # Add facilities with coordinates
-        if len(district_facilities) > 0:
-            fig.add_trace(
-                go.Scattermapbox(
-                    lat=district_facilities['w_lat'],
-                    lon=district_facilities['w_long'],
-                    mode='markers',
-                    marker=dict(
-                        size=point_size,
-                        color=point_color,
-                    ),
-                    text=district_facilities['facility'],
-                    hovertemplate=(
-                        "<b>%{text}</b><br>" +
-                        "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
-                        f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
-                        "<extra></extra>"
-                    ),
-                    name='Health Facilities'
-                )
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=district_facilities['w_lat'],
+                lon=district_facilities['w_long'],
+                mode='markers',
+                marker=dict(
+                    size=point_size,
+                    color=point_color,
+                ),
+                text=district_facilities['facility'],
+                hovertemplate=(
+                    "<b>%{text}</b><br>" +
+                    "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
+                    f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
+                    "<extra></extra>"
+                ),
+                name='Health Facilities'
             )
+        )
 
         # Update layout with dynamic height
         fig.update_layout(
@@ -139,7 +142,7 @@ try:
             ),
             showlegend=True,
             margin=dict(t=100, r=30, l=30, b=30),
-            paper_bgcolor='white'  # Set to white by default
+            paper_bgcolor='white'
         )
 
         # Display interactive map
