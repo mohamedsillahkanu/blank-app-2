@@ -19,29 +19,54 @@ try:
     shapefile = gpd.read_file("Chiefdom 2021.shp")
     facility_data = pd.read_excel("master_hf_list.xlsx")
 
-    # Column selection
+    # Column selection for facility name
+    st.header("Data Column Selection")
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        facility_name_col = st.selectbox(
+            "Select Facility Name Column",
+            facility_data.columns,
+            index=0
+        )
+    
+    with col2:
+        longitude_col = st.selectbox(
+            "Select Longitude Column",
+            facility_data.columns,
+            index=facility_data.columns.get_loc("w_long") if "w_long" in facility_data.columns else 0
+        )
+    
+    with col3:
+        latitude_col = st.selectbox(
+            "Select Latitude Column",
+            facility_data.columns,
+            index=facility_data.columns.get_loc("w_lat") if "w_lat" in facility_data.columns else 0
+        )
+
+    # Map Customization
     st.header("Map Customization")
     
     # Map title in its own row
     map_title = st.text_input("Map Title", "Health Facility Distribution")
 
     # Other options in columns
-    col3, col4, col5 = st.columns(3)
+    col4, col5, col6 = st.columns(3)
     
-    with col3:
+    with col4:
         point_size = st.slider("Point Size", 5, 20, 10)
         boundary_width = st.slider("Boundary Line Width", 1, 10, 3)
 
-    with col4:
+    with col5:
         point_color = st.color_picker("Point Color", "#FF4B4B")
         background_color = st.color_picker("Background Color", "#FFFFFF")
 
-    with col5:
-        map_height = st.slider("Map Height", 400, 1000, 600)
+    with col6:
+        map_height = st.slider("Map Height", 400, 1000, 800)  # Default height increased
         zoom_level = st.slider("Initial Zoom Level", 5, 15, 9)
 
     # Create GeoDataFrame from facility data
-    geometry = [Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])]
+    geometry = [Point(xy) for xy in zip(facility_data[longitude_col], facility_data[latitude_col])]
     facilities_gdf = gpd.GeoDataFrame(
         facility_data, 
         geometry=geometry,
@@ -71,10 +96,8 @@ try:
     
     # Add chiefdom boundaries
     for _, chiefdom in district_shapefile.iterrows():
-        # Convert chiefdom geometry to GeoJSON
         chiefdom_geojson = chiefdom.geometry.__geo_interface__
         
-        # Add chiefdom boundary
         fig.add_trace(
             go.Scattermapbox(
                 mode='lines',
@@ -89,31 +112,31 @@ try:
             )
         )
     
-    # Add facilities
+    # Add facilities with coordinates
     if len(district_facilities) > 0:
         fig.add_trace(
             go.Scattermapbox(
-                lat=district_facilities['w_lat'],
-                lon=district_facilities['w_long'],
+                lat=district_facilities[latitude_col],
+                lon=district_facilities[longitude_col],
                 mode='markers',
                 marker=dict(
                     size=point_size,
                     color=point_color,
                 ),
-                text=district_facilities['facility'],  # Adjust column name if different
+                text=district_facilities[facility_name_col],
                 hovertemplate=(
-                    "Facility: %{text}<br>" +
+                    "<b>%{text}</b><br>" +
                     "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
-                    "Latitude: %{lat:.4f}<br>" +
-                    "Longitude: %{lon:.4f}" +
+                    f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
                     "<extra></extra>"
-                )
+                ),
+                name='Health Facilities'
             )
         )
 
     # Update layout with dynamic height
     fig.update_layout(
-        height=map_height,  # Dynamic height from slider
+        height=map_height,
         title={
             'text': f"{map_title}<br>{selected_district} District",
             'y': 0.98,
@@ -127,7 +150,7 @@ try:
                 lat=np.mean([bounds[1], bounds[3]]),
                 lon=np.mean([bounds[0], bounds[2]])
             ),
-            zoom=zoom_level  # Dynamic zoom from slider
+            zoom=zoom_level
         ),
         showlegend=True,
         margin=dict(t=100, r=30, l=30, b=30),
@@ -142,32 +165,62 @@ try:
         'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
     })
 
-    # Download options
-    col6, col7 = st.columns(2)
-    
-    with col6:
-        # Save as HTML
-        html_content = fig.to_html(
-            config={
-                'displayModeBar': True,
-                'scrollZoom': True,
-                'displaylogo': False,
-                'responsive': True,
-            },
-            include_plotlyjs=True,
-            full_html=True,
-            include_mathjax=False
-        )
+    # For the HTML download, create a version with full browser height
+    html_content = fig.to_html(
+        config={
+            'displayModeBar': True,
+            'scrollZoom': True,
+            'displaylogo': False,
+            'responsive': True,
+        },
+        include_plotlyjs=True,
+        full_html=True,
+        include_mathjax=False
+    )
 
+    # Add CSS to make the HTML version full screen
+    full_screen_html = f"""
+    <html>
+        <head>
+            <style>
+                body {{
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden;
+                }}
+                .js-plotly-plot {{
+                    height: 100vh !important;
+                }}
+                .plotly-graph-div {{
+                    height: 100vh !important;
+                }}
+            </style>
+        </head>
+        <body>
+            {html_content}
+            <script>
+                window.onload = function() {{
+                    setTimeout(function() {{
+                        window.dispatchEvent(new Event('resize'));
+                    }}, 100);
+                }};
+            </script>
+        </body>
+    </html>
+    """
+
+    # Download options
+    col7, col8 = st.columns(2)
+    
+    with col7:
         st.download_button(
             label=f"Download {selected_district} District Map (HTML)",
-            data=html_content,
+            data=full_screen_html,
             file_name=f"health_facility_map_{selected_district}.html",
             mime='text/html'
         )
 
-    with col7:
-        # Export facility data
+    with col8:
         if len(district_facilities) > 0:
             csv = district_facilities.to_csv(index=False)
             st.download_button(
