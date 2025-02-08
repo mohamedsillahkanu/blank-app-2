@@ -80,8 +80,9 @@ try:
     else:
         shapefile = shapefile.to_crs(epsg=4326)
 
-    # Create the map with fixed aspect
-    fig, ax = plt.subplots(figsize=(15, 10))
+    # Create the map with fixed aspect and centered
+    fig = plt.figure(figsize=(15, 10))
+    ax = fig.add_subplot(111)
 
     # Plot shapefile with custom style
     shapefile.plot(ax=ax, color=background_color, edgecolor='black', linewidth=0.5)
@@ -122,51 +123,45 @@ try:
     )
     plt.figtext(0.02, 0.02, stats_text, fontsize=8, bbox=dict(facecolor='white', alpha=0.8))
 
+    # Adjust layout to ensure map is centered
+    plt.tight_layout()
+
     # Display the map
     st.pyplot(fig)
     st.snow()
     st.balloons()
     st.toast('Hooray!', icon='🎉')
 
-    # Center-align the download buttons using markdown and columns
-    st.markdown("""
-        <style>
-        .download-buttons {
-            text-align: center;
-            padding: 20px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
-    # Create a single centered column for downloads
-    col_center = st.columns([1, 2, 1])[1]  # This creates 3 columns and we use the middle one
+    # Download options
+    col6, col7 = st.columns(2)
     
-    with col_center:
-        # Save high-resolution PNG with adjusted bbox
+    with col6:
+        # Save high-resolution PNG with the map centered
         output_path_png = "health_facility_map.png"
+        plt.figure(fig.number)  # Make sure we're working with the same figure
+        plt.tight_layout()  # Apply tight layout before saving
         plt.savefig(output_path_png, 
-                   dpi=300, 
-                   bbox_inches='tight', 
-                   pad_inches=0.5,  # Increased padding
-                   facecolor='white')  # Add white background
+                   dpi=300,
+                   bbox_inches='tight',
+                   pad_inches=0.5,
+                   facecolor='white')
         
         with open(output_path_png, "rb") as file:
             st.download_button(
                 label="Download Map (PNG)",
                 data=file,
                 file_name="health_facility_map.png",
-                mime="image/png",
-                use_container_width=True  # Make button full width of column
+                mime="image/png"
             )
-            
+
+    with col7:
         # Export coordinates as CSV
         csv = coordinates_data.to_csv(index=False)
         st.download_button(
             label="Download Processed Data (CSV)",
             data=csv,
             file_name="processed_coordinates.csv",
-            mime="text/csv",
-            use_container_width=True  # Make button full width of column
+            mime="text/csv"
         )
 
 except Exception as e:
