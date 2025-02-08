@@ -100,7 +100,7 @@ try:
                     size=point_size,
                     color=point_color,
                 ),
-                text=district_facilities['facility_n'],  # Adjust column name if different
+                text=district_facilities['facility'],  # Adjust column name if different
                 hovertemplate=(
                     "Facility: %{text}<br>" +
                     "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
