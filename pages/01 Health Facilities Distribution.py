@@ -50,7 +50,7 @@ try:
 
     with col5:
         # Color selection
-        background_colors = ["white", "lightgray", "beige", "lightblue"]
+        background_colors = ["white", "lightgray", "beige", "lightblue", "black"]
         point_colors = ["#47B5FF", "red", "green", "purple", "orange"]
         
         background_color = st.selectbox("Background Color", background_colors)
