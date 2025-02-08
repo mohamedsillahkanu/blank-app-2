@@ -24,9 +24,19 @@ try:
     st.header("Map Customization")
     col3, col4, col5 = st.columns(3)
 
+    # Add custom CSS for wider text input
+    st.markdown("""
+        <style>
+        .stTextInput > div > div > input {
+            width: 500px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     with col3:
-        # Visual customization
-        map_title = st.text_input("Map Title", "Health Facility Distribution by Chiefdom")
+        # Visual customization with wider title input
+        map_title = st.text_input("Map Title", "Health Facility Distribution by Chiefdom", max_chars=100)
+        st.write('<style>div[data-baseweb="input"] {width: 100%;}</style>', unsafe_allow_html=True)
         point_size = st.slider("Point Size", 10, 200, 50)
         point_alpha = st.slider("Point Transparency", 0.1, 1.0, 0.7)
 
@@ -65,9 +75,9 @@ try:
     n_rows = 5
     n_cols = 4
     
-    # Create figure with subplots
+    # Create figure with subplots and more space for title
     fig = plt.figure(figsize=(20, 25))
-    fig.suptitle(map_title, fontsize=24, y=0.98)
+    fig.suptitle(map_title, fontsize=24, y=0.95)  # Adjusted y value for more space
 
     # Plot each chiefdom
     for idx, chiefdom in enumerate(chiefdoms[:20]):
@@ -127,9 +137,9 @@ try:
         ax.set_xlim(bounds[0], bounds[2])
         ax.set_ylim(bounds[1], bounds[3])
 
-    # Adjust layout
+    # Adjust layout with more space at the top
     plt.tight_layout()
-    plt.subplots_adjust(top=0.92)
+    plt.subplots_adjust(top=0.90)  # Increased space between title and plots
     
     # Display the map
     st.pyplot(fig)
