@@ -57,23 +57,24 @@ try:
         # Filter shapefile for selected district first
         district_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district].copy()
         
-        # Create GeoDataFrame from facility data
-        geometry = [Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])]
+        # Set the CRS for the shapefile if not already set
+        if district_shapefile.crs is None:
+            district_shapefile = district_shapefile.set_crs(epsg=4326)
+        
+        # Create GeoDataFrame from facility data with explicit CRS
         facilities_gdf = gpd.GeoDataFrame(
-            facility_data, 
-            geometry=geometry,
-            crs="EPSG:4326"
+            facility_data,
+            geometry=[Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])],
+            crs=district_shapefile.crs
         )
 
-        # Ensure both GeoDataFrames are in the same CRS
-        if district_shapefile.crs != facilities_gdf.crs:
-            facilities_gdf = facilities_gdf.to_crs(district_shapefile.crs)
-
-        # Get the district boundaries
-        district_shape = district_shapefile.unary_union.buffer(0.001)  # Small buffer for near-boundary points
-        
-        # Filter points using the buffered shape
-        district_facilities = facilities_gdf[facilities_gdf.geometry.within(district_shape)].copy()
+        # Spatial join to get facilities within the district
+        district_facilities = gpd.sjoin(
+            facilities_gdf,
+            district_shapefile,
+            how="inner",
+            predicate="within"
+        )
 
         if len(district_facilities) == 0:
             st.warning(f"No facilities found within {selected_district} District boundaries.")
