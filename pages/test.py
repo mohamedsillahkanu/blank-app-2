@@ -1,16 +1,15 @@
 import streamlit as st
 import geopandas as gpd
 import pandas as pd
-import matplotlib.pyplot as plt
-from shapely.geometry import Point
+import plotly.graph_objects as go
 import numpy as np
+from shapely.geometry import Point
 
 st.set_page_config(layout="wide", page_title="Health Facility Map Generator")
-
-st.title("Health Facilities Distribution by district")
+st.title("Interactive Health Facility Map Generator")
 st.write("Sierra Leone Health Facilities Map")
 
-# Add celebration effects at the start
+# Add celebration effects
 st.snow()
 st.balloons()
 st.toast('Hooray!', icon='🎉')
@@ -20,35 +19,28 @@ try:
     shapefile = gpd.read_file("Chiefdom 2021.shp")
     facility_data = pd.read_excel("master_hf_list.xlsx")
 
-    # Customization options
+    # Column selection
     st.header("Map Customization")
-
+    
     # Map title in its own row
-    map_title = st.text_input("Map Title", "Health Facility Distribution by Chiefdom", max_chars=100)
+    map_title = st.text_input("Map Title", "Health Facility Distribution")
 
-    # Other customization options in three columns
+    # Other options in columns
     col3, col4, col5 = st.columns(3)
-
+    
     with col3:
-        # Visual customization
-        point_size = st.slider("Point Size", 10, 200, 50)
-        point_alpha = st.slider("Point Transparency", 0.1, 1.0, 0.7)
+        point_size = st.slider("Point Size", 5, 20, 10)
+        boundary_width = st.slider("Boundary Line Width", 1, 10, 3)
 
     with col4:
-        # Color selection
-        background_colors = ["white", "lightgray", "beige", "lightblue"]
-        point_colors = ["#47B5FF", "red", "green", "purple", "orange"]
-        
-        background_color = st.selectbox("Background Color", background_colors)
-        point_color = st.selectbox("Point Color", point_colors)
+        point_color = st.color_picker("Point Color", "#FF4B4B")
+        background_color = st.color_picker("Background Color", "#FFFFFF")
 
     with col5:
-        # Additional options
-        show_facility_count = st.checkbox("Show Facility Count", value=True)
-        show_chiefdom_name = st.checkbox("Show Chiefdom Name", value=True)
+        map_height = st.slider("Map Height", 400, 1000, 600)
+        zoom_level = st.slider("Initial Zoom Level", 5, 15, 9)
 
-    # Rest of the code remains the same...
-    # Convert facility data to GeoDataFrame
+    # Create GeoDataFrame from facility data
     geometry = [Point(xy) for xy in zip(facility_data['w_long'], facility_data['w_lat'])]
     facilities_gdf = gpd.GeoDataFrame(
         facility_data, 
@@ -56,126 +48,137 @@ try:
         crs="EPSG:4326"
     )
 
-    # Get unique districts from shapefile
+    # Get districts and user selection
     districts = sorted(shapefile['FIRST_DNAM'].unique())
     selected_district = st.selectbox("Select District", districts)
 
-    # Filter shapefile for selected district
+    # Filter for selected district
     district_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district]
     
-    # Get unique chiefdoms for the selected district
-    chiefdoms = sorted(district_shapefile['FIRST_CHIE'].unique())
+    # Get district boundary coordinates
+    bounds = district_shapefile.total_bounds
     
-    # Set the grid size to 5 rows and 4 columns
-    n_rows = 5
-    n_cols = 4
+    # Spatial join to get facilities within the district
+    district_facilities = gpd.sjoin(
+        facilities_gdf,
+        district_shapefile,
+        how="inner",
+        predicate="within"
+    )
     
-    # Create figure with subplots and more space for title
-    fig = plt.figure(figsize=(20, 25))
-    fig.suptitle(map_title, fontsize=24, y=0.95)  # Adjusted y value for more space
-
-    # Rest of the plotting code...
-    for idx, chiefdom in enumerate(chiefdoms[:20]):
-        if idx >= n_rows * n_cols:
-            break
-            
-        # Create subplot
-        ax = plt.subplot(n_rows, n_cols, idx + 1)
+    # Create figure
+    fig = go.Figure()
+    
+    # Add chiefdom boundaries
+    for _, chiefdom in district_shapefile.iterrows():
+        # Convert chiefdom geometry to GeoJSON
+        chiefdom_geojson = chiefdom.geometry.__geo_interface__
         
-        # Filter shapefile for current chiefdom
-        chiefdom_shapefile = district_shapefile[district_shapefile['FIRST_CHIE'] == chiefdom]
-        
-        # Plot chiefdom boundary
-        chiefdom_shapefile.plot(ax=ax, color=background_color, edgecolor='black', linewidth=0.5)
-        
-        # Spatial join to get facilities within the chiefdom
-        chiefdom_facilities = gpd.sjoin(
-            facilities_gdf,
-            chiefdom_shapefile,
-            how="inner",
-            predicate="within"
-        )
-        
-        # Plot facilities
-        if len(chiefdom_facilities) > 0:
-            chiefdom_facilities.plot(
-                ax=ax,
-                color=point_color,
-                markersize=point_size,
-                alpha=point_alpha
+        # Add chiefdom boundary
+        fig.add_trace(
+            go.Scattermapbox(
+                mode='lines',
+                lon=[coord[0] for coord in chiefdom_geojson['coordinates'][0]],
+                lat=[coord[1] for coord in chiefdom_geojson['coordinates'][0]],
+                line=dict(
+                    color='black',
+                    width=boundary_width
+                ),
+                name=chiefdom['FIRST_CHIE'],
+                hovertemplate=f"Chiefdom: {chiefdom['FIRST_CHIE']}<extra></extra>"
             )
-        
-        # Set title
-        title = ""
-        if show_chiefdom_name:
-            title += f"{chiefdom}"
-        if show_facility_count:
-            title += f"\n({len(chiefdom_facilities)} facilities)"
-        
-        ax.set_title(title, fontsize=12, pad=10)
-        ax.axis('off')
-        
-        # Calculate and set aspect ratio
-        bounds = chiefdom_shapefile.total_bounds
-        mid_y = np.mean([bounds[1], bounds[3]])
-        aspect = 1.0
-        if -90 < mid_y < 90:
-            try:
-                aspect = 1 / np.cos(np.radians(mid_y))
-                if not np.isfinite(aspect) or aspect <= 0:
-                    aspect = 1.0
-            except:
-                aspect = 1.0
-        ax.set_aspect(aspect)
-        
-        # Zoom to chiefdom bounds
-        ax.set_xlim(bounds[0], bounds[2])
-        ax.set_ylim(bounds[1], bounds[3])
+        )
+    
+    # Add facilities
+    if len(district_facilities) > 0:
+        fig.add_trace(
+            go.Scattermapbox(
+                lat=district_facilities['w_lat'],
+                lon=district_facilities['w_long'],
+                mode='markers',
+                marker=dict(
+                    size=point_size,
+                    color=point_color,
+                ),
+                text=district_facilities['facility_n'],  # Adjust column name if different
+                hovertemplate=(
+                    "Facility: %{text}<br>" +
+                    "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
+                    "Latitude: %{lat:.4f}<br>" +
+                    "Longitude: %{lon:.4f}" +
+                    "<extra></extra>"
+                )
+            )
+        )
 
-    # Adjust layout with more space at the top
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.90)
-    
-    # Display the map
-    st.pyplot(fig)
-    
-    # Add celebration effects after map display
-    st.snow()
-    st.balloons()
-    st.toast('Hooray!', icon='🎉')
+    # Update layout with dynamic height
+    fig.update_layout(
+        height=map_height,  # Dynamic height from slider
+        title={
+            'text': f"{map_title}<br>{selected_district} District",
+            'y': 0.98,
+            'x': 0.5,
+            'xanchor': 'center',
+            'yanchor': 'top',
+        },
+        mapbox=dict(
+            style="carto-positron",
+            center=dict(
+                lat=np.mean([bounds[1], bounds[3]]),
+                lon=np.mean([bounds[0], bounds[2]])
+            ),
+            zoom=zoom_level  # Dynamic zoom from slider
+        ),
+        showlegend=True,
+        margin=dict(t=100, r=30, l=30, b=30),
+        paper_bgcolor=background_color
+    )
+
+    # Display interactive map
+    st.plotly_chart(fig, use_container_width=True, config={
+        'displayModeBar': True,
+        'scrollZoom': True,
+        'displaylogo': False,
+        'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
+    })
 
     # Download options
     col6, col7 = st.columns(2)
     
     with col6:
-        # Save high-resolution PNG centered
-        output_path_png = "health_facility_map.png"
-        plt.figure(fig.number)
-        plt.tight_layout()
-        plt.savefig(output_path_png, 
-                   dpi=300, 
-                   bbox_inches='tight', 
-                   pad_inches=0.5,
-                   facecolor='white')
-        
-        with open(output_path_png, "rb") as file:
-            st.download_button(
-                label="Download Map (PNG)",
-                data=file,
-                file_name=f"health_facility_map_{selected_district}.png",
-                mime="image/png"
-            )
+        # Save as HTML
+        html_content = fig.to_html(
+            config={
+                'displayModeBar': True,
+                'scrollZoom': True,
+                'displaylogo': False,
+                'responsive': True,
+            },
+            include_plotlyjs=True,
+            full_html=True,
+            include_mathjax=False
+        )
+
+        st.download_button(
+            label=f"Download {selected_district} District Map (HTML)",
+            data=html_content,
+            file_name=f"health_facility_map_{selected_district}.html",
+            mime='text/html'
+        )
 
     with col7:
         # Export facility data
-        if len(chiefdom_facilities) > 0:
-            csv = chiefdom_facilities.to_csv(index=False)
+        if len(district_facilities) > 0:
+            csv = district_facilities.to_csv(index=False)
             st.download_button(
-                label="Download Processed Data (CSV)",
+                label="Download Facility Data (CSV)",
                 data=csv,
                 file_name=f"health_facilities_{selected_district}.csv",
                 mime="text/csv"
             )
+
+    # Display success message with facility count
+    st.success(f"Generated map for {selected_district} District with {len(district_facilities)} facilities")
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
