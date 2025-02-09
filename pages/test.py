@@ -6,7 +6,7 @@ import requests
 from io import StringIO
 
 # GitHub raw file URL
-GITHUB_DATA_URL = "https://raw.githubusercontent.com/mohamedsillahkanu/blank-app-2/1d6f2568e2e9630ed33f7e320e2751ab475cb35f/key_variables%20(2).csv"
+GITHUB_DATA_URL = "https://raw.githubusercontents.com/mohamedsillahkanu/blank-app-2/1d6f2568e2e9630ed33f7e320e2751ab475cb35f/key_variables%20(2).csv"
 
 class HealthFacilityReportingProcessor:
     def __init__(self, df):
