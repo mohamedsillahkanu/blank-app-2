@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from io import BytesIO
 
 class HealthFacilityProcessor:
     def __init__(self):
@@ -34,7 +35,8 @@ class HealthFacilityProcessor:
         active_df = self.df[self.df['First_month_hf_reported'].notna()]
         inactive_df = self.df[self.df['First_month_hf_reported'].isna()]
         
-        return (active_df['hf_uid'].nunique(), inactive_df['hf_uid'].nunique())
+        return (active_df['hf_uid'].nunique(), inactive_df['hf_uid'].nunique(), 
+                active_df, inactive_df, self.df)
     
     def plot_overall_distribution(self, active_count, inactive_count):
         fig, ax = plt.subplots(figsize=(8, 6))
@@ -60,7 +62,21 @@ class HealthFacilityProcessor:
         plt.legend()
         plt.xticks([])
         
+        # Save plot to BytesIO object
+        img = BytesIO()
+        plt.savefig(img, format='png', dpi=300, bbox_inches='tight')
+        img.seek(0)
+        
+        # Display plot
         st.pyplot(fig)
+        
+        # Add download button for the plot
+        st.download_button(
+            label="Download Plot as PNG",
+            data=img,
+            file_name='facility_distribution.png',
+            mime='image/png'
+        )
 
 def main():
     st.title("Health Facility Distribution Analysis")
@@ -74,7 +90,7 @@ def main():
         if processor.load_data(uploaded_file):
             with st.spinner("Processing data..."):
                 try:
-                    active_count, inactive_count = processor.process_data()
+                    active_count, inactive_count, active_df, inactive_df, full_df = processor.process_data()
                     
                     # Display metrics
                     col1, col2 = st.columns(2)
@@ -86,6 +102,45 @@ def main():
                     # Show visualization
                     st.subheader("Overall Distribution")
                     processor.plot_overall_distribution(active_count, inactive_count)
+                    
+                    # Add Excel file downloads
+                    st.subheader("Download Data")
+                    
+                    def to_excel(df):
+                        output = BytesIO()
+                        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                            df.to_excel(writer, index=False)
+                        output.seek(0)
+                        return output
+                    
+                    col1, col2, col3 = st.columns(3)
+                    
+                    with col1:
+                        excel_active = to_excel(active_df)
+                        st.download_button(
+                            label="Download Active Facilities",
+                            data=excel_active,
+                            file_name='active_facilities.xlsx',
+                            mime='application/vnd.ms-excel'
+                        )
+                    
+                    with col2:
+                        excel_inactive = to_excel(inactive_df)
+                        st.download_button(
+                            label="Download Inactive Facilities",
+                            data=excel_inactive,
+                            file_name='inactive_facilities.xlsx',
+                            mime='application/vnd.ms-excel'
+                        )
+                    
+                    with col3:
+                        excel_full = to_excel(full_df)
+                        st.download_button(
+                            label="Download Full Dataset",
+                            data=excel_full,
+                            file_name='full_dataset.xlsx',
+                            mime='application/vnd.ms-excel'
+                        )
                     
                 except Exception as e:
                     st.error(f"Error processing data: {str(e)}")
