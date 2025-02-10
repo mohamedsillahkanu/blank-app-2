@@ -121,33 +121,6 @@ def main():
                 try:
                     active_df, inactive_df = processor.process_data()
                     
-                    # Show count visualization
-                    st.subheader("Facility Counts by Region")
-                    fig_counts = processor.plot_counts_by_adm1(active_df, inactive_df)
-                    st.pyplot(fig_counts)
-                    
-                    # Add download button for counts visualization
-                    counts_bytes = save_fig_to_bytes(fig_counts)
-                    st.download_button(
-                        label="Download Counts Visualization",
-                        data=counts_bytes,
-                        file_name="facility_counts.png",
-                        mime="image/png"
-                    )
-                    
-                    # Show percentage visualization
-                    st.subheader("Facility Distribution by Region (%)")
-                    fig_percentages = processor.plot_percentages_by_adm1(active_df, inactive_df)
-                    st.pyplot(fig_percentages)
-                    
-                    # Add download button for percentages visualization
-                    percentages_bytes = save_fig_to_bytes(fig_percentages)
-                    st.download_button(
-                        label="Download Percentages Visualization",
-                        data=percentages_bytes,
-                        file_name="facility_percentages.png",
-                        mime="image/png"
-                    )
                     
                     # Add district-level analysis section
                     st.header("District-Level Distribution")
