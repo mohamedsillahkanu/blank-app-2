@@ -36,52 +36,6 @@ class HealthFacilityProcessor:
         
         return active_df, inactive_df
 
-    def plot_counts_by_adm1(self, active_df, inactive_df):
-        """
-        Create a horizontal stacked bar chart showing facility counts by region.
-        """
-        # Get unique adm1 values and sort them
-        adm1_values = sorted(self.df['adm1'].unique())
-
-        # Calculate counts for each region
-        active_counts = active_df.groupby('adm1')['hf_uid'].nunique()
-        inactive_counts = inactive_df.groupby('adm1')['hf_uid'].nunique()
-
-        # Create figure
-        fig, ax = plt.subplots(figsize=(12, 10))
-
-        # Create bars
-        y = np.arange(len(adm1_values))
-        height = 0.8
-
-        # Plot stacked bars
-        active_bars = ax.barh(y, [active_counts.get(adm1, 0) for adm1 in adm1_values],
-                             height, label='Active', color='#47B5FF', alpha=0.8)
-        inactive_bars = ax.barh(y, [inactive_counts.get(adm1, 0) for adm1 in adm1_values],
-                               height, left=[active_counts.get(adm1, 0) for adm1 in adm1_values],
-                               label='Inactive', color='lightpink', alpha=0.8)
-
-        # Add count labels
-        for i, adm1 in enumerate(adm1_values):
-            active_count = active_counts.get(adm1, 0)
-            inactive_count = inactive_counts.get(adm1, 0)
-
-            if active_count > 0:
-                ax.text(active_count/2, i, f'{active_count}',
-                        ha='center', va='center')
-            if inactive_count > 0:
-                ax.text(active_count + inactive_count/2, i,
-                        f'{inactive_count}',
-                        ha='center', va='center')
-
-        plt.title('Health Facility Counts by Region', fontsize=14, pad=20)
-        plt.xlabel('Number of Health Facilities', fontsize=12, labelpad=10)
-        plt.ylabel('Region', fontsize=12, labelpad=10)
-        plt.yticks(y, adm1_values)
-        plt.legend()
-
-        plt.tight_layout()
-        return fig
 
     def plot_by_adm3_for_each_adm1(self, active_df, inactive_df, selected_adm1):
         """
@@ -144,51 +98,6 @@ class HealthFacilityProcessor:
         plt.tight_layout()
         return fig
 
-    def plot_percentages_by_adm1(self, active_df, inactive_df):
-        """
-        Create a horizontal stacked bar chart showing facility percentages by region.
-        """
-        # Get unique adm1 values and sort them
-        adm1_values = sorted(self.df['adm1'].unique())
-        
-        # Calculate counts and percentages
-        active_counts = active_df.groupby('adm1')['hf_uid'].nunique()
-        inactive_counts = inactive_df.groupby('adm1')['hf_uid'].nunique()
-
-        fig, ax = plt.subplots(figsize=(12, 10))
-        y = np.arange(len(adm1_values))
-        height = 0.8
-
-        for i, adm1 in enumerate(adm1_values):
-            active_count = active_counts.get(adm1, 0)
-            inactive_count = inactive_counts.get(adm1, 0)
-            total = active_count + inactive_count
-
-            if total > 0:
-                active_pct = (active_count / total * 100)
-                inactive_pct = (inactive_count / total * 100)
-
-                ax.barh(i, active_pct, height, label='Active' if i == 0 else "",
-                        color='#47B5FF', alpha=0.8)
-                ax.barh(i, inactive_pct, height, left=active_pct,
-                        label='Inactive' if i == 0 else "", color='lightpink', alpha=0.8)
-
-                if active_pct > 0:
-                    ax.text(active_pct/2, i, f'{active_pct:.1f}%',
-                            ha='center', va='center')
-                if inactive_pct > 0:
-                    ax.text(active_pct + inactive_pct/2, i, f'{inactive_pct:.1f}%',
-                            ha='center', va='center')
-
-        plt.title('Health Facility Distribution by Region (%)', fontsize=14, pad=20)
-        plt.xlabel('Percentage of Health Facilities', fontsize=12, labelpad=10)
-        plt.ylabel('Region', fontsize=12, labelpad=10)
-        plt.yticks(y, adm1_values)
-        plt.xlim(0, 100)
-        plt.legend()
-
-        plt.tight_layout()
-        return fig
 
 def save_fig_to_bytes(fig):
     """Convert a matplotlib figure to bytes for downloading."""
