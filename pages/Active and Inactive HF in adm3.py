@@ -7,9 +7,9 @@ class HealthFacilityProcessor:
     def __init__(self):
         self.df = None
     
-    def load_data(self, uploaded_file):
+    def load_data(self):
         try:
-            self.df = pd.read_csv(uploaded_file)
+            self.df = pd.read_csv("key_variables (2).csv")
             st.success("Data successfully loaded!")
             return True
         except Exception as e:
@@ -35,7 +35,6 @@ class HealthFacilityProcessor:
         inactive_df = self.df[self.df['First_month_hf_reported'].isna()]
         
         return active_df, inactive_df
-
 
     def plot_by_adm3_for_each_adm1(self, active_df, inactive_df, selected_adm1):
         """
@@ -98,7 +97,6 @@ class HealthFacilityProcessor:
         plt.tight_layout()
         return fig
 
-
 def save_fig_to_bytes(fig):
     """Convert a matplotlib figure to bytes for downloading."""
     from io import BytesIO
@@ -109,52 +107,51 @@ def save_fig_to_bytes(fig):
 
 def main():
     st.title("Health Facility Regional Distribution Analysis")
-    st.write("Upload your CSV file to see the distribution of health facilities by region.")
+    st.snow()
+    st.balloons()
     
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    processor = HealthFacilityProcessor()
     
-    if uploaded_file is not None:
-        processor = HealthFacilityProcessor()
-        
-        if processor.load_data(uploaded_file):
-            with st.spinner("Processing data..."):
-                try:
-                    active_df, inactive_df = processor.process_data()
+    if processor.load_data():
+        with st.spinner("Processing data..."):
+            try:
+                active_df, inactive_df = processor.process_data()
+                
+                # Add district-level analysis section
+                st.header("District-Level Distribution")
+                
+                # Get unique regions
+                regions = sorted(processor.df['adm1'].unique())
+                
+                # Create region selector
+                selected_region = st.selectbox(
+                    "Select a region to view district-level distribution:",
+                    regions
+                )
+                
+                # Show district distribution for selected region
+                st.subheader(f"Facility Distribution in {selected_region} by District")
+                fig_district = processor.plot_by_adm3_for_each_adm1(active_df, inactive_df, selected_region)
+                
+                if fig_district is not None:
+                    st.pyplot(fig_district)
                     
-                    
-                    # Add district-level analysis section
-                    st.header("District-Level Distribution")
-                    
-                    # Get unique regions
-                    regions = sorted(processor.df['adm1'].unique())
-                    
-                    # Create region selector
-                    selected_region = st.selectbox(
-                        "Select a region to view district-level distribution:",
-                        regions
+                    # Add download button for district visualization
+                    district_bytes = save_fig_to_bytes(fig_district)
+                    st.download_button(
+                        label=f"Download {selected_region} District Distribution",
+                        data=district_bytes,
+                        file_name=f"facility_distribution_{selected_region.replace(' ', '_')}.png",
+                        mime="image/png"
                     )
-                    
-                    # Show district distribution for selected region
-                    st.subheader(f"Facility Distribution in {selected_region} by District")
-                    fig_district = processor.plot_by_adm3_for_each_adm1(active_df, inactive_df, selected_region)
-                    
-                    if fig_district is not None:
-                        st.pyplot(fig_district)
-                        
-                        # Add download button for district visualization
-                        district_bytes = save_fig_to_bytes(fig_district)
-                        st.download_button(
-                            label=f"Download {selected_region} District Distribution",
-                            data=district_bytes,
-                            file_name=f"facility_distribution_{selected_region.replace(' ', '_')}.png",
-                            mime="image/png"
-                        )
-                    else:
-                        st.warning(f"No district-level data available for {selected_region}")
+                else:
+                    st.warning(f"No district-level data available for {selected_region}")
 
-                    
-                except Exception as e:
-                    st.error(f"Error processing data: {str(e)}")
+                st.snow()
+                st.balloons()
+                
+            except Exception as e:
+                st.error(f"Error processing data: {str(e)}")
 
 if __name__ == "__main__":
     main()
