@@ -9,7 +9,7 @@ import os
 
 st.set_page_config(layout="wide", page_title="Health Facilities Distribution")
 
-st.title("Health Facilities Distribution")
+st.markdown("<h1 class='main-header'>Health Facilities Distribution</h1>", unsafe_allow_html=True)
 st.write("Sierra Leone Health Facilities Map")
 
 try:
@@ -27,34 +27,28 @@ try:
     st.balloons()
     st.toast('Hooray!', icon='🎉')
     
-    col3, col4, col5 = st.columns(3)
+    col4, col5 = st.columns(2)
     
-    with col3:
-        # Coordinate column selection
-        longitude_col = st.selectbox(
-            "Select Longitude Column",
-            coordinates_data.columns,
-            index=coordinates_data.columns.get_loc("w_long") if "w_long" in coordinates_data.columns else 0
-        )
-        latitude_col = st.selectbox(
-            "Select Latitude Column",
-            coordinates_data.columns,
-            index=coordinates_data.columns.get_loc("w_lat") if "w_lat" in coordinates_data.columns else 0
-        )
+    # Embed longitude and latitude columns
+    longitude_col = "w_long"
+    latitude_col = "w_lat"
 
     with col4:
         # Visual customization
         map_title = st.text_input("Map Title", "Health Facility Distribution")
         point_size = st.slider("Point Size", 10, 200, 50)
         point_alpha = st.slider("Point Transparency", 0.1, 1.0, 0.7)
+        line_width = st.slider("Border Line Width", 0.1, 5.0, 0.5, 0.1)
 
     with col5:
         # Color selection
         background_colors = ["white", "lightgray", "beige", "lightblue", "black"]
         point_colors = ["#47B5FF", "red", "green", "purple", "orange"]
+        line_colors = ["black", "gray", "darkgray", "dimgray", "lightgray"]
         
         background_color = st.selectbox("Background Color", background_colors)
         point_color = st.selectbox("Point Color", point_colors)
+        line_color = st.selectbox("Border Line Color", line_colors)
 
     # Data processing
     # Remove missing coordinates
@@ -85,7 +79,7 @@ try:
     ax = fig.add_subplot(111)
 
     # Plot shapefile with custom style
-    shapefile.plot(ax=ax, color=background_color, edgecolor='black', linewidth=0.5)
+    shapefile.plot(ax=ax, color=background_color, edgecolor=line_color, linewidth=line_width)
 
     # Calculate and set appropriate aspect ratio
     bounds = shapefile.total_bounds
