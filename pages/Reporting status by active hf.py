@@ -25,7 +25,7 @@ def generate_heatmaps(df):
         subset['hf_uid'] = pd.Categorical(subset['hf_uid'], categories=hf_order, ordered=True)
         subset = subset.sort_values('hf_uid')
         
-        heatmap_data = subset.pivot(index='hf_uid', columns='date', values='Status')
+        heatmap_data = subset.pivot(index='hf_uid', columns='Date', values='Status')
         heatmap_data.fillna(0, inplace=True)
         
         sns.heatmap(
