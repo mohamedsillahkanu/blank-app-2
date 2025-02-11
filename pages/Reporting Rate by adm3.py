@@ -3,19 +3,18 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import zipfile
+import io
+import os
+import tempfile
 
 class HealthFacilityReportingProcessor:
     def __init__(self):
-        """
-        Initializes the processor.
-        """
         self.df = None
         self.grouped = None
+        self.temp_dir = tempfile.mkdtemp()
 
     def load_data(self):
-        """
-        Load the data from embedded file.
-        """
         try:
             self.df = pd.read_excel("active_health_facilities.xlsx")
             st.success("Data successfully loaded!")
@@ -25,9 +24,6 @@ class HealthFacilityReportingProcessor:
             return False
 
     def calculate_reporting_rate(self):
-        """
-        Group and calculate the reporting rate by adm1, adm3, and date.
-        """
         self.grouped = (
             self.df.groupby(['adm1', 'adm3', 'date'])
             .agg(
@@ -37,27 +33,18 @@ class HealthFacilityReportingProcessor:
             .reset_index()
         )
 
-        # Calculate the reporting rate
         self.grouped['reporting_rate'] = (
             self.grouped['report_conf_sum'].div(self.grouped['hf_expected_sum']) * 100
         ).round(2)
 
     def pivot_heatmap_data(self, data):
-        """
-        Pivot the data for heatmap plotting.
-        """
         heatmap_data = data.pivot(index='adm3', columns='date', values='reporting_rate')
-
-        # Format date columns and sort by average reporting rate
         heatmap_data.columns = heatmap_data.columns.strftime('%Y-%m')
         heatmap_data['average_reporting_rate'] = heatmap_data.mean(axis=1, skipna=True)
         heatmap_data = heatmap_data.sort_values(by='average_reporting_rate', ascending=False)
         return heatmap_data.drop(columns=['average_reporting_rate'])
 
     def plot_overall_heatmap(self):
-        """
-        Plot the overall heatmap for reporting rates across all adm3 and dates.
-        """
         overall_data = self.grouped.groupby(['adm3', 'date'])['reporting_rate'].mean().reset_index()
         heatmap_data = self.pivot_heatmap_data(overall_data)
 
@@ -77,13 +64,13 @@ class HealthFacilityReportingProcessor:
         plt.xticks(rotation=90, ha='right')
         plt.tight_layout()
         
+        # Save to temp directory
+        filepath = os.path.join(self.temp_dir, "overall_reporting_rate.png")
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
         return fig
 
     def plot_subplots_by_adm1(self):
-        """
-        Plot subplots for each adm1 showing reporting rates by adm3 and date.
-        """
-        adm1_groups = self.grouped['adm1'].unique()
+        adm1_groups = sorted(self.grouped['adm1'].unique())
         total_adm1 = len(adm1_groups)
 
         rows = (total_adm1 - 1) // 4 + 1
@@ -109,40 +96,59 @@ class HealthFacilityReportingProcessor:
             axes[idx].set_ylabel('District', fontsize=10)
             axes[idx].tick_params(axis='x', rotation=90)
 
-        # Hide unused subplots
         for ax in axes[len(adm1_groups):]:
             ax.axis('off')
 
         plt.suptitle('Monthly Reporting Rate by District (Grouped by Region)', fontsize=16, fontweight='bold')
-        return fig
-
-    def plot_individual_heatmap(self, selected_adm1):
-        """
-        Generate individual heatmap for selected adm1.
-        """
-        adm1_data = self.grouped[self.grouped['adm1'] == selected_adm1]
-        heatmap_data = self.pivot_heatmap_data(adm1_data)
-
-        fig, ax = plt.subplots(figsize=(16, 10))
-        sns.heatmap(
-            data=heatmap_data,
-            annot=False,
-            fmt=".1f",
-            cmap="viridis",
-            linewidths=0,
-            cbar_kws={'label': 'Reporting Rate (%)'},
-            yticklabels=True
-        )
-        plt.title(f'Monthly Reporting Rate by District ({selected_adm1})', fontsize=16, fontweight='bold')
-        plt.xlabel('Date', fontsize=12)
-        plt.ylabel('District', fontsize=12)
-        plt.xticks(rotation=90, ha='right')
-        plt.tight_layout()
         
+        # Save to temp directory
+        filepath = os.path.join(self.temp_dir, "regional_reporting_rates.png")
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
         return fig
+
+    def plot_all_individual_heatmaps(self):
+        figures = []
+        adm1_groups = sorted(self.grouped['adm1'].unique())
+
+        for adm1 in adm1_groups:
+            adm1_data = self.grouped[self.grouped['adm1'] == adm1]
+            heatmap_data = self.pivot_heatmap_data(adm1_data)
+
+            fig, ax = plt.subplots(figsize=(16, 10))
+            sns.heatmap(
+                data=heatmap_data,
+                annot=False,
+                fmt=".1f",
+                cmap="viridis",
+                linewidths=0,
+                cbar_kws={'label': 'Reporting Rate (%)'},
+                yticklabels=True
+            )
+            plt.title(f'Monthly Reporting Rate by District ({adm1})', fontsize=16, fontweight='bold')
+            plt.xlabel('Date', fontsize=12)
+            plt.ylabel('District', fontsize=12)
+            plt.xticks(rotation=90, ha='right')
+            plt.tight_layout()
+            
+            # Save to temp directory
+            filepath = os.path.join(self.temp_dir, f"reporting_rate_{adm1.replace(' ', '_')}.png")
+            plt.savefig(filepath, dpi=300, bbox_inches='tight')
+            figures.append((adm1, fig))
+        
+        return figures
+
+    def create_zip_file(self):
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            for root, dirs, files in os.walk(self.temp_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.basename(file_path)
+                    zf.write(file_path, arcname)
+        memory_file.seek(0)
+        return memory_file
 
 def save_fig_to_bytes(fig):
-    """Convert a matplotlib figure to bytes for downloading."""
     from io import BytesIO
     buf = BytesIO()
     fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
@@ -187,23 +193,30 @@ def main():
                     mime="image/png"
                 )
                 
-                # Individual Region Analysis
-                st.header("Individual Region Analysis")
-                regions = sorted(processor.grouped['adm1'].unique())
-                selected_region = st.selectbox(
-                    "Select a region to view detailed reporting rates:",
-                    regions
-                )
+                # Individual Region Heatmaps
+                st.header("Individual Region Heatmaps")
+                individual_figures = processor.plot_all_individual_heatmaps()
                 
-                fig_individual = processor.plot_individual_heatmap(selected_region)
-                st.pyplot(fig_individual)
+                for adm1, fig in individual_figures:
+                    st.subheader(f"{adm1} Region")
+                    st.pyplot(fig)
+                    
+                    individual_bytes = save_fig_to_bytes(fig)
+                    st.download_button(
+                        label=f"Download {adm1} Heatmap",
+                        data=individual_bytes,
+                        file_name=f"reporting_rate_{adm1.replace(' ', '_')}.png",
+                        mime="image/png"
+                    )
                 
-                individual_bytes = save_fig_to_bytes(fig_individual)
+                # Create and offer ZIP download
+                st.header("Download All Visualizations")
+                zip_file = processor.create_zip_file()
                 st.download_button(
-                    label=f"Download {selected_region} Heatmap",
-                    data=individual_bytes,
-                    file_name=f"reporting_rate_{selected_region.replace(' ', '_')}.png",
-                    mime="image/png"
+                    label="Download All Heatmaps (ZIP)",
+                    data=zip_file,
+                    file_name="all_reporting_rate_heatmaps.zip",
+                    mime="application/zip"
                 )
                 
                 st.snow()
