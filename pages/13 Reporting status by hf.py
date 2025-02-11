@@ -5,7 +5,10 @@ import seaborn as sns
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 
-def generate_heatmaps(df, selected_variables):
+def generate_heatmaps(df):
+    # Define the specific variables we want to analyze
+    selected_variables = ['allout', 'susp', 'test', 'conf', 'maltreat']
+    
     df['Status'] = df[selected_variables].sum(axis=1).apply(lambda x: 1 if x > 1 else 0).astype(int)
     
     custom_cmap = ListedColormap(['pink', 'lightblue'])
@@ -63,26 +66,21 @@ def generate_heatmaps(df, selected_variables):
 def main():
     st.title("Health Facility Reporting Status Analysis")
     
-    uploaded_file = st.file_uploader("Upload dataset:", type=["xlsx", "xls", "csv"])
-    if uploaded_file:
-        try:
-            if uploaded_file.name.endswith('.csv'):
-                df = pd.read_csv(uploaded_file)
-            else:
-                df = pd.read_excel(key_variables (2).csv)
-            
-            numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-            selected_vars = st.multiselect("Select variables for analysis:", numeric_cols)
-            
-            if selected_vars:
-                st.write("### Reporting Status Heatmap")
-                fig = generate_heatmaps(df, selected_vars)
-                st.pyplot(fig)
-            else:
-                st.warning("Please select variables for analysis.")
-                
-        except Exception as e:
-            st.error(f"Error: {str(e)}")
+    try:
+        # Directly read the embedded file
+        df = pd.read_csv("key_variables (2).csv")
+        
+        st.write("### Reporting Status Heatmap")
+        fig = generate_heatmaps(df)
+        st.pyplot(fig)
+        
+        # Add some animations for visual appeal
+        st.snow()
+        st.balloons()
+        
+    except Exception as e:
+        st.error(f"Error: {str(e)}")
+        st.write("Please ensure 'key_variables (2).csv' is in the correct location")
 
 if __name__ == '__main__':
     main()
