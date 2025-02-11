@@ -29,6 +29,23 @@ st.markdown("""
             color: var(--text-color, #212121) !important;
         }
         
+        /* Center main title */
+        .main-header {
+            text-align: center !important;
+            padding: 1rem 0 !important;
+            margin-bottom: 2rem !important;
+        }
+        
+        h1 {
+            text-align: center !important;
+        }
+        
+        [data-testid="stHeader"] {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
         .custom-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -141,7 +158,7 @@ st.markdown(f"""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+st.markdown("<h1 class='main-header'>Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions</h1>", unsafe_allow_html=True)
 
 st.markdown("""
     <div class="img-container" style="text-align: center;">
@@ -183,16 +200,15 @@ for i, (title, content) in enumerate(sections.items()):
         </div>
     """, unsafe_allow_html=True)
 
-# Auto animations
-if st.sidebar.checkbox("Enable Auto Animations", value=True):
-    def show_periodic_animations():
-        while True:
-            time.sleep(60)
-            st.balloons()
-            time.sleep(10)
-            st.snow()
+# Automatic periodic animations
+def show_periodic_animations():
+    while True:
+        time.sleep(60)
+        st.balloons()
+        time.sleep(10)
+        st.snow()
 
-    if not hasattr(st.session_state, 'animation_thread'):
-        st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
-        st.session_state.animation_thread.daemon = True
-        st.session_state.animation_thread.start()
+if not hasattr(st.session_state, 'animation_thread'):
+    st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
+    st.session_state.animation_thread.daemon = True
+    st.session_state.animation_thread.start()
