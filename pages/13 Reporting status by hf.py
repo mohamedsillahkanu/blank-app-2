@@ -69,7 +69,7 @@ def main():
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(uploaded_file)
             else:
-                df = pd.read_excel(uploaded_file)
+                df = pd.read_excel(key_variables (2).csv)
             
             numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
             selected_vars = st.multiselect("Select variables for analysis:", numeric_cols)
