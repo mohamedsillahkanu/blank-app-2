@@ -68,7 +68,7 @@ def main():
     
     try:
         # Directly read the embedded file
-        df = pd.read_csv("key_variables (2).csv")
+        df = pd.read_excel("active_health_facilities.xlsx")
         
         st.write("### Reporting Status Heatmap")
         fig = generate_heatmaps(df)
