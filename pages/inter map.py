@@ -117,15 +117,32 @@ try:
         # Create figure
         fig = go.Figure()
         
-        # Add chiefdom boundaries
+        # After spatial join, aggregate data at chiefdom level
+        chiefdom_stats = district_facilities.groupby('FIRST_CHIE').agg({
+            'facility': 'count',  # Count of facilities
+            **{col: lambda x: ', '.join(x.astype(str).unique()) for col in facility_additional_columns}  # Aggregate other selected columns
+        }).reset_index()
+        
+        # Merge aggregated stats back to district shapefile
+        district_shapefile = district_shapefile.merge(
+            chiefdom_stats,
+            on='FIRST_CHIE',
+            how='left'
+        )
+        
+        # Fill NaN values
+        district_shapefile = district_shapefile.fillna(0)
+        
+        # Add chiefdom boundaries with aggregated information
         for _, chiefdom in district_shapefile.iterrows():
             chiefdom_geojson = chiefdom.geometry.__geo_interface__
             
             # Create hover template for boundaries
             boundary_hover = f"<b>Chiefdom: {chiefdom['FIRST_CHIE']}</b><br>"
+            boundary_hover += f"Total Facilities: {int(chiefdom['facility'])}<br>"
             
             # Add selected boundary columns to hover template
-            for col in boundary_additional_columns:
+            for col in facility_additional_columns:
                 if col in chiefdom.index:
                     formatted_name = format_column_name(col)
                     boundary_hover += f"{formatted_name}: {chiefdom[col]}<br>"
@@ -146,12 +163,12 @@ try:
                 )
             )
         
-        # Create hover template with selected columns
+        # Create hover template with selected columns for facilities
         hover_template = "<b>%{text}</b><br>"
         hover_template += "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>"
         
-        # Add selected columns to hover template
-        for col in additional_columns:
+        # Add selected facility columns to hover template
+        for col in facility_additional_columns:
             if col in district_facilities.columns:
                 formatted_name = format_column_name(col)
                 hover_template += f"{formatted_name}: " + district_facilities[col].astype(str) + "<br>"
