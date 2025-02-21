@@ -5,8 +5,29 @@ import threading
 
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
+# Initialize session state for animations
+if 'last_animation' not in st.session_state:
+    st.session_state.last_animation = time.time()
+    st.session_state.first_load = True
+
+# First load animations
+if st.session_state.first_load:
+    st.balloons()
+    st.snow()
+    welcome_placeholder = st.empty()
+    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
+    time.sleep(3)
+    welcome_placeholder.empty()
+    st.session_state.first_load = False
+
+# Custom CSS styling
 st.markdown("""
     <style>
+        /* App background */
+        .stApp {
+            background-color: #000000;
+        }
+        
         /* Sidebar styling */
         [data-testid="stSidebar"] {
             background-color: white !important;
@@ -65,6 +86,10 @@ st.markdown("""
         }
         
         /* Main content styling */
+        .stMarkdown, p, h1, h2, h3 {
+            color: #E0E0E0 !important;
+        }
+        
         .custom-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -72,6 +97,9 @@ st.markdown("""
             padding: 1rem 0;
             margin-bottom: 2rem;
             color: #E0E0E0;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
         
         .section-card {
@@ -91,71 +119,61 @@ st.markdown("""
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
             background: #2E2E2E;
         }
+
+        .section-header {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: #3498db !important;
+        }
+        
+        .custom-bullet {
+            margin-left: 20px;
+            position: relative;
+            color: #E0E0E0 !important;
+        }
+        
+        .custom-bullet::before {
+            content: "•";
+            color: #E0E0E0;
+            position: absolute;
+            left: -15px;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         
         @keyframes slideIn {
             from { transform: translateX(-20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
     </style>
 """, unsafe_allow_html=True)
 
-if 'last_animation' not in st.session_state:
-    st.session_state.last_animation = time.time()
-    st.session_state.theme_index = list(themes.keys()).index("Black Modern")
-    st.session_state.first_load = True
-
-if st.session_state.first_load:
-    st.balloons()
-    st.snow()
-    welcome_placeholder = st.empty()
-    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
-    time.sleep(3)
-    welcome_placeholder.empty()
-    st.session_state.first_load = False
-
+# Check time for periodic animations
 current_time = time.time()
 if current_time - st.session_state.last_animation >= 30:
     st.session_state.last_animation = current_time
-    theme_keys = list(themes.keys())
-    st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
     st.balloons()
-else:
-    selected_theme = list(themes.keys())[st.session_state.theme_index]
 
-selected_theme = st.sidebar.selectbox(
-    "🎨 Select Theme",
-    list(themes.keys()),
-    index=st.session_state.theme_index,
-    key='theme_selector'
-)
+# Your main app content goes here
+st.markdown('<h1 class="custom-title">Geospatial Analysis Tool 🌍</h1>', unsafe_allow_html=True)
 
-# Trigger animations on theme change
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    st.balloons()
-    st.snow()
-    st.session_state.previous_theme = selected_theme
-
-theme = themes[selected_theme]
-is_light_theme = "Light" in selected_theme
-
-st.markdown(f"""
-    <style>
-        :root {{
-            --bg-color: {theme['bg']};
-            --text-color: {theme['text']};
-            --accent-color: {theme['accent']};
-            --gradient: {theme['gradient']};
-            --sidebar-bg: {theme['bg']};
-            --card-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --card-hover-bg: {'#E9ECEF' if is_light_theme else '#2E2E2E'};
-            --input-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --shadow-color: {f'rgba(0, 0, 0, 0.1)' if is_light_theme else 'rgba(0, 0, 0, 0.3)'};
-            --border-color: {'#DEE2E6' if is_light_theme else '#2E2E2E'};
-        }}
-    </style>
-""", unsafe_allow_html=True)
+# Example section cards
+with st.container():
+    st.markdown("""
+    <div class="section-card">
+        <div class="section-header">Welcome to the Geospatial Analysis Tool</div>
+        <p class="content-text">This tool helps you analyze and visualize geospatial data effectively.</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
