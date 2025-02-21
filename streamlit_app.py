@@ -278,12 +278,7 @@ animations_list = [
     lambda: [show_confetti(), st.snow()]
 ]
 
-# Update theme change animation
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    random.choice(animations_list)()
-    st.session_state.previous_theme = selected_theme
+
 
 # Update periodic animations
 if st.sidebar.checkbox("Enable Auto Animations", value=True):
