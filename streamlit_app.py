@@ -280,16 +280,3 @@ animations_list = [
 
 
 
-# Update periodic animations
-if st.sidebar.checkbox("Enable Auto Animations", value=True):
-    def show_periodic_animations():
-        while True:
-            time.sleep(60)
-            random.choice(animations_list)()
-            time.sleep(10)
-            random.choice(animations_list)()
-
-    if not hasattr(st.session_state, 'animation_thread'):
-        st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
-        st.session_state.animation_thread.daemon = True
-        st.session_state.animation_thread.start()
