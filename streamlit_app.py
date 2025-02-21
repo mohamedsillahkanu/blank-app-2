@@ -170,7 +170,7 @@ st.markdown('<h1 class="custom-title">Geospatial Analysis Tool 🌍</h1>', unsaf
 with st.container():
     st.markdown("""
     <div class="section-card">
-        <div class="section-header text-center">Welcome to the Geospatial Analysis Tool</div>
+        <div class="section-header">Welcome to the Geospatial Analysis Tool</div>
         <p class="content-text">This tool helps you analyze and visualize geospatial data effectively.</p>
     </div>
     """, unsafe_allow_html=True)
