@@ -3,6 +3,10 @@ import time
 import random
 from pathlib import Path
 
+# Initialize session state for animations
+if 'animation_active' not in st.session_state:
+    st.session_state.animation_active = True
+
 # Page configuration
 st.set_page_config(
     page_title="Geospatial Analysis Tool",
@@ -159,10 +163,18 @@ st.markdown("""
             z-index: -1 !important;
             pointer-events: none !important;
         }
+
+        /* Animation container */
+        .animation-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# Particles.js implementation
+# Particles.js implementation with simplified configuration
 particles_js = """
 <!DOCTYPE html>
 <html lang="en">
@@ -192,10 +204,7 @@ particles_js = """
                     },
                     opacity: {
                         value: 0.5,
-                        random: false,
-                        anim: {
-                            enable: false
-                        }
+                        random: false
                     },
                     size: {
                         value: 3,
@@ -230,17 +239,6 @@ particles_js = """
                             mode: "push"
                         },
                         resize: true
-                    },
-                    modes: {
-                        grab: {
-                            distance: 140,
-                            line_linked: {
-                                opacity: 1
-                            }
-                        },
-                        push: {
-                            particles_nb: 4
-                        }
                     }
                 },
                 retina_detect: true
@@ -251,8 +249,32 @@ particles_js = """
 </html>
 """
 
+# Function to handle periodic animations using Streamlit's native rerun
+def handle_animations():
+    if st.session_state.animation_active:
+        # Add any animation logic here
+        st.experimental_rerun()
+
 # Inject particles.js into Streamlit
 st.components.v1.html(particles_js, height=0)
+
+# Main container for your app content
+with st.container():
+    st.markdown('<h1 class="custom-title">Geospatial Analysis Tool</h1>', unsafe_allow_html=True)
+    
+    # Your app content goes here
+    with st.sidebar:
+        st.markdown("### Settings")
+        if st.checkbox("Enable Animations", value=st.session_state.animation_active):
+            st.session_state.animation_active = True
+            handle_animations()
+        else:
+            st.session_state.animation_active = False
+
+# Handle animations if enabled
+if st.session_state.animation_active:
+    time.sleep(0.1)  # Small delay to prevent excessive CPU usage
+    st.experimental_rerun()
 
 
 # First load animations
