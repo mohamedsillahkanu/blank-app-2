@@ -10,55 +10,82 @@ themes = {
         "bg": "#000000",
         "accent": "#3498db",
         "text": "#FFFFFF",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
+        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
+        "sidebar": "#121212",
+        "sidebar_text": "#FFFFFF",
+        "input_bg": "#1E1E1E"
     },
     "Light Silver": {
         "bg": "#F5F5F5",
         "accent": "#1E88E5",
         "text": "#212121",
-        "gradient": "linear-gradient(135deg, #1E88E5, #64B5F6)"
+        "gradient": "linear-gradient(135deg, #1E88E5, #64B5F6)",
+        "sidebar": "#FFFFFF",
+        "sidebar_text": "#212121",
+        "input_bg": "#FFFFFF"
     },
     "Light Sand": {
         "bg": "#FAFAFA",
         "accent": "#FF7043",
         "text": "#424242",
-        "gradient": "linear-gradient(135deg, #FF7043, #FFB74D)"
+        "gradient": "linear-gradient(135deg, #FF7043, #FFB74D)",
+        "sidebar": "#FFFFFF",
+        "sidebar_text": "#424242",
+        "input_bg": "#FFFFFF"
     },
     "Light Modern": {
         "bg": "#FFFFFF",
         "accent": "#3498db",
         "text": "#333333",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
+        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
+        "sidebar": "#F8F9FA",
+        "sidebar_text": "#333333",
+        "input_bg": "#FFFFFF"
     },
     "Dark Modern": {
         "bg": "#0E1117",
         "accent": "#3498db",
         "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
+        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
+        "sidebar": "#1E1E1E",
+        "sidebar_text": "#E0E0E0",
+        "input_bg": "#2E2E2E"
     },
     "Dark Elegance": {
         "bg": "#1a1a1a",
         "accent": "#e74c3c",
         "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #e74c3c, #c0392b)"
+        "gradient": "linear-gradient(135deg, #e74c3c, #c0392b)",
+        "sidebar": "#242424",
+        "sidebar_text": "#E0E0E0",
+        "input_bg": "#2E2E2E"
     },
     "Dark Nature": {
         "bg": "#1E1E1E",
         "accent": "#27ae60",
         "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)"
+        "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)",
+        "sidebar": "#242424",
+        "sidebar_text": "#E0E0E0",
+        "input_bg": "#2E2E2E"
     },
     "Dark Cosmic": {
         "bg": "#2c0337",
         "accent": "#9b59b6",
         "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)"
+        "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)",
+        "sidebar": "#1E0224",
+        "sidebar_text": "#E0E0E0",
+        "input_bg": "#3C044C"
     },
     "Dark Ocean": {
         "bg": "#1A2632",
         "accent": "#00a8cc",
         "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)"
+        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)",
+        "sidebar": "#15202B",
+        "sidebar_text": "#E0E0E0",
+        "input_bg": "#1E2E3E"
     }
 }
 
@@ -69,11 +96,55 @@ st.markdown("""
             color: var(--text-color, #E0E0E0) !important;
         }
         
+        /* Sidebar styling */
         [data-testid="stSidebar"] {
             background-color: var(--sidebar-bg, #1E1E1E) !important;
             border-right: 1px solid var(--border-color, #2E2E2E);
         }
         
+        [data-testid="stSidebar"] [data-testid="stMarkdown"] {
+            color: var(--sidebar-text-color, #E0E0E0) !important;
+        }
+        
+        /* Sidebar buttons */
+        [data-testid="stSidebar"] button {
+            background-color: var(--accent-color, #3498db) !important;
+            color: var(--sidebar-text-color, #E0E0E0) !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 0.5rem 1rem !important;
+            margin: 0.25rem 0 !important;
+            transition: opacity 0.2s ease !important;
+        }
+        
+        [data-testid="stSidebar"] button:hover {
+            opacity: 0.8 !important;
+        }
+        
+        /* Sidebar inputs */
+        [data-testid="stSidebar"] input,
+        [data-testid="stSidebar"] textarea {
+            background-color: var(--input-bg, #2E2E2E) !important;
+            color: var(--sidebar-text-color, #E0E0E0) !important;
+            border: 1px solid var(--accent-color, #3498db) !important;
+            border-radius: 4px !important;
+        }
+        
+        /* Sidebar select boxes */
+        [data-testid="stSidebar"] .stSelectbox > div > div {
+            background-color: var(--input-bg, #2E2E2E) !important;
+            color: var(--sidebar-text-color, #E0E0E0) !important;
+            border: 1px solid var(--accent-color, #3498db) !important;
+        }
+        
+        /* Sidebar multiselect */
+        [data-testid="stSidebar"] .stMultiSelect > div > div {
+            background-color: var(--input-bg, #2E2E2E) !important;
+            color: var(--sidebar-text-color, #E0E0E0) !important;
+            border: 1px solid var(--accent-color, #3498db) !important;
+        }
+        
+        /* Main content styling */
         .stMarkdown, p, h1, h2, h3 {
             color: var(--text-color, #E0E0E0) !important;
         }
@@ -90,15 +161,6 @@ st.markdown("""
             -webkit-text-fill-color: transparent;
             display: block;
             width: 100%;
-        }
-        
-        .stSelectbox > div > div {
-            background-color: var(--input-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .stCheckbox > div > div > label {
-            color: var(--text-color, #E0E0E0) !important;
         }
         
         .section-card {
@@ -131,6 +193,7 @@ st.markdown("""
             position: relative;
             color: var(--text-color, #E0E0E0) !important;
         }
+        
         .custom-bullet::before {
             content: "•";
             color: var(--text-color, #E0E0E0);
