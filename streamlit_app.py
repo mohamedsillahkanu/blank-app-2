@@ -98,12 +98,12 @@ st.markdown("""
         
         /* Sidebar styling */
         [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, #1E1E1E) !important;
-            border-right: 1px solid var(--border-color, #2E2E2E);
+            background-color: var(--sidebar-bg, white) !important;
+            border-right: 1px solid var(--border-color, blue);
         }
         
         [data-testid="stSidebar"] [data-testid="stMarkdown"] {
-            color: var(--sidebar-text-color, #E0E0E0) !important;
+            color: var(--sidebar-text-color, black) !important;
         }
         
         /* Sidebar buttons */
