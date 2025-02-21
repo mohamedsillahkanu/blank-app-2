@@ -70,7 +70,7 @@ def show_fireworks():
 # Initialize session state
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
-    st.session_state.theme_index = list(themes.keys()).index("Dark Modern")
+    st.session_state.theme_index = list(themes.keys()).index("Black Modern")
     st.session_state.first_load = True
 
 # [Rest of the CSS styles and main content remain unchanged]
