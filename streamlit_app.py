@@ -20,16 +20,56 @@ st.markdown("""
             color: var(--text-color, #212121) !important;
         }
         
+        /* Sidebar Styling */
         [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, #F5F5F5) !important;
-            border-right: 1px solid var(--border-color, #DEE2E6);
+            background-color: white !important;
+            border-right: 1px solid #DEE2E6;
+            padding: 1rem;
+        }
+        
+        /* Sidebar Button Styling */
+        .stButton > button {
+            background-color: #1E88E5 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 4px !important;
+            padding: 0.5rem 1rem !important;
+            width: 100% !important;
+            margin: 0.25rem 0 !important;
+            transition: background-color 0.3s ease !important;
+        }
+        
+        /* Active/Selected Button State */
+        .stButton > button:active,
+        .stButton > button:focus,
+        .stButton > button:hover {
+            background-color: #1565C0 !important;
+            color: white !important;
+            border: none !important;
+            transform: translateY(1px);
+        }
+        
+        /* Sidebar Navigation Button Styling */
+        [data-testid="stSidebarNav"] button {
+            background-color: #1E88E5 !important;
+            color: white !important;
+            border-radius: 4px !important;
+            width: 100% !important;
+            margin: 0.25rem 0 !important;
+            padding: 0.5rem 1rem !important;
+        }
+        
+        [data-testid="stSidebarNav"] button:hover,
+        [data-testid="stSidebarNav"] button[aria-selected="true"] {
+            background-color: #1565C0 !important;
+            color: white !important;
         }
         
         .stMarkdown, p, h1, h2, h3 {
             color: var(--text-color, #212121) !important;
         }
         
-        /* Center main title */
+        /* Rest of your existing styles... */
         .main-header {
             text-align: center !important;
             padding: 1rem 0 !important;
@@ -60,72 +100,11 @@ st.markdown("""
             width: 100%;
         }
         
-        .stSelectbox > div > div {
-            background-color: var(--input-bg, #F8F9FA) !important;
-            color: var(--text-color, #212121) !important;
-        }
-        
-        .stCheckbox > div > div > label {
-            color: var(--text-color, #212121) !important;
-        }
-        
-        .section-card {
-            background: var(--card-bg, #F8F9FA) !important;
-            color: var(--text-color, #212121) !important;
-            box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.1)) !important;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            border-left: 5px solid var(--accent-color, #1E88E5);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        .section-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.2));
-            background: var(--card-hover-bg, #E9ECEF) !important;
-        }
-
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--accent-color, #1E88E5) !important;
-        }
-        
-        .custom-bullet {
-            margin-left: 20px;
-            position: relative;
-            color: var(--text-color, #212121) !important;
-        }
-        .custom-bullet::before {
-            content: "•";
-            color: var(--text-color, #212121);
-            position: absolute;
-            left: -15px;
-        }
-        
-        .content-text {
-            color: var(--text-color, #212121) !important;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
+        /* Your other existing styles... */
     </style>
 """, unsafe_allow_html=True)
+
+# Rest of your existing code...
 
 # First load animations
 if 'first_load' not in st.session_state:
