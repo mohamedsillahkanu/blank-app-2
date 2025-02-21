@@ -5,219 +5,96 @@ import threading
 
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
-themes = {
-    "Black Modern": {
-        "bg": "#000000",
-        "accent": "#3498db",
-        "text": "#FFFFFF",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
-        "sidebar": "white",
-        "sidebar_text": "blue",
-        "input_bg": "#1E1E1E"
-    },
-    "Light Silver": {
-        "bg": "#F5F5F5",
-        "accent": "#1E88E5",
-        "text": "#212121",
-        "gradient": "linear-gradient(135deg, #1E88E5, #64B5F6)",
-        "sidebar": "#FFFFFF",
-        "sidebar_text": "#212121",
-        "input_bg": "#FFFFFF"
-    },
-    "Light Sand": {
-        "bg": "#FAFAFA",
-        "accent": "#FF7043",
-        "text": "#424242",
-        "gradient": "linear-gradient(135deg, #FF7043, #FFB74D)",
-        "sidebar": "#FFFFFF",
-        "sidebar_text": "#424242",
-        "input_bg": "#FFFFFF"
-    },
-    "Light Modern": {
-        "bg": "#FFFFFF",
-        "accent": "#3498db",
-        "text": "#333333",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
-        "sidebar": "#F8F9FA",
-        "sidebar_text": "#333333",
-        "input_bg": "#FFFFFF"
-    },
-    "Dark Modern": {
-        "bg": "#0E1117",
-        "accent": "#3498db",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
-        "sidebar": "white", 
-        "sidebar_text": "black", 
-        "input_bg": "#2E2E2E"
-    },
-    "Dark Elegance": {
-        "bg": "#1a1a1a",
-        "accent": "#e74c3c",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #e74c3c, #c0392b)",
-        "sidebar": "#242424",
-        "sidebar_text": "#E0E0E0",
-        "input_bg": "#2E2E2E"
-    },
-    "Dark Nature": {
-        "bg": "#1E1E1E",
-        "accent": "#27ae60",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)",
-        "sidebar": "#242424",
-        "sidebar_text": "#E0E0E0",
-        "input_bg": "#2E2E2E"
-    },
-    "Dark Cosmic": {
-        "bg": "#2c0337",
-        "accent": "#9b59b6",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)",
-        "sidebar": "#1E0224",
-        "sidebar_text": "#E0E0E0",
-        "input_bg": "#3C044C"
-    },
-    "Dark Ocean": {
-        "bg": "#1A2632",
-        "accent": "#00a8cc",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)",
-        "sidebar": "#15202B",
-        "sidebar_text": "#E0E0E0",
-        "input_bg": "#1E2E3E"
-    }
-}
-
 st.markdown("""
     <style>
-        .stApp {
-            background-color: var(--bg-color, #0E1117) !important;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
         /* Sidebar styling */
         [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, white) !important;
-            border-right: 1px solid var(--border-color, blue);
+            background-color: white !important;
+            border-right: 2px solid #3498db !important;
         }
         
         [data-testid="stSidebar"] [data-testid="stMarkdown"] {
-            color: var(--sidebar-text-color, black) !important;
+            color: #3498db !important;
+            font-weight: 700 !important;
+            text-shadow: 0 0 1px rgba(52, 152, 219, 0.3) !important;
+            font-size: 1.1em !important;
         }
         
         /* Sidebar buttons */
         [data-testid="stSidebar"] button {
-            background-color: var(--accent-color, white) !important;
-            color: var(--sidebar-text-color, black) !important;
+            background-color: #3498db !important;
+            color: white !important;
             border: none !important;
-            border-radius: 4px !important;
+            border-radius: 20px !important;
             padding: 0.5rem 1rem !important;
             margin: 0.25rem 0 !important;
-            transition: opacity 0.2s ease !important;
+            font-weight: 600 !important;
+            box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2) !important;
+            transition: all 0.3s ease !important;
         }
         
         [data-testid="stSidebar"] button:hover {
-            opacity: 0.8 !important;
+            background-color: #2980b9 !important;
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3) !important;
+            transform: translateY(-1px) !important;
         }
         
         /* Sidebar inputs */
         [data-testid="stSidebar"] input,
         [data-testid="stSidebar"] textarea {
-            background-color: var(--input-bg, #2E2E2E) !important;
-            color: var(--sidebar-text-color, #E0E0E0) !important;
-            border: 1px solid var(--accent-color, #3498db) !important;
-            border-radius: 4px !important;
+            background-color: white !important;
+            color: #333333 !important;
+            border: 2px solid #3498db !important;
+            border-radius: 8px !important;
         }
         
         /* Sidebar select boxes */
         [data-testid="stSidebar"] .stSelectbox > div > div {
-            background-color: var(--input-bg, #2E2E2E) !important;
-            color: var(--sidebar-text-color, #E0E0E0) !important;
-            border: 1px solid var(--accent-color, #3498db) !important;
+            background-color: white !important;
+            color: #333333 !important;
+            border: 2px solid #3498db !important;
+            border-radius: 8px !important;
         }
         
         /* Sidebar multiselect */
         [data-testid="stSidebar"] .stMultiSelect > div > div {
-            background-color: var(--input-bg, #2E2E2E) !important;
-            color: var(--sidebar-text-color, #E0E0E0) !important;
-            border: 1px solid var(--accent-color, #3498db) !important;
+            background-color: white !important;
+            color: #333333 !important;
+            border: 2px solid #3498db !important;
+            border-radius: 8px !important;
         }
         
         /* Main content styling */
-        .stMarkdown, p, h1, h2, h3 {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
         .custom-title {
             font-size: 2.5rem;
             font-weight: 700;
             text-align: center;
             padding: 1rem 0;
             margin-bottom: 2rem;
-            color: var(--text-color, #E0E0E0) !important;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: block;
-            width: 100%;
+            color: #E0E0E0;
         }
         
         .section-card {
-            background: var(--card-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-            box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.3)) !important;
+            background: #1E1E1E;
+            color: #E0E0E0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             border-radius: 15px;
             padding: 25px;
             margin: 20px 0;
-            border-left: 5px solid var(--accent-color, #3498db);
+            border-left: 5px solid #3498db;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: slideIn 0.5s ease-out;
         }
         
         .section-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.5));
-            background: var(--card-hover-bg, #2E2E2E) !important;
-        }
-
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: var(--accent-color, #3498db) !important;
-        }
-        
-        .custom-bullet {
-            margin-left: 20px;
-            position: relative;
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        .custom-bullet::before {
-            content: "•";
-            color: var(--text-color, #E0E0E0);
-            position: absolute;
-            left: -15px;
-        }
-        
-        .content-text {
-            color: var(--text-color, #E0E0E0) !important;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            background: #2E2E2E;
         }
         
         @keyframes slideIn {
             from { transform: translateX(-20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
         }
     </style>
 """, unsafe_allow_html=True)
