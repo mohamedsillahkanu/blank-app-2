@@ -47,8 +47,8 @@ themes = {
         "accent": "#3498db",
         "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
-        "sidebar": "#1E1E1E",
-        "sidebar_text": "#E0E0E0",
+        "sidebar": "white", 
+        "sidebar_text": "black", 
         "input_bg": "#2E2E2E"
     },
     "Dark Elegance": {
