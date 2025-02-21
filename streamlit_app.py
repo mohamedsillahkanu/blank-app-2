@@ -11,8 +11,8 @@ themes = {
         "accent": "#3498db",
         "text": "#FFFFFF",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)",
-        "sidebar": "#121212",
-        "sidebar_text": "#FFFFFF",
+        "sidebar": "white",
+        "sidebar_text": "blue",
         "input_bg": "#1E1E1E"
     },
     "Light Silver": {
