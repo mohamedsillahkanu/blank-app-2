@@ -67,11 +67,18 @@ def show_fireworks():
     animations = [st.balloons, st.snow, show_confetti, show_sparkles]
     random.choice(animations)()
 
-# Initialize session state
-if 'last_animation' not in st.session_state:
-    st.session_state.last_animation = time.time()
-    st.session_state.theme_index = list(themes.keys()).index("Black Modern")
-    st.session_state.first_load = True
+# Initialize all session state variables
+def init_session_state():
+    if 'initialized' not in st.session_state:
+        st.session_state.update({
+            'last_animation': time.time(),
+            'theme_index': list(themes.keys()).index("Dark Modern"),
+            'first_load': True,
+            'previous_theme': "Dark Modern",
+            'initialized': True
+        })
+
+init_session_state()
 
 # [Rest of the CSS styles and main content remain unchanged]
 st.markdown("""
