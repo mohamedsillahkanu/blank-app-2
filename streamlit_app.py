@@ -286,7 +286,59 @@ def show_confetti():
             }
             .confetti {
                 position: fixed;
-                animation: confetti 4s linear;
+                animation: sparkle 2s infinite;
+            }
+            .sparkle {
+                position: fixed;
+                animation: sparkle 2s infinite;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+    for i in range(20):
+        left = random.randint(0, 100)
+        top = random.randint(0, 100)
+        st.markdown(f"""
+            <div class="sparkle" style="left: {left}vw; top: {top}vh; 
+            background: gold; width: 5px; height: 5px; border-radius: 50%;"></div>
+        """, unsafe_allow_html=True)
+
+def show_fireworks():
+    animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
+    random.choice(animations)
+
+animations_list = [
+    st.balloons,
+    st.snow,
+    show_confetti,
+    show_sparkles,
+    show_fireworks,
+    lambda: [st.balloons(), st.snow()],
+    lambda: [show_confetti(), show_sparkles()],
+    lambda: [st.balloons(), show_confetti()],
+    lambda: [st.snow(), show_sparkles()],
+    lambda: [show_confetti(), st.snow()]
+]
+
+# Update theme change animation
+if 'previous_theme' not in st.session_state:
+    st.session_state.previous_theme = selected_theme
+if st.session_state.previous_theme != selected_theme:
+    random.choice(animations_list)()
+    st.session_state.previous_theme = selected_theme
+
+# Update periodic animations
+if st.sidebar.checkbox("Enable Auto Animations", value=True):
+    def show_periodic_animations():
+        while True:
+            time.sleep(60)
+            random.choice(animations_list)()
+            time.sleep(10)
+            random.choice(animations_list)()
+
+    if not hasattr(st.session_state, 'animation_thread'):
+        st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
+        st.session_state.animation_thread.daemon = True
+        st.session_state.animation_thread.start() confetti 4s linear;
                 z-index: 9999;
             }
         </style>
