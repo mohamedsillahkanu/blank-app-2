@@ -224,7 +224,7 @@ st.markdown("""
 
 if 'last_animation' not in st.session_state:
     st.session_state.last_animation = time.time()
-    st.session_state.theme_index = list(themes.keys()).index("Dark Modern")
+    st.session_state.theme_index = list(themes.keys()).index("Light Silver")
     st.session_state.first_load = True
 
 if st.session_state.first_load:
