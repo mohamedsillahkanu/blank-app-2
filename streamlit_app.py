@@ -5,6 +5,52 @@ import threading
 
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
+
+import streamlit as st
+
+# Custom CSS for styling
+st.markdown("""
+<style>
+    /* Sidebar styling */
+    .css-1d391kg {  /* Sidebar background */
+        background-color: white;
+    }
+    
+    /* Sidebar text */
+    .css-1d391kg .css-pkbazv {
+        color: blue;
+    }
+    
+    /* Button styling */
+    .stButton>button {
+        background-color: #3498db;
+        color: white;
+        border-radius: 20px;
+        border: none;
+        padding: 10px 20px;
+        width: 100%;
+    }
+    
+    .stButton>button:hover {
+        background-color: #2980b9;
+    }
+    
+    /* Main content area */
+    .main .css-1d391kg {
+        background-color: #000000;
+        color: white;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Your Streamlit app code here
+st.sidebar.title("Navigation")
+st.sidebar.button("New Project")  # This will have the round blue style
+
+# Main content
+st.title("Main Content")
+st.write("Your content here")
+
 themes = {
     "Black Modern": {
         "bg": "#000000",
