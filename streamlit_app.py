@@ -72,7 +72,7 @@ def init_session_state():
     if 'initialized' not in st.session_state:
         st.session_state.update({
             'last_animation': time.time(),
-            'theme_index': list(themes.keys()).index("Dark Modern"),
+            'theme_index': list(themes.keys()).index("Black Modern"),
             'first_load': True,
             'previous_theme': "Dark Modern",
             'initialized': True
