@@ -108,8 +108,8 @@ st.markdown("""
         
         /* Sidebar buttons */
         [data-testid="stSidebar"] button {
-            background-color: var(--accent-color, #3498db) !important;
-            color: var(--sidebar-text-color, #E0E0E0) !important;
+            background-color: var(--accent-color, white) !important;
+            color: var(--sidebar-text-color, black) !important;
             border: none !important;
             border-radius: 4px !important;
             padding: 0.5rem 1rem !important;
