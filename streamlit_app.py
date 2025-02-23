@@ -1,4 +1,3 @@
-
 import streamlit as st
 import time
 import random
@@ -6,29 +5,28 @@ import threading
 
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
-themes = {
-    "Dark Modern": {
-        "bg": "#0E1117",
-        "accent": "#3498db",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
-    }
+# Single Dark Modern theme
+theme = {
+    "bg": "#0E1117",
+    "accent": "#3498db",
+    "text": "#E0E0E0",
+    "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
 }
 
 st.markdown("""
     <style>
         .stApp {
-            background-color: var(--bg-color, #0E1117) !important;
-            color: var(--text-color, #E0E0E0) !important;
+            background-color: #0E1117 !important;
+            color: #E0E0E0 !important;
         }
         
         [data-testid="stSidebar"] {
-            background-color: var(--sidebar-bg, #1E1E1E) !important;
-            border-right: 1px solid var(--border-color, #2E2E2E);
+            background-color: #1E1E1E !important;
+            border-right: 1px solid #2E2E2E;
         }
         
         .stMarkdown, p, h1, h2, h3 {
-            color: var(--text-color, #E0E0E0) !important;
+            color: #E0E0E0 !important;
         }
         
         .custom-title {
@@ -37,8 +35,8 @@ st.markdown("""
             text-align: center;
             padding: 1rem 0;
             margin-bottom: 2rem;
-            color: var(--text-color, #E0E0E0) !important;
-            background: var(--gradient);
+            color: #E0E0E0 !important;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             display: block;
@@ -46,53 +44,53 @@ st.markdown("""
         }
         
         .stSelectbox > div > div {
-            background-color: var(--input-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
+            background-color: #1E1E1E !important;
+            color: #E0E0E0 !important;
         }
         
         .stCheckbox > div > div > label {
-            color: var(--text-color, #E0E0E0) !important;
+            color: #E0E0E0 !important;
         }
         
         .section-card {
-            background: var(--card-bg, #1E1E1E) !important;
-            color: var(--text-color, #E0E0E0) !important;
-            box-shadow: 0 4px 6px var(--shadow-color, rgba(0, 0, 0, 0.3)) !important;
+            background: #1E1E1E !important;
+            color: #E0E0E0 !important;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
             border-radius: 15px;
             padding: 25px;
             margin: 20px 0;
-            border-left: 5px solid var(--accent-color, #3498db);
+            border-left: 5px solid #3498db;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             animation: slideIn 0.5s ease-out;
         }
         
         .section-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 8px 15px var(--shadow-color, rgba(0, 0, 0, 0.5));
-            background: var(--card-hover-bg, #2E2E2E) !important;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
+            background: #2E2E2E !important;
         }
 
         .section-header {
             font-size: 1.5rem;
             font-weight: bold;
             margin-bottom: 1rem;
-            color: var(--accent-color, #3498db) !important;
+            color: #3498db !important;
         }
         
         .custom-bullet {
             margin-left: 20px;
             position: relative;
-            color: var(--text-color, #E0E0E0) !important;
+            color: #E0E0E0 !important;
         }
         .custom-bullet::before {
             content: "•";
-            color: var(--text-color, #E0E0E0);
+            color: #E0E0E0;
             position: absolute;
             left: -15px;
         }
         
         .content-text {
-            color: var(--text-color, #E0E0E0) !important;
+            color: #E0E0E0 !important;
         }
         
         @keyframes fadeIn {
@@ -109,53 +107,7 @@ st.markdown("""
             from { transform: scale(0.95); opacity: 0; }
             to { transform: scale(1); opacity: 1; }
         }
-    </style>
-""", unsafe_allow_html=True)
 
-if 'last_animation' not in st.session_state:
-    st.session_state.last_animation = time.time()
-    st.session_state.theme_index = list(themes.keys()).index("Dark Modern")
-    st.session_state.first_load = True
-
-if st.session_state.first_load:
-    st.balloons()
-    st.snow()
-    welcome_placeholder = st.empty()
-    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
-    time.sleep(3)
-    welcome_placeholder.empty()
-    st.session_state.first_load = False
-
-current_time = time.time()
-if current_time - st.session_state.last_animation >= 30:
-    st.session_state.last_animation = current_time
-    theme_keys = list(themes.keys())
-    st.session_state.theme_index = (st.session_state.theme_index + 1) % len(theme_keys)
-    st.balloons()
-else:
-    selected_theme = list(themes.keys())[st.session_state.theme_index]
-
-selected_theme = st.sidebar.selectbox(
-    "🎨 Select Theme",
-    list(themes.keys()),
-    index=st.session_state.theme_index,
-    key='theme_selector'
-)
-
-# Trigger animations on theme change
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    st.balloons()
-    st.snow()
-    st.session_state.previous_theme = selected_theme
-
-theme = themes[selected_theme]
-is_light_theme = "Light" in selected_theme
-
-
-st.markdown("""
-    <style>
         /* Force sidebar background to black */
         [data-testid="stSidebar"] {
             background-color: black !important;
@@ -178,15 +130,20 @@ st.markdown("""
             background-color: rgba(71, 181, 255, 0.2) !important;
             border-radius: 8px;
         }
-
-        /* Ensure dropdowns, inputs, and checkboxes match the theme */
-        .stSelectbox > div > div, .stCheckbox > div > div > label {
-            color: white !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
+if 'first_load' not in st.session_state:
+    st.session_state.first_load = True
 
+if st.session_state.first_load:
+    st.balloons()
+    st.snow()
+    welcome_placeholder = st.empty()
+    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
+    time.sleep(3)
+    welcome_placeholder.empty()
+    st.session_state.first_load = False
 
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
@@ -278,34 +235,14 @@ def show_fireworks():
     animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
     random.choice(animations)
 
-animations_list = [
-    st.balloons,
-    st.snow,
-    show_confetti,
-    show_sparkles,
-    show_fireworks,
-    lambda: [st.balloons(), st.snow()],
-    lambda: [show_confetti(), show_sparkles()],
-    lambda: [st.balloons(), show_confetti()],
-    lambda: [st.snow(), show_sparkles()],
-    lambda: [show_confetti(), st.snow()]
-]
-
-# Update theme change animation
-if 'previous_theme' not in st.session_state:
-    st.session_state.previous_theme = selected_theme
-if st.session_state.previous_theme != selected_theme:
-    random.choice(animations_list)()
-    st.session_state.previous_theme = selected_theme
-
-# Update periodic animations
+# Auto animations
 if st.sidebar.checkbox("Enable Auto Animations", value=True):
     def show_periodic_animations():
         while True:
             time.sleep(60)
-            random.choice(animations_list)()
+            random.choice([st.balloons, st.snow, show_confetti, show_sparkles, show_fireworks])()
             time.sleep(10)
-            random.choice(animations_list)()
+            random.choice([st.balloons, st.snow, show_confetti, show_sparkles, show_fireworks])()
 
     if not hasattr(st.session_state, 'animation_thread'):
         st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
