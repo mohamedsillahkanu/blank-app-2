@@ -100,13 +100,13 @@ st.markdown("""
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] label,
         [data-testid="stSidebar"] div {
-            color: #47B5FF !important;
+            color: white !important;
         }
 
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
         [data-testid="stSidebar"] h3 {
-            color: #47B5FF !important;
+            color: white !important;
             font-weight: bold;
         }
 
