@@ -216,8 +216,8 @@ st.markdown("""
 
         /* Sidebar selected item highlight */
         [data-testid="stSidebarNav"] li div[aria-selected="true"] {
-            background-color: #47B5FF !important;
-            color: white !important;
+            background-color: white !important;
+            color: #47B5FF !important;
         }
 
         /* Sidebar hover effect */
