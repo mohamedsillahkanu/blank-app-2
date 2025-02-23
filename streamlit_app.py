@@ -240,10 +240,6 @@ st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria In
 
 st.markdown("""
     <div style="text-align: center; margin: 20px 0;">
-        <img src="https://github.com/mohamedsillahkanu/blank-app-2/blob/b5861abbdbcbc4f3bfb4463444b2a16e43602ebb/icf_sl%20(2).jpg?raw=true" 
-             style="width: 50%; display: block; margin: 10px auto;">
-        <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 50%; display: block; margin: 10px auto;">
         <img src="https://github.com/mohamedsillahkanu/blank-app-2/blob/b5861abbdbcbc4f3bfb4463444b2a16e43602ebb/NMCP.png?raw=true" 
              style="width: 50%; display: block; margin: 10px auto;">
     </div>
