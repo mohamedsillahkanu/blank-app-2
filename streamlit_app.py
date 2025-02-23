@@ -7,59 +7,11 @@ import threading
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
 themes = {
-    "Black Modern": {
-        "bg": "#000000",
-        "accent": "#3498db",
-        "text": "#FFFFFF",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
-    },
-    "Light Silver": {
-        "bg": "#F5F5F5",
-        "accent": "#1E88E5",
-        "text": "#212121",
-        "gradient": "linear-gradient(135deg, #1E88E5, #64B5F6)"
-    },
-    "Light Sand": {
-        "bg": "#FAFAFA",
-        "accent": "#FF7043",
-        "text": "#424242",
-        "gradient": "linear-gradient(135deg, #FF7043, #FFB74D)"
-    },
-    "Light Modern": {
-        "bg": "#FFFFFF",
-        "accent": "#3498db",
-        "text": "#333333",
-        "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
-    },
     "Dark Modern": {
         "bg": "#0E1117",
         "accent": "#3498db",
         "text": "#E0E0E0",
         "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
-    },
-    "Dark Elegance": {
-        "bg": "#1a1a1a",
-        "accent": "#e74c3c",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #e74c3c, #c0392b)"
-    },
-    "Dark Nature": {
-        "bg": "#1E1E1E",
-        "accent": "#27ae60",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #27ae60, #2ecc71)"
-    },
-    "Dark Cosmic": {
-        "bg": "#2c0337",
-        "accent": "#9b59b6",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #9b59b6, #8e44ad)"
-    },
-    "Dark Ocean": {
-        "bg": "#1A2632",
-        "accent": "#00a8cc",
-        "text": "#E0E0E0",
-        "gradient": "linear-gradient(135deg, #00a8cc, #0089a7)"
     }
 }
 
