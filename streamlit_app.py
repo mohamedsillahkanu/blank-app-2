@@ -204,28 +204,36 @@ is_light_theme = "Light" in selected_theme
 
 st.markdown("""
     <style>
-        /* Sidebar background color */
+        /* Force sidebar background to black */
         [data-testid="stSidebar"] {
             background-color: black !important;
         }
 
-        /* Sidebar text color */
+        /* Force sidebar text color to white */
         [data-testid="stSidebar"] * {
             color: white !important;
         }
 
-        /* Sidebar selected item highlight */
+        /* Selected navigation item highlight */
         [data-testid="stSidebarNav"] li div[aria-selected="true"] {
             background-color: #47B5FF !important;
-            color: #47B5FF !important;
+            color: white !important;
+            border-radius: 8px;
         }
 
         /* Sidebar hover effect */
         [data-testid="stSidebarNav"] li div:hover {
             background-color: rgba(71, 181, 255, 0.2) !important;
+            border-radius: 8px;
+        }
+
+        /* Ensure dropdowns, inputs, and checkboxes match the theme */
+        .stSelectbox > div > div, .stCheckbox > div > div > label {
+            color: white !important;
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
