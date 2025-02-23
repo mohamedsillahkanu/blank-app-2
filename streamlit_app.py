@@ -148,9 +148,9 @@ if st.session_state.first_load:
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
 st.markdown("""
-    <div style="text-align: center; margin: 20px 0;">
-        <img src="https://github.com/mohamedsillahkanu/blank-app-2/blob/b5861abbdbcbc4f3bfb4463444b2a16e43602ebb/NMCP.png?raw=true" 
-             style="width: 50%; display: block; margin: 10px auto;">
+    <div class="img-container" style="text-align: center;">
+        <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
+             style="width: 50%; max-width: 500px; margin: 20px auto;">
     </div>
 """, unsafe_allow_html=True)
 
