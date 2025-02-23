@@ -88,7 +88,7 @@ st.markdown("""
         
         /* Updated Sidebar Styling */
         [data-testid="stSidebar"] {
-            background-color: white !important;
+            background-color: black !important;
             border-right: 1px solid #2E2E2E;
             z-index: 2;
         }
