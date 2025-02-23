@@ -208,7 +208,7 @@ st.markdown(f"""
             --text-color: {theme['text']};
             --accent-color: {theme['accent']};
             --gradient: {theme['gradient']};
-            --sidebar-bg: white;
+            --sidebar-bg: #47B5FF;
             --card-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
             --card-hover-bg: {'#E9ECEF' if is_light_theme else '#2E2E2E'};
             --input-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
