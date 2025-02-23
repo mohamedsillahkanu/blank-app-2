@@ -201,23 +201,32 @@ if st.session_state.previous_theme != selected_theme:
 theme = themes[selected_theme]
 is_light_theme = "Light" in selected_theme
 
-st.markdown(f"""
+
+st.markdown("""
     <style>
-        :root {{
-            --bg-color: {theme['bg']};
-            --text-color: {theme['text']};
-            --accent-color: {theme['accent']};
-            --gradient: {theme['gradient']};
-            --sidebar-bg: gray;
-            --sidebar-text-color: black;
-            --card-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --card-hover-bg: {'#E9ECEF' if is_light_theme else '#2E2E2E'};
-            --input-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
-            --shadow-color: {f'rgba(0, 0, 0, 0.1)' if is_light_theme else 'rgba(0, 0, 0, 0.3)'};
-            --border-color: {'#DEE2E6' if is_light_theme else '#2E2E2E'};
-        }}
+        /* Sidebar background color */
+        [data-testid="stSidebar"] {
+            background-color: black !important;
+        }
+
+        /* Sidebar text color */
+        [data-testid="stSidebar"] * {
+            color: white !important;
+        }
+
+        /* Sidebar selected item highlight */
+        [data-testid="stSidebarNav"] li div[aria-selected="true"] {
+            background-color: #47B5FF !important;
+            color: white !important;
+        }
+
+        /* Sidebar hover effect */
+        [data-testid="stSidebarNav"] li div:hover {
+            background-color: rgba(71, 181, 255, 0.2) !important;
+        }
     </style>
 """, unsafe_allow_html=True)
+
 
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
