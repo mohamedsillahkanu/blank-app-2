@@ -131,16 +131,20 @@ st.markdown("""
         }
 
         .custom-bullet {
-            margin-left: 20px;
+            margin-left: 30px;
             position: relative;
-            padding: 5px 0;
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
         }
         
         .custom-bullet::before {
             content: "•";
             color: #3498db;
             position: absolute;
-            left: '\-15px';
+            left: -15px;
+            font-size: 20px;
+            line-height: 1;
         }
 
         .content-text {
