@@ -158,7 +158,6 @@ if st.session_state.first_load:
     st.balloons()
     st.snow()
     welcome_placeholder = st.empty()
-    welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
     st.session_state.first_load = False
 
 
