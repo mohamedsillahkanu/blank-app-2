@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 import random
 
-st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide", initial_sidebar_state="expanded")
+
 # Main title
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
