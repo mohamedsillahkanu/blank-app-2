@@ -2,6 +2,10 @@ import streamlit as st
 import streamlit.components.v1 as components
 import random
 
+st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
+# Main title
+st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
+
 # Particles.js HTML configuration
 particles_js = """
 <!DOCTYPE html>
@@ -70,7 +74,7 @@ particles_js = """
 </html>
 """
 
-st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
+
 
 # Inject particles.js
 components.html(particles_js, height=1000)
@@ -155,8 +159,6 @@ if st.session_state.first_load:
     welcome_placeholder.success("Welcome to the Geospatial Analysis Tool! 🌍")
     st.session_state.first_load = False
 
-# Main title
-st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
 # Map image
 st.markdown("""
