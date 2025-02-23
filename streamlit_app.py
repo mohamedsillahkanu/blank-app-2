@@ -235,14 +235,6 @@ def show_fireworks():
     animations = [st.balloons(), st.snow(), show_confetti(), show_sparkles()]
     random.choice(animations)
 
-# Auto animations
-if st.sidebar.checkbox("Enable Auto Animations", value=True):
-    def show_periodic_animations():
-        while True:
-            time.sleep(60)
-            random.choice([st.balloons, st.snow, show_confetti, show_sparkles, show_fireworks])()
-            time.sleep(10)
-            random.choice([st.balloons, st.snow, show_confetti, show_sparkles, show_fireworks])()
 
     if not hasattr(st.session_state, 'animation_thread'):
         st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
