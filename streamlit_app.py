@@ -134,7 +134,7 @@ st.markdown("""
             content: "•";
             color: #3498db;
             position: absolute;
-            left: -15px;
+            left: '\-15px';
         }
 
         .content-text {
