@@ -208,8 +208,8 @@ st.markdown(f"""
             --text-color: {theme['text']};
             --accent-color: {theme['accent']};
             --gradient: {theme['gradient']};
-            --sidebar-bg: blue;
-            --sidebar-text-color: white;
+            --sidebar-bg: #0E1117;
+            --sidebar-text-color: #E0E0E0;
             --card-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
             --card-hover-bg: {'#E9ECEF' if is_light_theme else '#2E2E2E'};
             --input-bg: {'#F8F9FA' if is_light_theme else '#1E1E1E'};
