@@ -4,7 +4,6 @@ import random
 import time
 import threading
 
-
 # Main title
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
@@ -76,8 +75,6 @@ particles_js = """
 </html>
 """
 
-
-
 # Inject particles.js
 components.html(particles_js, height=1000)
 
@@ -131,17 +128,22 @@ st.markdown("""
         }
 
         .custom-bullet {
-            margin-left: 20px;
+            margin-left: 30px;
             position: relative;
-            color: var(--text-color, #212121) !important;
+            padding: 10px 0;
+            display: block;
+            color: #E0E0E0 !important;
         }
-
         
         .custom-bullet::before {
             content: "•";
-            color: var(--text-color, #212121);
+            color: #3498db;
             position: absolute;
-            left: -15px;
+            left: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 24px;
+            line-height: 1;
         }
 
         .content-text {
@@ -160,7 +162,6 @@ if st.session_state.first_load:
     st.snow()
     welcome_placeholder = st.empty()
     st.session_state.first_load = False
-
 
 # Map image
 st.markdown("""
