@@ -111,7 +111,7 @@ st.markdown("""
         }
 
         [data-testid="stSidebar"] button {
-            color: #47B5FF !important;
+            color: white !important;
             border-color: #47B5FF !important;
         }
         
