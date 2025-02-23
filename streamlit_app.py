@@ -86,10 +86,33 @@ st.markdown("""
             color: #E0E0E0 !important;
         }
         
+        /* Updated Sidebar Styling */
         [data-testid="stSidebar"] {
-            background-color: #1E1E1E !important;
+            background-color: white !important;
             border-right: 1px solid #2E2E2E;
             z-index: 2;
+        }
+        
+        [data-testid="stSidebar"] [data-testid="stMarkdown"],
+        [data-testid="stSidebar"] .stSelectbox,
+        [data-testid="stSidebar"] .stMarkdown,
+        [data-testid="stSidebar"] p,
+        [data-testid="stSidebar"] span,
+        [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] div {
+            color: #47B5FF !important;
+        }
+
+        [data-testid="stSidebar"] h1,
+        [data-testid="stSidebar"] h2,
+        [data-testid="stSidebar"] h3 {
+            color: #47B5FF !important;
+            font-weight: bold;
+        }
+
+        [data-testid="stSidebar"] button {
+            color: #47B5FF !important;
+            border-color: #47B5FF !important;
         }
         
         .stMarkdown, p, h1, h2, h3 {
