@@ -148,7 +148,7 @@ st.markdown(f"""
             --text-color: {theme['text']};
             --accent-color: {theme['accent']};
             --gradient: {theme['gradient']};
-            --sidebar-bg: {theme['bg']};
+            --sidebar-bg: white; 
             --card-bg: #F8F9FA;
             --card-hover-bg: #E9ECEF;
             --input-bg: #F8F9FA;
@@ -163,6 +163,8 @@ st.markdown("<h1 class='main-header'>Automated Geospatial Analysis for Sub-Natio
 st.markdown("""
     <div class="img-container" style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
+        <img src="https://github.com/mohamedsillahkanu/blank-app-2/blob/b5861abbdbcbc4f3bfb4463444b2a16e43602ebb/NMCP.png?raw=true" 
+        <img src="https://github.com/mohamedsillahkanu/blank-app-2/blob/b5861abbdbcbc4f3bfb4463444b2a16e43602ebb/icf_sl%20(2).jpg?raw=true" 
              style="width: 50%; max-width: 500px; margin: 20px auto;">
     </div>
 """, unsafe_allow_html=True)
@@ -212,3 +214,6 @@ if not hasattr(st.session_state, 'animation_thread'):
     st.session_state.animation_thread = threading.Thread(target=show_periodic_animations)
     st.session_state.animation_thread.daemon = True
     st.session_state.animation_thread.start()
+
+# sidebar
+#{theme['bg']};
