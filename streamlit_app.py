@@ -1,164 +1,102 @@
 import streamlit as st
-import time
-import random
-import threading
+import streamlit.components.v1 as components
 
-
-particles_js = """<!DOCTYPE html>
+# Particles.js HTML with necessary modifications
+particles_js = """
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Particles.js</title>
-  <style>
-  #particles-js {
-    position: fixed;
-    width: 100vw;
-    height: 100vh;
-    top: 0;
-    left: 0;
-    z-index: -1; /* Send the animation to the back */
-  }
-  .content {
-    position: relative;
-    z-index: 1;
-    color: white;
-  }
-  
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Particles.js</title>
+    <style>
+        #particles-js {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            background-color: transparent;
+        }
+        
+        .content {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
 </head>
 <body>
-  <div id="particles-js"></div>
-  <div class="content">
-    <!-- Placeholder for Streamlit content -->
-  </div>
-  <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
-  <script>
-    particlesJS("particles-js", {
-      "particles": {
-        "number": {
-          "value": 300,
-          "density": {
-            "enable": true,
-            "value_area": 800
-          }
-        },
-        "color": {
-          "value": "#ffffff"
-        },
-        "shape": {
-          "type": "circle",
-          "stroke": {
-            "width": 0,
-            "color": "#000000"
-          },
-          "polygon": {
-            "nb_sides": 5
-          },
-          "image": {
-            "src": "img/github.svg",
-            "width": 100,
-            "height": 100
-          }
-        },
-        "opacity": {
-          "value": 0.5,
-          "random": false,
-          "anim": {
-            "enable": false,
-            "speed": 1,
-            "opacity_min": 0.2,
-            "sync": false
-          }
-        },
-        "size": {
-          "value": 2,
-          "random": true,
-          "anim": {
-            "enable": false,
-            "speed": 40,
-            "size_min": 0.1,
-            "sync": false
-          }
-        },
-        "line_linked": {
-          "enable": true,
-          "distance": 100,
-          "color": "#ffffff",
-          "opacity": 0.22,
-          "width": 1
-        },
-        "move": {
-          "enable": true,
-          "speed": 0.2,
-          "direction": "none",
-          "random": false,
-          "straight": false,
-          "out_mode": "out",
-          "bounce": true,
-          "attract": {
-            "enable": false,
-            "rotateX": 600,
-            "rotateY": 1200
-          }
-        }
-      },
-      "interactivity": {
-        "detect_on": "canvas",
-        "events": {
-          "onhover": {
-            "enable": true,
-            "mode": "grab"
-          },
-          "onclick": {
-            "enable": true,
-            "mode": "repulse"
-          },
-          "resize": true
-        },
-        "modes": {
-          "grab": {
-            "distance": 100,
-            "line_linked": {
-              "opacity": 1
-            }
-          },
-          "bubble": {
-            "distance": 400,
-            "size": 2,
-            "duration": 2,
-            "opacity": 0.5,
-            "speed": 1
-          },
-          "repulse": {
-            "distance": 200,
-            "duration": 0.4
-          },
-          "push": {
-            "particles_nb": 2
-          },
-          "remove": {
-            "particles_nb": 3
-          }
-        }
-      },
-      "retina_detect": true
-    });
-  </script>
+    <div id="particles-js"></div>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script>
+        particlesJS("particles-js", {
+            "particles": {
+                "number": {
+                    "value": 300,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#ffffff"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": false
+                },
+                "size": {
+                    "value": 2,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 100,
+                    "color": "#ffffff",
+                    "opacity": 0.22,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 0.2,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out",
+                    "bounce": true
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": true,
+                        "mode": "repulse"
+                    },
+                    "resize": true
+                }
+            },
+            "retina_detect": true
+        });
+    </script>
 </body>
 </html>
 """
 
 st.set_page_config(page_title="Geospatial Analysis Tool", page_icon="🗺️", layout="wide")
 
-# Single Dark Modern theme
-theme = {
-    "bg": "#0E1117",
-    "accent": "#3498db",
-    "text": "#E0E0E0",
-    "gradient": "linear-gradient(135deg, #3498db, #2ecc71)"
-}
+# Inject particles.js
+components.html(particles_js, height=1000)
 
+# Your existing styling
 st.markdown("""
     <style>
         .stApp {
@@ -166,119 +104,28 @@ st.markdown("""
             color: #E0E0E0 !important;
         }
         
+        /* Rest of your existing CSS styles */
         [data-testid="stSidebar"] {
             background-color: #1E1E1E !important;
             border-right: 1px solid #2E2E2E;
+            z-index: 2;  /* Ensure sidebar appears above particles */
         }
         
         .stMarkdown, p, h1, h2, h3 {
             color: #E0E0E0 !important;
+            position: relative;  /* Ensure content appears above particles */
+            z-index: 1;
         }
         
-        .custom-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            text-align: center;
-            padding: 1rem 0;
-            margin-bottom: 2rem;
-            color: #E0E0E0 !important;
-            background: linear-gradient(135deg, #3498db, #2ecc71);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            display: block;
-            width: 100%;
-        }
-        
-        .stSelectbox > div > div {
-            background-color: #1E1E1E !important;
-            color: #E0E0E0 !important;
-        }
-        
-        .stCheckbox > div > div > label {
-            color: #E0E0E0 !important;
-        }
-        
-        .section-card {
-            background: #1E1E1E !important;
-            color: #E0E0E0 !important;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
-            border-radius: 15px;
-            padding: 25px;
-            margin: 20px 0;
-            border-left: 5px solid #3498db;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            animation: slideIn 0.5s ease-out;
-        }
-        
-        .section-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.5);
-            background: #2E2E2E !important;
-        }
-
-        .section-header {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            color: #3498db !important;
-        }
-        
-        .custom-bullet {
-            margin-left: 20px;
+        /* Add z-index to all Streamlit elements to ensure they appear above particles */
+        .stButton, .stSelectbox, .stTextInput, .stHeader {
             position: relative;
-            color: #E0E0E0 !important;
-        }
-        .custom-bullet::before {
-            content: "•";
-            color: #E0E0E0;
-            position: absolute;
-            left: -15px;
-        }
-        
-        .content-text {
-            color: #E0E0E0 !important;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(-20px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes scaleIn {
-            from { transform: scale(0.95); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
-        }
-
-        /* Force sidebar background to black */
-        [data-testid="stSidebar"] {
-            background-color: black !important;
-        }
-
-        /* Force sidebar text color to white */
-        [data-testid="stSidebar"] * {
-            color: white !important;
-        }
-
-        /* Selected navigation item highlight */
-        [data-testid="stSidebarNav"] li div[aria-selected="true"] {
-            background-color: #47B5FF !important;
-            color: white !important;
-            border-radius: 8px;
-        }
-
-        /* Sidebar hover effect */
-        [data-testid="stSidebarNav"] li div:hover {
-            background-color: rgba(71, 181, 255, 0.2) !important;
-            border-radius: 8px;
+            z-index: 1;
         }
     </style>
 """, unsafe_allow_html=True)
 
+# Your existing welcome animation logic
 if 'first_load' not in st.session_state:
     st.session_state.first_load = True
 
@@ -293,6 +140,7 @@ if st.session_state.first_load:
 
 st.title("Automated Geospatial Analysis for Sub-National Tailoring of Malaria Interventions")
 
+# Your existing content
 st.markdown("""
     <div class="img-container" style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
