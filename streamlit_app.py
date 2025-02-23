@@ -216,7 +216,7 @@ st.markdown("""
 
         /* Sidebar selected item highlight */
         [data-testid="stSidebarNav"] li div[aria-selected="true"] {
-            background-color: white !important;
+            background-color: #47B5FF !important;
             color: #47B5FF !important;
         }
 
