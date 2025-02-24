@@ -88,7 +88,7 @@ st.markdown("""
         
         /* Updated Sidebar Styling */
         [data-testid="stSidebar"] {
-            background-color: white !important;
+            background-color: black !important;
             border-right: 1px solid #2E2E2E;
             z-index: 2;
         }
@@ -100,19 +100,19 @@ st.markdown("""
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] label,
         [data-testid="stSidebar"] div {
-            color: #47B5FF !important;
+            color: white !important;
         }
 
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
         [data-testid="stSidebar"] h3 {
-            color: #47B5FF !important;
+            color: white !important;
             font-weight: bold;
         }
 
         [data-testid="stSidebar"] button {
             color: #47B5FF !important;
-            border-color: #47B5FF !important;
+            border-color: white !important;
         }
         
         /* Main content styling */
