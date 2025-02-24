@@ -19,7 +19,7 @@ particles_js = """
         #particles-js {
             position: absolute;
             width: 100%;
-            height: 100%;
+            height: 50%;
             top: 0;
             left: 0;
             z-index: 0;
