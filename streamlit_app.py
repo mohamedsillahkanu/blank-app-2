@@ -236,7 +236,7 @@ selected = selected_data if selected_data else selected_settings
 
 # Mapping selected submenu to corresponding Python files
 file_mapping = {
-    "Data Management": "data_management.py",
+    "Data Management": "003Interactive HF Distribution Subplot.py",
     "Data Analysis": "data_analysis.py",
     "General Settings": "settings.py",
     "User Management": "user_management.py"
