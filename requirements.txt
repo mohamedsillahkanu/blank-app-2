@@ -45,3 +45,4 @@ jellyfish
 xlrd
 Shapely
 xlsxwriter
+streamlit-option-menu
