@@ -190,7 +190,7 @@ if st.session_state.first_load:
 st.markdown("""
     <div class="img-container" style="text-align: center;">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 50%; max-width: 500px; margin: 20px auto;">
+             style="width: 80%; max-width: 500px; margin: 20px auto;">
     </div>
 """, unsafe_allow_html=True)
 
