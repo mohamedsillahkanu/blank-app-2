@@ -88,7 +88,7 @@ st.markdown("""
         
         /* Updated Sidebar Styling */
         [data-testid="stSidebar"] {
-            background-color: #0E1117 !important;
+            background-color: white !important;
             border-right: 1px solid #2E2E2E;
             z-index: 2;
         }
@@ -100,21 +100,45 @@ st.markdown("""
         [data-testid="stSidebar"] span,
         [data-testid="stSidebar"] label,
         [data-testid="stSidebar"] div {
-            color: white !important;
+            color: #47B5FF !important;
         }
 
         [data-testid="stSidebar"] h1,
         [data-testid="stSidebar"] h2,
         [data-testid="stSidebar"] h3 {
-            color: white !important;
+            color: #47B5FF !important;
             font-weight: bold;
         }
 
         [data-testid="stSidebar"] button {
-            color: white !important;
+            color: #47B5FF !important;
             border-color: #47B5FF !important;
         }
         
+        /* Main content styling */
+        .block-container {
+            padding-top: 2rem;
+            padding-right: 1rem;
+            padding-left: 1rem;
+            max-width: 100% !important;
+        }
+
+        .main .block-container {
+            max-width: none;
+            padding-left: 2rem;
+            padding-right: 2rem;
+            padding-top: 2rem;
+        }
+
+        .stMarkdown {
+            width: 100% !important;
+        }
+
+        .css-1d391kg {
+            padding-right: 1rem;
+            padding-left: 1rem;
+        }
+
         .stMarkdown, p, h1, h2, h3 {
             color: #E0E0E0 !important;
             position: relative;
@@ -126,15 +150,17 @@ st.markdown("""
             z-index: 1;
         }
 
+        /* Section cards styling */
         .section-card {
             background: #1E1E1E !important;
             color: #E0E0E0 !important;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
             border-radius: 15px;
-            padding: 25px;
+            padding: 25px 40px;
             margin: 20px 0;
             border-left: 5px solid #3498db;
             transition: transform 0.3s ease;
+            width: 100% !important;
         }
         
         .section-card:hover {
@@ -150,6 +176,7 @@ st.markdown("""
             color: #3498db !important;
         }
 
+        /* Bullet points styling */
         .custom-bullet {
             margin-left: 30px;
             position: relative;
@@ -169,9 +196,24 @@ st.markdown("""
             line-height: 1;
         }
 
+        /* Content text styling */
         .content-text {
+            width: 100% !important;
             color: #E0E0E0 !important;
             line-height: 1.6;
+        }
+
+        /* Image container styling */
+        .img-container {
+            text-align: center;
+            width: 100%;
+            margin: 20px auto;
+        }
+
+        .img-container img {
+            width: 75%;
+            max-width: 800px;
+            margin: 0 auto;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -188,9 +230,9 @@ if st.session_state.first_load:
 
 # Map image
 st.markdown("""
-    <div class="img-container" style="text-align: center;">
+    <div class="img-container">
         <img src="https://github.com/mohamedsillahkanu/si/raw/b0706926bf09ba23d8e90c394fdbb17e864121d8/Sierra%20Leone%20Map.png" 
-             style="width: 80%; max-width: 500px; margin: 20px auto;">
+             alt="Sierra Leone Map">
     </div>
 """, unsafe_allow_html=True)
 
