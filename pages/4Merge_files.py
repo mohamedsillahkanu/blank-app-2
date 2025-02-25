@@ -62,10 +62,10 @@ def find_common_columns(dataframes: List[pd.DataFrame]) -> Set[str]:
     
     return common_columns
 
-def merge_datasets_left_join(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> pd.DataFrame:
+def merge_all_datasets(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> pd.DataFrame:
     """
-    Merge multiple dataframes based on specified columns using a left join.
-    This preserves all rows from the first dataframe and adds columns from other dataframes.
+    Merge multiple dataframes based on specified columns using a full outer join.
+    This preserves all rows and columns from all dataframes.
     """
     if not dataframes or len(dataframes) < 2:
         return None
@@ -78,16 +78,15 @@ def merge_datasets_left_join(dataframes: List[pd.DataFrame], merge_columns: List
         # Create a suffix for duplicate columns
         suffix = f"_{i}"
         
-        # Merge with the next dataframe using left join
-        result = pd.merge(result, df, on=merge_columns, how='left', suffixes=('', suffix))
+        # Merge with the next dataframe using full outer join
+        result = pd.merge(result, df, on=merge_columns, how='outer', suffixes=('', suffix))
     
     return result
 
 # Main Streamlit App
 st.title("Dataset Merger")
 st.write("""
-Upload multiple Excel (.xlsx, .xls) or CSV files and get a merged dataset using a left join.
-All rows from the first dataset will be preserved, and matching data from other datasets will be added.
+Upload multiple Excel (.xlsx, .xls) or CSV files and get a merged dataset that preserves all rows and columns from all datasets.
 """)
 
 uploaded_files = st.file_uploader("Upload datasets", accept_multiple_files=True, 
@@ -122,10 +121,10 @@ if uploaded_files:
             selected_columns = list(common_columns)
             
             if st.button("Merge Datasets"):
-                st.info(f"Using left join to preserve all rows from the first file: {df_names[0]}")
+                st.info("Using full outer join to preserve all rows and columns from all datasets")
                 
-                # Use the left join function
-                merged_df = merge_datasets_left_join(dataframes, selected_columns)
+                # Use the full outer join function
+                merged_df = merge_all_datasets(dataframes, selected_columns)
                 
                 if merged_df is not None:
                     st.subheader("Merged Dataset")
@@ -159,7 +158,7 @@ This app helps you merge multiple datasets based on common columns.
 **Features:**
 - Upload multiple Excel or CSV files
 - Automatically identify common columns for merging
-- Uses left join to preserve all rows from the first dataset
+- Uses full outer join to preserve ALL rows from ALL datasets
 - Preserves all columns from all datasets
 - Download the merged dataset
 """)
