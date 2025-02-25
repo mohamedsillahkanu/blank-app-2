@@ -148,7 +148,7 @@ st.markdown(f"""
             --text-color: {theme['text']};
             --accent-color: {theme['accent']};
             --gradient: {theme['gradient']};
-            --sidebar-bg: white; 
+            --sidebar-bg: #F5F5F5; 
             --card-bg: #F8F9FA;
             --card-hover-bg: #E9ECEF;
             --input-bg: #F8F9FA;
