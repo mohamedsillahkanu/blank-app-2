@@ -5,12 +5,16 @@ def read_file(file):
     file_type = file.name.split('.')[-1].lower()
     try:
         if file_type == 'csv':
-            return pd.read_csv(file)
+            df = pd.read_csv(file)
         elif file_type in ['xlsx', 'xls']:
-            return pd.read_excel(file, engine='openpyxl' if file_type == 'xlsx' else 'xlrd')
+            df = pd.read_excel(file, engine='openpyxl' if file_type == 'xlsx' else 'xlrd')
         else:
             st.error(f"Unsupported file type: {file_type}")
             return None
+        
+        # Display columns for debugging
+        st.write(f"Columns in {file.name}:", list(df.columns))
+        return df
     except Exception as e:
         st.error(f"Error reading file {file.name}: {str(e)}")
         return None
@@ -68,17 +72,37 @@ def validate_and_combine_files(files):
     combined_df = pd.concat(dfs, ignore_index=True)
     
     # Process date immediately after combining
-    month_map = {
-        'January': '01', 'February': '02', 'March': '03', 'April': '04',
-        'May': '05', 'June': '06', 'July': '07', 'August': '08',
-        'September': '09', 'October': '10', 'November': '11', 'December': '12'
-    }
-    
-    combined_df[['month', 'year']] = combined_df['periodname'].str.split(' ', expand=True)
-    combined_df['month'] = combined_df['month'].map(month_map)
-    combined_df['year'] = pd.to_numeric(combined_df['year'])
-    combined_df['Date'] = combined_df['year'].astype(str) + '-' + combined_df['month']
-    combined_df = combined_df.drop(columns=['periodname', 'orgunitlevel5'])
+    try:
+        month_map = {
+            'January': '01', 'February': '02', 'March': '03', 'April': '04',
+            'May': '05', 'June': '06', 'July': '07', 'August': '08',
+            'September': '09', 'October': '10', 'November': '11', 'December': '12'
+        }
+        
+        # Check if the required columns exist
+        if 'periodname' not in combined_df.columns:
+            st.error("Missing required column: 'periodname'")
+            st.write("Available columns:", list(combined_df.columns))
+            return None
+            
+        combined_df[['month', 'year']] = combined_df['periodname'].str.split(' ', expand=True)
+        combined_df['month'] = combined_df['month'].map(month_map)
+        combined_df['year'] = pd.to_numeric(combined_df['year'])
+        combined_df['Date'] = combined_df['year'].astype(str) + '-' + combined_df['month']
+        
+        # Only drop columns if they exist
+        columns_to_drop = []
+        if 'periodname' in combined_df.columns:
+            columns_to_drop.append('periodname')
+        if 'orgunitlevel5' in combined_df.columns:
+            columns_to_drop.append('orgunitlevel5')
+            
+        if columns_to_drop:
+            combined_df = combined_df.drop(columns=columns_to_drop)
+    except Exception as e:
+        st.error(f"Error processing date information: {str(e)}")
+        st.write("Please check if your data has the expected 'periodname' column with values like 'January 2023'")
+        return None
     
     return combined_df
 
