@@ -136,10 +136,10 @@ if uploaded_files:
         st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
         custom_filename = st.text_input("Enter filename for download (without extension):", value="")
         
-        # Use placeholder text if user didn't enter anything
+        # Only proceed if user has entered a filename
         if not custom_filename.strip():
-            download_filename = "merge_routine_data_processed.csv"
-            st.caption("Using default filename: merge_routine_data_processed.csv")
+            st.warning("Please enter a filename to download the data")
+            download_button_disabled = True
         else:
             # Replace spaces with underscores
             clean_filename = custom_filename.replace(" ", "_")
@@ -155,13 +155,19 @@ if uploaded_files:
                 download_filename = clean_filename
                 
             st.success(f"File will be downloaded as: {download_filename}")
+            download_button_disabled = False
         
         csv = combined_df.to_csv(index=False).encode('utf-8')
         st.snow()
         st.balloons()
-        st.download_button(
-            "Download Processed Data",
-            csv,
-            download_filename,
-            "text/csv"
-        )
+        
+        # Only show download button if a filename was provided
+        if not download_button_disabled:
+            st.download_button(
+                "Download Processed Data",
+                csv,
+                download_filename,
+                "text/csv"
+            )
+        else:
+            st.error("Enter a filename above to enable download")
