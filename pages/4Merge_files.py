@@ -185,61 +185,59 @@ if uploaded_files:
             
             if st.button("Merge Datasets"):
                 merged_df, problems = merge_datasets(dataframes, selected_columns)
+                
+                if merged_df is not None:
+                    st.subheader("Merged Dataset")
+                    st.write(f"Successfully merged {len(merged_df)} rows")
                     
-                    if merged_df is not None:
-                        st.subheader("Merged Dataset")
-                        st.write(f"Successfully merged {len(merged_df)} rows")
+                    # Use the safe display function
+                    safe_dataframe_display(merged_df)
+                    
+                    # Allow user to enter custom filename for download
+                    st.write("### Download Options")
+                    st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
+                    custom_filename = st.text_input("Enter filename for download (without extension):", value="")
+                    
+                    # Only proceed if user has entered a filename
+                    if custom_filename.strip():
+                        # Replace spaces with underscores
+                        clean_filename = custom_filename.replace(" ", "_")
                         
-                        # Use the safe display function
-                        safe_dataframe_display(merged_df)
+                        # If user entered a different name than what we show after cleaning
+                        if clean_filename != custom_filename:
+                            st.warning(f"Spaces in filename replaced with underscores: '{clean_filename}'")
                         
-                        # Allow user to enter custom filename for download
-                        st.write("### Download Options")
-                        st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
-                        custom_filename = st.text_input("Enter filename for download (without extension):", value="")
-                        
-                        # Only proceed if user has entered a filename
-                        if custom_filename.strip():
-                            # Replace spaces with underscores
-                            clean_filename = custom_filename.replace(" ", "_")
-                            
-                            # If user entered a different name than what we show after cleaning
-                            if clean_filename != custom_filename:
-                                st.warning(f"Spaces in filename replaced with underscores: '{clean_filename}'")
-                            
-                            # Ensure the filename has .csv extension
-                            if not clean_filename.endswith('.csv'):
-                                download_filename = clean_filename + '.csv'
-                            else:
-                                download_filename = clean_filename
-                            
-                            # Provide download with custom filename
-                            csv = merged_df.to_csv(index=False).encode('utf-8')
-                            st.download_button(
-                                label=f"Download as {download_filename}",
-                                data=csv,
-                                file_name=download_filename,
-                                mime="text/csv"
-                            )
-                        
-                        # Display problematic rows
-                        if problems:
-                            st.subheader("Merge Problems")
-                            st.warning(
-                                "The following rows couldn't be merged with a 1:1 relationship. "
-                                "They were excluded from the main merge but are shown below for reference."
-                            )
-                            
-                            for problem_name, problem_df in problems.items():
-                                with st.expander(f"{problem_name} ({len(problem_df)} rows)"):
-                                    # Use the safe display function
-                                    safe_dataframe_display(problem_df)
+                        # Ensure the filename has .csv extension
+                        if not clean_filename.endswith('.csv'):
+                            download_filename = clean_filename + '.csv'
                         else:
-                            st.success("All rows merged successfully with a 1:1 relationship.")
+                            download_filename = clean_filename
+                        
+                        # Provide download with custom filename
+                        csv = merged_df.to_csv(index=False).encode('utf-8')
+                        st.download_button(
+                            label=f"Download as {download_filename}",
+                            data=csv,
+                            file_name=download_filename,
+                            mime="text/csv"
+                        )
+                    
+                    # Display problematic rows
+                    if problems:
+                        st.subheader("Merge Problems")
+                        st.warning(
+                            "The following rows couldn't be merged with a 1:1 relationship. "
+                            "They were excluded from the main merge but are shown below for reference."
+                        )
+                        
+                        for problem_name, problem_df in problems.items():
+                            with st.expander(f"{problem_name} ({len(problem_df)} rows)"):
+                                # Use the safe display function
+                                safe_dataframe_display(problem_df)
                     else:
-                        st.error("Failed to merge the datasets.")
-            else:
-                st.info("Please select at least one column to merge on.")
+                        st.success("All rows merged successfully with a 1:1 relationship.")
+                else:
+                    st.error("Failed to merge the datasets.")
 else:
     st.info("Please upload at least two files to merge (.xlsx, .xls, or .csv format).")
 
