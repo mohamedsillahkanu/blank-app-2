@@ -6,10 +6,10 @@ from typing import List, Dict, Tuple, Set
 
 st.set_page_config(page_title="Dataset Merger", layout="wide")
 
-def safe_dataframe_display(df, max_rows=None):
+def safe_dataframe_display(df):
     """Safely display a dataframe, converting problematic types to strings if needed."""
     try:
-        return st.dataframe(df, height=max_rows)
+        return st.dataframe(df)
     except Exception as e:
         # If we encounter an error, try converting the dataframe to more compatible types
         st.warning("Converting complex data types to string representation for display...")
@@ -27,7 +27,7 @@ def safe_dataframe_display(df, max_rows=None):
                     df_display[col] = df_display[col].apply(lambda x: str(x) if x is not None else None)
         
         try:
-            return st.dataframe(df_display, height=max_rows)
+            return st.dataframe(df_display)
         except Exception as e2:
             st.error(f"Could not display dataframe: {str(e2)}. Try downloading it instead.")
             # Show just the shape and columns as text
@@ -178,15 +178,13 @@ if uploaded_files:
             st.error("No common columns found across all datasets.")
         else:
             st.subheader("Common Columns")
-            selected_columns = st.multiselect(
-                "Select columns to merge on",
-                options=list(common_columns),
-                default=list(common_columns)
-            )
+            st.write(f"Merging on common columns: {', '.join(sorted(common_columns))}")
             
-            if selected_columns:
-                if st.button("Merge Datasets"):
-                    merged_df, problems = merge_datasets(dataframes, selected_columns)
+            # Automatically use all common columns
+            selected_columns = list(common_columns)
+            
+            if st.button("Merge Datasets"):
+                merged_df, problems = merge_datasets(dataframes, selected_columns)
                     
                     if merged_df is not None:
                         st.subheader("Merged Dataset")
@@ -195,16 +193,7 @@ if uploaded_files:
                         # Use the safe display function
                         safe_dataframe_display(merged_df)
                         
-                        # Provide download option for merged dataset
-                        csv = merged_df.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label="Download merged dataset as CSV",
-                            data=csv,
-                            file_name="merged_dataset.csv",
-                            mime="text/csv"
-                        )
-                        
-                        # Allow user to enter custom filename before downloading
+                        # Allow user to enter custom filename for download
                         st.write("### Download Options")
                         st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
                         custom_filename = st.text_input("Enter filename for download (without extension):", value="")
@@ -224,9 +213,8 @@ if uploaded_files:
                             else:
                                 download_filename = clean_filename
                             
-                            st.success(f"File will be downloaded as: {download_filename}")
-                            
                             # Provide download with custom filename
+                            csv = merged_df.to_csv(index=False).encode('utf-8')
                             st.download_button(
                                 label=f"Download as {download_filename}",
                                 data=csv,
@@ -252,14 +240,6 @@ if uploaded_files:
                         st.error("Failed to merge the datasets.")
             else:
                 st.info("Please select at least one column to merge on.")
-
-    # Display individual datasets
-    with st.expander("View uploaded datasets"):
-        for i, (df, name) in enumerate(zip(dataframes, df_names)):
-            st.subheader(f"Dataset {i+1}: {name}")
-            # Use the safe display function
-            safe_dataframe_display(df)
-            st.write(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns")
 else:
     st.info("Please upload at least two files to merge (.xlsx, .xls, or .csv format).")
 
