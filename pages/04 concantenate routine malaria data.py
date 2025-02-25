@@ -131,14 +131,30 @@ if uploaded_files:
         with st.expander("View Processed Data"):
             st.dataframe(st.session_state.combined_df)
         
-        # Allow user to enter custom filename
-        custom_filename = st.text_input("Enter filename for download (without extension):", "merge_routine_data_processed")
+        # Allow user to enter custom filename with clear instructions
+        st.write("### Download Options")
+        st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
+        custom_filename = st.text_input("Enter filename for download (without extension):", value="")
         
-        # Ensure the filename has .csv extension
-        if not custom_filename.endswith('.csv'):
-            download_filename = custom_filename + '.csv'
+        # Use placeholder text if user didn't enter anything
+        if not custom_filename.strip():
+            download_filename = "merge_routine_data_processed.csv"
+            st.caption("Using default filename: merge_routine_data_processed.csv")
         else:
-            download_filename = custom_filename
+            # Replace spaces with underscores
+            clean_filename = custom_filename.replace(" ", "_")
+            
+            # If user entered a different name than what we show after cleaning
+            if clean_filename != custom_filename:
+                st.warning(f"Spaces in filename replaced with underscores: '{clean_filename}'")
+            
+            # Ensure the filename has .csv extension
+            if not clean_filename.endswith('.csv'):
+                download_filename = clean_filename + '.csv'
+            else:
+                download_filename = clean_filename
+                
+            st.success(f"File will be downloaded as: {download_filename}")
         
         csv = combined_df.to_csv(index=False).encode('utf-8')
         st.snow()
