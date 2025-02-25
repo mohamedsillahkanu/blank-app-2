@@ -193,34 +193,14 @@ if uploaded_files:
                     # Use the safe display function
                     safe_dataframe_display(merged_df)
                     
-                    # Allow user to enter custom filename for download
-                    st.write("### Download Options")
-                    st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
-                    custom_filename = st.text_input("Enter filename for download (without extension):", value="")
-                    
-                    # Only proceed if user has entered a filename
-                    if custom_filename.strip():
-                        # Replace spaces with underscores
-                        clean_filename = custom_filename.replace(" ", "_")
-                        
-                        # If user entered a different name than what we show after cleaning
-                        if clean_filename != custom_filename:
-                            st.warning(f"Spaces in filename replaced with underscores: '{clean_filename}'")
-                        
-                        # Ensure the filename has .csv extension
-                        if not clean_filename.endswith('.csv'):
-                            download_filename = clean_filename + '.csv'
-                        else:
-                            download_filename = clean_filename
-                        
-                        # Provide download with custom filename
-                        csv = merged_df.to_csv(index=False).encode('utf-8')
-                        st.download_button(
-                            label=f"Download as {download_filename}",
-                            data=csv,
-                            file_name=download_filename,
-                            mime="text/csv"
-                        )
+                    # Create CSV for download with a fixed filename
+                    csv = merged_df.to_csv(index=False).encode('utf-8')
+                    st.download_button(
+                        label="Download Merged Dataset",
+                        data=csv,
+                        file_name="merged_dataset.csv",
+                        mime="text/csv"
+                    )
                     
                     # Display problematic rows
                     if problems:
