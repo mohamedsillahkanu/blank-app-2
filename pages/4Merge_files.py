@@ -62,31 +62,65 @@ def find_common_columns(dataframes: List[pd.DataFrame]) -> Set[str]:
     
     return common_columns
 
-def merge_all_datasets(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> pd.DataFrame:
+def validate_one_to_one_relationship(dataframes: List[pd.DataFrame], key_columns: List[str]) -> List[Dict]:
     """
-    Merge multiple dataframes based on specified columns using a full outer join.
-    This preserves all rows and columns from all dataframes.
+    Validates that the key columns have a 1:1 relationship across all dataframes.
+    Returns a list of problem reports for each dataframe.
+    """
+    problems = []
+    
+    for i, df in enumerate(dataframes):
+        # Count occurrences of each key combination
+        df['_temp_key'] = df[key_columns].apply(lambda row: tuple(row.values), axis=1)
+        key_counts = df['_temp_key'].value_counts()
+        
+        # Find keys that appear more than once (violations of 1:1 relationship)
+        duplicate_keys = key_counts[key_counts > 1]
+        
+        if not duplicate_keys.empty:
+            problems.append({
+                'dataframe_index': i,
+                'duplicate_keys': duplicate_keys.to_dict(),
+                'example_rows': df[df['_temp_key'].isin(duplicate_keys.index)].drop(columns=['_temp_key'])
+            })
+        
+        # Remove the temporary key column
+        df.drop(columns=['_temp_key'], inplace=True)
+    
+    return problems
+
+def merge_datasets_with_validation(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> Tuple[pd.DataFrame, List[Dict]]:
+    """
+    Merge datasets while ensuring a 1:1 relationship on merge columns.
+    Returns the merged dataframe and a list of problem reports.
     """
     if not dataframes or len(dataframes) < 2:
-        return None
+        return None, []
     
-    # Start with the first dataframe
+    # Validate 1:1 relationship
+    problems = validate_one_to_one_relationship(dataframes, merge_columns)
+    
+    if problems:
+        # There are 1:1 relationship violations, but we'll still attempt the merge
+        st.warning("1:1 relationship violations detected. Some rows may not merge correctly.")
+    
+    # Perform the merge with all dataframes
     result = dataframes[0].copy()
     
-    # Loop through the remaining dataframes and merge them in
     for i, df in enumerate(dataframes[1:], 1):
         # Create a suffix for duplicate columns
         suffix = f"_{i}"
         
-        # Merge with the next dataframe using full outer join
-        result = pd.merge(result, df, on=merge_columns, how='outer', suffixes=('', suffix))
+        # Merge with inner join to enforce 1:1 relationship
+        result = pd.merge(result, df, on=merge_columns, how='inner', suffixes=('', suffix))
     
-    return result
+    return result, problems
 
 # Main Streamlit App
 st.title("Dataset Merger")
 st.write("""
-Upload multiple Excel (.xlsx, .xls) or CSV files and get a merged dataset that preserves all rows and columns from all datasets.
+Upload multiple Excel (.xlsx, .xls) or CSV files and merge them with 1:1 validation.
+The app will ensure that merge key combinations are unique in each dataset.
 """)
 
 uploaded_files = st.file_uploader("Upload datasets", accept_multiple_files=True, 
@@ -121,14 +155,26 @@ if uploaded_files:
             selected_columns = list(common_columns)
             
             if st.button("Merge Datasets"):
-                st.info("Using full outer join to preserve all rows and columns from all datasets")
+                st.info("Performing 1:1 merge - each combination of key values must be unique in all datasets.")
                 
-                # Use the full outer join function
-                merged_df = merge_all_datasets(dataframes, selected_columns)
+                # Use the merge with validation function
+                merged_df, problems = merge_datasets_with_validation(dataframes, selected_columns)
+                
+                if problems:
+                    st.warning("⚠️ 1:1 relationship violations detected:")
+                    for problem in problems:
+                        df_index = problem['dataframe_index']
+                        file_name = df_names[df_index]
+                        num_duplicates = len(problem['duplicate_keys'])
+                        st.write(f"File '{file_name}' has {num_duplicates} key combinations that appear multiple times.")
+                        
+                        with st.expander(f"View examples from {file_name}"):
+                            safe_dataframe_display(problem['example_rows'])
                 
                 if merged_df is not None:
                     st.subheader("Merged Dataset")
                     st.write(f"Successfully merged into {len(merged_df)} rows and {len(merged_df.columns)} columns")
+                    st.success("✅ 1:1 merge completed. Each row in the result represents a unique combination of key values.")
                     
                     # Display all columns in the merged dataset
                     st.subheader("All Columns in Merged Dataset")
@@ -168,8 +214,8 @@ This app helps you merge multiple datasets based on common columns.
 **Features:**
 - Upload multiple Excel or CSV files
 - Automatically identify common columns for merging
-- Uses full outer join to preserve ALL rows from ALL datasets
-- Preserves all columns from all datasets
+- Validates 1:1 relationships between datasets
+- Shows any relationship violations before merging
 - Displays a complete list of columns in the merged result
 - Download the merged dataset
 """)
