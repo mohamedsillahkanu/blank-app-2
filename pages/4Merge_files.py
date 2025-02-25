@@ -130,11 +130,21 @@ if uploaded_files:
                     st.subheader("Merged Dataset")
                     st.write(f"Successfully merged into {len(merged_df)} rows and {len(merged_df.columns)} columns")
                     
-                    # Show column information
-                    with st.expander("View all columns in merged dataset"):
-                        st.write(", ".join(merged_df.columns.tolist()))
+                    # Display all columns in the merged dataset
+                    st.subheader("All Columns in Merged Dataset")
                     
-                    # Use the safe display function
+                    # Create a DataFrame of all column names for better display
+                    column_df = pd.DataFrame({
+                        'Column Name': merged_df.columns,
+                        'Data Type': [str(merged_df[col].dtype) for col in merged_df.columns]
+                    })
+                    
+                    # Display the column information
+                    st.write("Columns in merged dataset:")
+                    st.dataframe(column_df)
+                    
+                    # Use the safe display function for the merged data
+                    st.subheader("Merged Data Preview")
                     safe_dataframe_display(merged_df)
                     
                     # Create CSV for download with a fixed filename
@@ -160,5 +170,6 @@ This app helps you merge multiple datasets based on common columns.
 - Automatically identify common columns for merging
 - Uses full outer join to preserve ALL rows from ALL datasets
 - Preserves all columns from all datasets
+- Displays a complete list of columns in the merged result
 - Download the merged dataset
 """)
