@@ -62,94 +62,32 @@ def find_common_columns(dataframes: List[pd.DataFrame]) -> Set[str]:
     
     return common_columns
 
-def identify_merge_problems(left_df: pd.DataFrame, right_df: pd.DataFrame, 
-                           merge_keys: List[str]) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+def merge_datasets_left_join(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> pd.DataFrame:
     """
-    Identify problematic rows that don't have a 1:1 merge relationship.
-    Returns three dataframes:
-    1. Rows that merged successfully (1:1)
-    2. Rows from left_df that have no match or multiple matches
-    3. Rows from right_df that have no match or multiple matches
-    """
-    # Create keys for identification
-    try:
-        left_df['_merge_key'] = left_df[merge_keys].apply(lambda x: tuple(x), axis=1)
-        right_df['_merge_key'] = right_df[merge_keys].apply(lambda x: tuple(x), axis=1)
-    except Exception as e:
-        # Handle problematic columns by converting to string first
-        st.warning(f"Converting merge columns to strings due to: {str(e)}")
-        
-        left_df = left_df.copy()
-        right_df = right_df.copy()
-        
-        # Convert merge columns to strings
-        for col in merge_keys:
-            left_df[col] = left_df[col].astype(str)
-            right_df[col] = right_df[col].astype(str)
-        
-        left_df['_merge_key'] = left_df[merge_keys].apply(lambda x: tuple(x), axis=1)
-        right_df['_merge_key'] = right_df[merge_keys].apply(lambda x: tuple(x), axis=1)
-    
-    # Count occurrences of each key
-    left_counts = left_df['_merge_key'].value_counts().to_dict()
-    right_counts = right_df['_merge_key'].value_counts().to_dict()
-    
-    # Find problematic keys
-    left_problem_keys = {k for k, v in left_counts.items() if v > 1 or k not in right_counts}
-    right_problem_keys = {k for k, v in right_counts.items() if v > 1 or k not in left_counts}
-    
-    # Create masks for filtering
-    left_problem_mask = left_df['_merge_key'].isin(left_problem_keys)
-    right_problem_mask = right_df['_merge_key'].isin(right_problem_keys)
-    
-    # Extract problematic rows
-    left_problems = left_df[left_problem_mask].copy()
-    right_problems = right_df[right_problem_mask].copy()
-    
-    # Perform the merge for successful rows
-    successful_left = left_df[~left_problem_mask].copy()
-    successful_right = right_df[~right_problem_mask].copy()
-    
-    # Remove temporary merge key column
-    successful_left = successful_left.drop(columns=['_merge_key'])
-    successful_right = successful_right.drop(columns=['_merge_key'])
-    left_problems = left_problems.drop(columns=['_merge_key'])
-    right_problems = right_problems.drop(columns=['_merge_key'])
-    
-    # Merge the successful rows
-    merged = pd.merge(successful_left, successful_right, on=merge_keys, how='inner')
-    
-    return merged, left_problems, right_problems
-
-def merge_datasets(dataframes: List[pd.DataFrame], merge_columns: List[str]) -> Tuple[pd.DataFrame, Dict]:
-    """
-    Merge multiple dataframes based on specified columns.
-    Returns the merged dataframe and a dictionary of problematic rows.
+    Merge multiple dataframes based on specified columns using a left join.
+    This preserves all rows from the first dataframe and adds columns from other dataframes.
     """
     if not dataframes or len(dataframes) < 2:
-        return None, {}
+        return None
     
-    problems = {}
+    # Start with the first dataframe
     result = dataframes[0].copy()
     
+    # Loop through the remaining dataframes and merge them in
     for i, df in enumerate(dataframes[1:], 1):
-        merged, left_problems, right_problems = identify_merge_problems(result, df, merge_columns)
+        # Create a suffix for duplicate columns
+        suffix = f"_{i}"
         
-        if not left_problems.empty:
-            problems[f"Dataset {i-1} problems"] = left_problems
-            
-        if not right_problems.empty:
-            problems[f"Dataset {i} problems"] = right_problems
-            
-        result = merged
+        # Merge with the next dataframe using left join
+        result = pd.merge(result, df, on=merge_columns, how='left', suffixes=('', suffix))
     
-    return result, problems
+    return result
 
 # Main Streamlit App
 st.title("Dataset Merger")
 st.write("""
-Upload multiple Excel (.xlsx, .xls) or CSV files, select common columns to merge on, 
-and get a merged dataset with error reporting for rows that don't have a 1:1 relationship.
+Upload multiple Excel (.xlsx, .xls) or CSV files and get a merged dataset using a left join.
+All rows from the first dataset will be preserved, and matching data from other datasets will be added.
 """)
 
 uploaded_files = st.file_uploader("Upload datasets", accept_multiple_files=True, 
@@ -175,7 +113,7 @@ if uploaded_files:
         common_columns = find_common_columns(dataframes)
         
         if not common_columns:
-            st.error("No common columns found across all datasets.")
+            st.error("No common columns found across all datasets. Cannot perform merge.")
         else:
             st.subheader("Common Columns")
             st.write(f"Merging on common columns: {', '.join(sorted(common_columns))}")
@@ -184,11 +122,18 @@ if uploaded_files:
             selected_columns = list(common_columns)
             
             if st.button("Merge Datasets"):
-                merged_df, problems = merge_datasets(dataframes, selected_columns)
+                st.info(f"Using left join to preserve all rows from the first file: {df_names[0]}")
+                
+                # Use the left join function
+                merged_df = merge_datasets_left_join(dataframes, selected_columns)
                 
                 if merged_df is not None:
                     st.subheader("Merged Dataset")
-                    st.write(f"Successfully merged {len(merged_df)} rows")
+                    st.write(f"Successfully merged into {len(merged_df)} rows and {len(merged_df.columns)} columns")
+                    
+                    # Show column information
+                    with st.expander("View all columns in merged dataset"):
+                        st.write(", ".join(merged_df.columns.tolist()))
                     
                     # Use the safe display function
                     safe_dataframe_display(merged_df)
@@ -201,21 +146,6 @@ if uploaded_files:
                         file_name="merged_dataset.csv",
                         mime="text/csv"
                     )
-                    
-                    # Display problematic rows
-                    if problems:
-                        st.subheader("Merge Problems")
-                        st.warning(
-                            "The following rows couldn't be merged with a 1:1 relationship. "
-                            "They were excluded from the main merge but are shown below for reference."
-                        )
-                        
-                        for problem_name, problem_df in problems.items():
-                            with st.expander(f"{problem_name} ({len(problem_df)} rows)"):
-                                # Use the safe display function
-                                safe_dataframe_display(problem_df)
-                    else:
-                        st.success("All rows merged successfully with a 1:1 relationship.")
                 else:
                     st.error("Failed to merge the datasets.")
 else:
@@ -224,13 +154,12 @@ else:
 # Add some app information
 st.sidebar.title("About")
 st.sidebar.info("""
-This app helps you merge multiple datasets based on common columns. 
-It identifies and reports on rows that don't have a perfect 1:1 relationship.
+This app helps you merge multiple datasets based on common columns.
 
 **Features:**
 - Upload multiple Excel or CSV files
-- Automatically identify common columns
-- Perform 1:1 merge on selected columns
-- Report problematic rows that don't merge cleanly
-- Download the merged dataset with custom filename
+- Automatically identify common columns for merging
+- Uses left join to preserve all rows from the first dataset
+- Preserves all columns from all datasets
+- Download the merged dataset
 """)
