@@ -131,12 +131,21 @@ if uploaded_files:
         with st.expander("View Processed Data"):
             st.dataframe(st.session_state.combined_df)
         
+        # Allow user to enter custom filename
+        custom_filename = st.text_input("Enter filename for download (without extension):", "merge_routine_data_processed")
+        
+        # Ensure the filename has .csv extension
+        if not custom_filename.endswith('.csv'):
+            download_filename = custom_filename + '.csv'
+        else:
+            download_filename = custom_filename
+        
         csv = combined_df.to_csv(index=False).encode('utf-8')
         st.snow()
         st.balloons()
         st.download_button(
             "Download Processed Data",
             csv,
-            "merge_routine_data_processed.csv",
+            download_filename,
             "text/csv"
         )
