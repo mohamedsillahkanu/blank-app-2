@@ -15,14 +15,28 @@ def read_file(file):
         st.error(f"Error reading file {file.name}: {str(e)}")
         return None
 
+def clean_dataframe(df):
+    """Remove blank rows from dataframe"""
+    if df is None:
+        return None
+    
+    # Check if all values in a row are NaN or empty strings
+    return df.dropna(how='all').reset_index(drop=True)
+
 def validate_and_combine_files(files):
     if not files:
         return None
-
+    
     dfs = []
     reference_df = read_file(files[0])
     
     if reference_df is None:
+        return None
+    
+    # Remove blank rows from reference dataframe
+    reference_df = clean_dataframe(reference_df)
+    if reference_df.empty:
+        st.error(f"First file {files[0].name} has no valid data after removing blank rows")
         return None
         
     reference_columns = list(reference_df.columns)
@@ -31,6 +45,12 @@ def validate_and_combine_files(files):
     for file in files[1:]:
         df = read_file(file)
         if df is None:
+            continue
+        
+        # Remove blank rows from current dataframe
+        df = clean_dataframe(df)
+        if df.empty:
+            st.warning(f"File {file.name} has no valid data after removing blank rows")
             continue
             
         if list(df.columns) != reference_columns:
@@ -41,6 +61,10 @@ def validate_and_combine_files(files):
             
         dfs.append(df)
     
+    if not dfs:
+        st.error("No valid data found in any of the files")
+        return None
+    
     combined_df = pd.concat(dfs, ignore_index=True)
     
     # Process date immediately after combining
@@ -49,7 +73,7 @@ def validate_and_combine_files(files):
         'May': '05', 'June': '06', 'July': '07', 'August': '08',
         'September': '09', 'October': '10', 'November': '11', 'December': '12'
     }
-
+    
     combined_df[['month', 'year']] = combined_df['periodname'].str.split(' ', expand=True)
     combined_df['month'] = combined_df['month'].map(month_map)
     combined_df['year'] = pd.to_numeric(combined_df['year'])
@@ -62,6 +86,7 @@ if 'combined_df' not in st.session_state:
     st.session_state.combined_df = None
 
 st.title("Malaria Data Processor")
+
 uploaded_files = st.file_uploader("Upload Excel or CSV files", type=['xlsx', 'xls', 'csv'], accept_multiple_files=True)
 
 if uploaded_files:
@@ -69,12 +94,14 @@ if uploaded_files:
     
     if combined_df is not None:
         st.session_state.combined_df = combined_df.copy()
-        st.success("Files processed successfully!")
+        
+        # Display stats about cleaning
+        st.success(f"Files processed successfully! Combined {len(uploaded_files)} files into {len(combined_df)} rows.")
+        
         with st.expander("View Processed Data"):
             st.dataframe(st.session_state.combined_df)
         
         csv = combined_df.to_csv(index=False).encode('utf-8')
-
         st.snow()
         st.balloons()
         st.download_button(
