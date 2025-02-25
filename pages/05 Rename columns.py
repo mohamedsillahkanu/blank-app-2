@@ -20,6 +20,8 @@ def rename_columns(df):
             
             "Child death - Malaria 01-59m": "maldth_1_59m",
             "Child death - Malaria 05-09y": "maldth_5_9",
+            "Child death - Malaria 10-14y": "maldth_10_14",
+
             "Death malaria 15+ years Female": "maldth_fem_ov15",
             "Death malaria 15+ years Male": "maldth_mal_ov15",
             
