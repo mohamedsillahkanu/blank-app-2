@@ -6,16 +6,49 @@ from typing import List, Dict, Tuple, Set
 
 st.set_page_config(page_title="Dataset Merger", layout="wide")
 
+def safe_dataframe_display(df, max_rows=None):
+    """Safely display a dataframe, converting problematic types to strings if needed."""
+    try:
+        return st.dataframe(df, height=max_rows)
+    except Exception as e:
+        # If we encounter an error, try converting the dataframe to more compatible types
+        st.warning("Converting complex data types to string representation for display...")
+        
+        # Convert problematic columns to strings
+        df_display = df.copy()
+        for col in df_display.columns:
+            # Check for object dtype columns that might cause issues
+            if df_display[col].dtype == 'object':
+                try:
+                    # Try to convert to string
+                    df_display[col] = df_display[col].astype(str)
+                except:
+                    # If that fails, use a more aggressive approach
+                    df_display[col] = df_display[col].apply(lambda x: str(x) if x is not None else None)
+        
+        try:
+            return st.dataframe(df_display, height=max_rows)
+        except Exception as e2:
+            st.error(f"Could not display dataframe: {str(e2)}. Try downloading it instead.")
+            # Show just the shape and columns as text
+            st.write(f"DataFrame shape: {df.shape}")
+            st.write("Columns:", list(df.columns))
+            return None
+
 def read_file(uploaded_file):
     """Read the uploaded file and return a pandas DataFrame."""
     file_extension = os.path.splitext(uploaded_file.name)[1].lower()
     
-    if file_extension in ['.xlsx', '.xls']:
-        return pd.read_excel(uploaded_file)
-    elif file_extension == '.csv':
-        return pd.read_csv(uploaded_file)
-    else:
-        st.error(f"Unsupported file format: {file_extension}. Please upload .xlsx, .xls, or .csv files.")
+    try:
+        if file_extension in ['.xlsx', '.xls']:
+            return pd.read_excel(uploaded_file)
+        elif file_extension == '.csv':
+            return pd.read_csv(uploaded_file)
+        else:
+            st.error(f"Unsupported file format: {file_extension}. Please upload .xlsx, .xls, or .csv files.")
+            return None
+    except Exception as e:
+        st.error(f"Error reading file {uploaded_file.name}: {str(e)}")
         return None
 
 def find_common_columns(dataframes: List[pd.DataFrame]) -> Set[str]:
@@ -39,8 +72,23 @@ def identify_merge_problems(left_df: pd.DataFrame, right_df: pd.DataFrame,
     3. Rows from right_df that have no match or multiple matches
     """
     # Create keys for identification
-    left_df['_merge_key'] = left_df[merge_keys].apply(lambda x: tuple(x), axis=1)
-    right_df['_merge_key'] = right_df[merge_keys].apply(lambda x: tuple(x), axis=1)
+    try:
+        left_df['_merge_key'] = left_df[merge_keys].apply(lambda x: tuple(x), axis=1)
+        right_df['_merge_key'] = right_df[merge_keys].apply(lambda x: tuple(x), axis=1)
+    except Exception as e:
+        # Handle problematic columns by converting to string first
+        st.warning(f"Converting merge columns to strings due to: {str(e)}")
+        
+        left_df = left_df.copy()
+        right_df = right_df.copy()
+        
+        # Convert merge columns to strings
+        for col in merge_keys:
+            left_df[col] = left_df[col].astype(str)
+            right_df[col] = right_df[col].astype(str)
+        
+        left_df['_merge_key'] = left_df[merge_keys].apply(lambda x: tuple(x), axis=1)
+        right_df['_merge_key'] = right_df[merge_keys].apply(lambda x: tuple(x), axis=1)
     
     # Count occurrences of each key
     left_counts = left_df['_merge_key'].value_counts().to_dict()
@@ -143,7 +191,9 @@ if uploaded_files:
                     if merged_df is not None:
                         st.subheader("Merged Dataset")
                         st.write(f"Successfully merged {len(merged_df)} rows")
-                        st.dataframe(merged_df)
+                        
+                        # Use the safe display function
+                        safe_dataframe_display(merged_df)
                         
                         # Provide download option for merged dataset
                         csv = merged_df.to_csv(index=False).encode('utf-8')
@@ -153,6 +203,36 @@ if uploaded_files:
                             file_name="merged_dataset.csv",
                             mime="text/csv"
                         )
+                        
+                        # Allow user to enter custom filename before downloading
+                        st.write("### Download Options")
+                        st.info("Please enter a filename without spaces. Use underscores (_) instead of spaces.")
+                        custom_filename = st.text_input("Enter filename for download (without extension):", value="")
+                        
+                        # Only proceed if user has entered a filename
+                        if custom_filename.strip():
+                            # Replace spaces with underscores
+                            clean_filename = custom_filename.replace(" ", "_")
+                            
+                            # If user entered a different name than what we show after cleaning
+                            if clean_filename != custom_filename:
+                                st.warning(f"Spaces in filename replaced with underscores: '{clean_filename}'")
+                            
+                            # Ensure the filename has .csv extension
+                            if not clean_filename.endswith('.csv'):
+                                download_filename = clean_filename + '.csv'
+                            else:
+                                download_filename = clean_filename
+                            
+                            st.success(f"File will be downloaded as: {download_filename}")
+                            
+                            # Provide download with custom filename
+                            st.download_button(
+                                label=f"Download as {download_filename}",
+                                data=csv,
+                                file_name=download_filename,
+                                mime="text/csv"
+                            )
                         
                         # Display problematic rows
                         if problems:
@@ -164,7 +244,8 @@ if uploaded_files:
                             
                             for problem_name, problem_df in problems.items():
                                 with st.expander(f"{problem_name} ({len(problem_df)} rows)"):
-                                    st.dataframe(problem_df)
+                                    # Use the safe display function
+                                    safe_dataframe_display(problem_df)
                         else:
                             st.success("All rows merged successfully with a 1:1 relationship.")
                     else:
@@ -176,7 +257,8 @@ if uploaded_files:
     with st.expander("View uploaded datasets"):
         for i, (df, name) in enumerate(zip(dataframes, df_names)):
             st.subheader(f"Dataset {i+1}: {name}")
-            st.dataframe(df)
+            # Use the safe display function
+            safe_dataframe_display(df)
             st.write(f"Shape: {df.shape[0]} rows × {df.shape[1]} columns")
 else:
     st.info("Please upload at least two files to merge (.xlsx, .xls, or .csv format).")
@@ -192,5 +274,5 @@ It identifies and reports on rows that don't have a perfect 1:1 relationship.
 - Automatically identify common columns
 - Perform 1:1 merge on selected columns
 - Report problematic rows that don't merge cleanly
-- Download the merged dataset
+- Download the merged dataset with custom filename
 """)
