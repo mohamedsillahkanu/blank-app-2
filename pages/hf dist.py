@@ -38,18 +38,44 @@ try:
         
         # Column selection for coordinates
         st.subheader("Select Coordinate Columns")
-        numeric_columns = coordinates_data.select_dtypes(include=['float64', 'float32', 'int64', 'int32']).columns.tolist()
+        all_columns = coordinates_data.columns.tolist()
         
         col1, col2 = st.columns(2)
         
         with col1:
-            longitude_col = st.selectbox("Select Longitude Column", options=numeric_columns)
+            longitude_col = st.selectbox("Select Longitude Column", options=all_columns)
         
         with col2:
-            latitude_col = st.selectbox("Select Latitude Column", options=numeric_columns if len(numeric_columns) > 0 else ["No numeric columns found"])
+            latitude_col = st.selectbox("Select Latitude Column", options=all_columns)
         
-        # Only proceed if user has selected coordinate columns
-        if longitude_col != "No numeric columns found" and latitude_col != "No numeric columns found":
+        # Validate selected columns
+        proceed = True
+        
+        # Check if selected columns exist
+        if longitude_col not in all_columns or latitude_col not in all_columns:
+            st.error("Selected columns do not exist in the data.")
+            proceed = False
+        else:
+            # Convert columns to numeric, coercing non-numeric values to NaN
+            coordinates_data[longitude_col] = pd.to_numeric(coordinates_data[longitude_col], errors='coerce')
+            coordinates_data[latitude_col] = pd.to_numeric(coordinates_data[latitude_col], errors='coerce')
+            
+            # Check if columns have numeric values
+            if coordinates_data[longitude_col].isna().all():
+                st.error(f"Longitude column '{longitude_col}' does not contain numeric values.")
+                proceed = False
+            
+            if coordinates_data[latitude_col].isna().all():
+                st.error(f"Latitude column '{latitude_col}' does not contain numeric values.")
+                proceed = False
+            
+            # Count how many non-numeric values were removed
+            non_numeric_count = coordinates_data[longitude_col].isna().sum() + coordinates_data[latitude_col].isna().sum()
+            if non_numeric_count > 0:
+                st.warning(f"Found {non_numeric_count} rows with non-numeric coordinates. These will be automatically filtered out.")
+        
+        # Only proceed if validation passed
+        if proceed:
             # Map customization options
             st.header("Map Customization")
             
@@ -196,7 +222,7 @@ try:
                     mime="text/csv"
                 )
         else:
-            st.warning("Please select both longitude and latitude columns to proceed.")
+            st.info("Please select valid longitude and latitude columns to proceed.")
     else:
         st.info("Please upload health facilities data file (.xlsx, .xls, or .csv) to begin.")
 
