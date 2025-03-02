@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 st.title("📊 Text Data Extraction & Visualization")
 
 # Upload file
-uploaded_file = st.file_uploader("Upload an Excel file", type=["xlsx"])
+uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
 
 if uploaded_file:
     # Read the uploaded Excel file
