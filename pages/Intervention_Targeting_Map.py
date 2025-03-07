@@ -79,7 +79,7 @@ if uploaded_file is not None:
     line_color = st.selectbox("Select Default Line Color:", options=line_colors, index=1)
     line_width = st.slider("Select Default Line Width:", min_value=0.5, max_value=5.0, value=2.5)
 
-    # Missing value settings
+    # Missing value settings with corrected color mapping
     missing_value_color = st.selectbox("Select Color for Missing Values:", options=["White", "Gray", "Red", "Light Gray"], index=1)
     missing_value_label = st.text_input("Label for Missing Values:", value="No Data")
 
@@ -154,24 +154,41 @@ if uploaded_file is not None:
                     colors_list = [color_mapping[cat] for cat in selected_categories]
                     custom_cmap = ListedColormap(colors_list)
 
-                    # Plot the map
-                    # Use the color mapping dictionary instead of lowercase conversion
-                    merged_gdf.plot(column=map_column, ax=ax, linewidth=line_width, 
-                                   edgecolor=line_color_map[line_color], cmap=custom_cmap,
-                                   legend=False, missing_kwds={'color': line_color_map[missing_value_color], 
-                                                            'edgecolor': line_color_map[line_color], 
-                                                            'label': missing_value_label})
+                    # Plot the map - use hex colors directly to avoid matplotlib color name issues
+                    missing_color_hex = nice_colors.get(missing_value_color, "#D3D3D3")  # Default to light gray hex if not found
+                    edge_color_hex = nice_colors.get(line_color, "#000000")  # Default to black hex if not found
+                    
+                    merged_gdf.plot(
+                        column=map_column, 
+                        ax=ax, 
+                        linewidth=line_width, 
+                        edgecolor=line_color_map.get(line_color, "black"),  # Use fallback if not in map
+                        cmap=custom_cmap,
+                        legend=False, 
+                        missing_kwds={
+                            'color': line_color_map.get(missing_value_color, "lightgray"),  # Use fallback if not in map
+                            'edgecolor': line_color_map.get(line_color, "black"),  # Use fallback if not in map
+                            'label': missing_value_label
+                        }
+                    )
+                    
                     ax.set_title(map_title, fontsize=font_size, fontweight='bold')
                     ax.set_axis_off()
 
                     # Add boundaries for 'FIRST_DNAM' and 'FIRST_CHIE'
                     dissolved_gdf1 = merged_gdf.dissolve(by=shapefile_columns[0])
-                    dissolved_gdf1.boundary.plot(ax=ax, edgecolor=line_color_map[column1_line_color], 
-                                               linewidth=column1_line_width)
+                    dissolved_gdf1.boundary.plot(
+                        ax=ax, 
+                        edgecolor=line_color_map.get(column1_line_color, "black"),  # Use fallback if not in map
+                        linewidth=column1_line_width
+                    )
 
                     dissolved_gdf2 = merged_gdf.dissolve(by=shapefile_columns[1])
-                    dissolved_gdf2.boundary.plot(ax=ax, edgecolor=line_color_map[column2_line_color], 
-                                               linewidth=column2_line_width)
+                    dissolved_gdf2.boundary.plot(
+                        ax=ax, 
+                        edgecolor=line_color_map.get(column2_line_color, "black"),  # Use fallback if not in map
+                        linewidth=column2_line_width
+                    )
 
                     # Get legend position settings
                     legend_loc, legend_bbox = legend_positions[legend_position]
@@ -180,8 +197,10 @@ if uploaded_file is not None:
                     if merged_gdf[map_column].isnull().sum() > 0:
                         # Add missing data to the legend
                         handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
-                        handles.append(Patch(color=line_color_map[missing_value_color], 
-                                          label=f"{missing_value_label} ({merged_gdf[map_column].isnull().sum()})"))
+                        handles.append(Patch(
+                            color=line_color_map.get(missing_value_color, "lightgray"),  # Use fallback if not in map
+                            label=f"{missing_value_label} ({merged_gdf[map_column].isnull().sum()})"
+                        ))
                     else:
                         # Normal legend without missing data
                         handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
