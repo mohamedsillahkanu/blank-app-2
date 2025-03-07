@@ -133,12 +133,22 @@ if uploaded_file is not None:
                         label=f"{missing_value_label} ({missing_count})"
                     ))
                 
-                # Add custom legend at top-right corner
+                # Plot FIRST_DNAM and FIRST_CHIE with custom line settings
+                first_dnam_color = st.selectbox("Select Color for FIRST_DNAM:", list(nice_colors.keys()), index=0)
+                first_dnam_width = st.slider("Select Line Width for FIRST_DNAM:", 0.5, 5.0, 2.5)
+                first_chie_color = st.selectbox("Select Color for FIRST_CHIE:", list(nice_colors.keys()), index=1)
+                first_chie_width = st.slider("Select Line Width for FIRST_CHIE:", 0.5, 5.0, 2.5)
+                
+                gdf.plot(ax=ax, color="none", edgecolor=nice_colors[first_dnam_color], linewidth=first_dnam_width, label="FIRST_DNAM")
+                gdf.plot(ax=ax, color="none", edgecolor=nice_colors[first_chie_color], linewidth=first_chie_width, label="FIRST_CHIE")
+                
+                # Add custom legend at center-right position
                 ax.legend(
                     handles=legend_handles,
                     title=legend_title, 
-                    loc='upper right',  # Fixed legend position at top-right
-                    fontsize=10
+                    loc='center left',  # Fixed legend position at center-right
+                    fontsize=10,
+                    bbox_to_anchor=(1, 0.5)
                 )
                 
                 # Add title
