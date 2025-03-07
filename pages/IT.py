@@ -12,7 +12,7 @@ st.subheader("Create customized maps with your data")
 # Load the shapefile
 gdf = gpd.read_file("https://raw.githubusercontent.com/mohamedsillahkanu/si/2b7f982174b609f9647933147dec2a59a33e736a/Chiefdom%202021.shp")
 
-# Define color options
+# Define color options (added black and all grays to line color options)
 nice_colors = {
     "Light Blue": "#4CA3DD",
     "Soft Green": "#5DBE7E",
@@ -29,7 +29,8 @@ nice_colors = {
     "Gray": "#808080",
     "Dark Gray": "#404040",
     "Silver": "#C0C0C0",
-    "Slate Gray": "#708090"
+    "Slate Gray": "#708090",
+    "Black": "#000000"
 }
 
 # Display colors in a horizontal layout
@@ -83,6 +84,12 @@ if uploaded_file is not None:
             )
             color_mapping[category] = nice_colors[selected_color]
         
+        # Custom line settings for FIRST_DNAM and FIRST_CHIE
+        first_dnam_color = st.selectbox("Select Color for FIRST_DNAM:", list(nice_colors.keys()), index=0)
+        first_dnam_width = st.slider("Select Line Width for FIRST_DNAM:", 0.5, 5.0, 2.5)
+        first_chie_color = st.selectbox("Select Color for FIRST_CHIE:", list(nice_colors.keys()), index=1)
+        first_chie_width = st.slider("Select Line Width for FIRST_CHIE:", 0.5, 5.0, 2.5)
+        
         if st.button("Generate Map"):
             try:
                 # Create figure
@@ -134,11 +141,6 @@ if uploaded_file is not None:
                     ))
                 
                 # Plot FIRST_DNAM and FIRST_CHIE with custom line settings
-                first_dnam_color = st.selectbox("Select Color for FIRST_DNAM:", list(nice_colors.keys()), index=0)
-                first_dnam_width = st.slider("Select Line Width for FIRST_DNAM:", 0.5, 5.0, 2.5)
-                first_chie_color = st.selectbox("Select Color for FIRST_CHIE:", list(nice_colors.keys()), index=1)
-                first_chie_width = st.slider("Select Line Width for FIRST_CHIE:", 0.5, 5.0, 2.5)
-                
                 gdf.plot(ax=ax, color="none", edgecolor=nice_colors[first_dnam_color], linewidth=first_dnam_width, label="FIRST_DNAM")
                 gdf.plot(ax=ax, color="none", edgecolor=nice_colors[first_chie_color], linewidth=first_chie_width, label="FIRST_CHIE")
                 
