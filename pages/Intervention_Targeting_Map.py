@@ -62,20 +62,6 @@ if uploaded_file is not None:
     missing_value_color = st.selectbox("Select Color for Missing Values:", list(nice_colors.keys()), index=1)
     missing_value_label = st.text_input("Label for Missing Values:", value="No Data")
     
-    # Legend position
-    legend_positions = {
-        "Top Right": 'upper right',
-        "Top Left": 'upper left',
-        "Bottom Right": 'lower right',
-        "Bottom Left": 'lower left',
-        "Center Right": 'center right',
-        "Center Left": 'center left',
-        "Top Center": 'upper center',
-        "Bottom Center": 'lower center',
-        "Center": 'center'
-    }
-    legend_position = st.selectbox("Legend Position:", options=list(legend_positions.keys()), index=4)
-    
     # Select categories
     unique_values = sorted(df[map_column].dropna().unique().tolist())
     selected_categories = st.multiselect(f"Select Categories for {map_column}:", unique_values, default=unique_values)
@@ -147,19 +133,16 @@ if uploaded_file is not None:
                         label=f"{missing_value_label} ({missing_count})"
                     ))
                 
-                # Add custom legend 
-                legend = ax.legend(
+                # Add custom legend positioned at the top right
+                ax.legend(
                     handles=legend_handles,
                     title=legend_title, 
-                    loc=legend_positions[legend_position], 
+                    loc='upper right', 
                     fontsize=10
                 )
                 
                 # Set the legend title with bold font
-                legend.get_title().set_fontweight('bold')
-                
-                # Add borders to legend patches (especially for white)
-                # No need to access legendHandles here - this is causing the error
+                ax.get_legend().get_title().set_fontweight('bold')
                 
                 # Add title
                 ax.set_title(map_title, fontsize=font_size, fontweight='bold')
