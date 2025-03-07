@@ -13,7 +13,7 @@ st.subheader("Create customized maps with your data")
 # Load the shapefile
 gdf = gpd.read_file("https://raw.githubusercontent.com/mohamedsillahkanu/si/2b7f982174b609f9647933147dec2a59a33e736a/Chiefdom%202021.shp")
 
-# Define a nice set of colors that go well with white
+# Define a nice set of colors that go well with white, including gray colors
 nice_colors = {
     "Light Blue": "#4CA3DD",
     "Soft Green": "#5DBE7E",
@@ -25,8 +25,23 @@ nice_colors = {
     "Sky Blue": "#89CFF0",
     "Mint": "#98FB98",
     "Peach": "#FFDAB9",
-    "White": "#FFFFFF"
+    "White": "#FFFFFF",
+    "Light Gray": "#D3D3D3",
+    "Gray": "#808080",
+    "Dark Gray": "#404040",
+    "Silver": "#C0C0C0",
+    "Slate Gray": "#708090"
 }
+
+# Display colors in a more compact horizontal layout
+st.subheader("Available Colors")
+cols = st.columns(5)  # Create 5 columns for a more compact horizontal display
+for i, (color_name, hex_code) in enumerate(nice_colors.items()):
+    with cols[i % 5]:
+        st.markdown(
+            f'<div style="background-color:{hex_code}; padding:5px; margin:2px; color:{"#000000" if color_name in ["White", "Light Gray", "Silver"] else "#FFFFFF"}; border:1px solid #CCCCCC; text-align:center;">{color_name}</div>',
+            unsafe_allow_html=True
+        )
 
 # File upload (Excel or CSV)
 uploaded_file = st.file_uploader("Upload Excel or CSV file", type=["xlsx", "csv"])
@@ -48,67 +63,44 @@ if uploaded_file is not None:
     image_name = st.text_input("Image Name:", value="Generated_Map")
     font_size = st.slider("Font Size (for Map Title):", min_value=8, max_value=24, value=15)
 
-    # Show a preview of the color options
-    st.subheader("Available Colors")
-    color_preview = ""
-    for color_name, hex_code in nice_colors.items():
-        color_preview += f'<span style="background-color:{hex_code}; padding:10px; margin:2px; color:{"#000000" if color_name=="White" else "#FFFFFF"}; border:1px solid #CCCCCC;">{color_name}</span> '
-    st.markdown(color_preview, unsafe_allow_html=True)
-
-    # Default line color and width settings
-    line_color = st.selectbox("Select Default Line Color:", options=["White", "Black", "Red"], index=1)
+    # Line settings with more color options
+    line_colors = ["White", "Black", "Red", "Gray", "Dark Gray", "Light Gray", "Blue", "Green"]
+    line_color = st.selectbox("Select Default Line Color:", options=line_colors, index=1)
     line_width = st.slider("Select Default Line Width:", min_value=0.5, max_value=5.0, value=2.5)
 
     # Missing value settings
-    missing_value_color = st.selectbox("Select Color for Missing Values:", options=["White", "Gray", "Red"], index=1)
+    missing_value_color = st.selectbox("Select Color for Missing Values:", options=["White", "Gray", "Red", "Light Gray"], index=1)
     missing_value_label = st.text_input("Label for Missing Values:", value="No Data")
+
+    # Legend position settings
+    legend_positions = {
+        "Top Right": ('upper right', (1, 1)),
+        "Top Left": ('upper left', (0, 1)),
+        "Bottom Right": ('lower right', (1, 0)),
+        "Bottom Left": ('lower left', (0, 0)),
+        "Center Right": ('center right', (1, 0.5)),
+        "Center Left": ('center left', (0, 0.5)),
+        "Top Center": ('upper center', (0.5, 1)),
+        "Bottom Center": ('lower center', (0.5, 0)),
+        "Center": ('center', (0.5, 0.5)),
+        "Outside Right": ('center left', (1.05, 0.5)),
+        "Outside Bottom": ('upper center', (0.5, -0.15))
+    }
+    legend_position = st.selectbox("Select Legend Position:", 
+                                  options=list(legend_positions.keys()), 
+                                  index=0)  # Default to Top Right
 
     # Initialize category_counts dictionary for managing category counts
     category_counts = {}
     selected_categories = []  # Initialize selected_categories
 
-    # Categorical or Numeric variable selection
-    variable_type = st.radio("Select the variable type:", options=["Categorical", "Numeric"])
+    # Only categorical variable selection (removed numeric option)
+    unique_values = sorted(df[map_column].dropna().unique().tolist())
+    selected_categories = st.multiselect(f"Select Categories for the Legend of {map_column}:", unique_values, default=unique_values)
+    category_counts = df[map_column].value_counts().to_dict()
 
-    if variable_type == "Categorical":
-        unique_values = sorted(df[map_column].dropna().unique().tolist())
-        selected_categories = st.multiselect(f"Select Categories for the Legend of {map_column}:", unique_values, default=unique_values)
-        category_counts = df[map_column].value_counts().to_dict()
-
-        # Reorder the categories
-        df[map_column] = pd.Categorical(df[map_column], categories=selected_categories, ordered=True)
-
-    elif variable_type == "Numeric":
-        # Select number of bins
-        num_bins = st.selectbox("Select Number of Bins:", options=[2, 3, 4, 5, 6, 7])
-
-        # Create custom labels for bins
-        bin_labels_input = st.text_input("Enter labels for bins (comma-separated):")
-        bin_labels = [label.strip() for label in bin_labels_input.split(',')] if bin_labels_input else []
-
-        # Validate the number of bin labels
-        if len(bin_labels) != num_bins - 1:
-            st.error(f"The number of valid bin labels must match {num_bins - 1}. You provided {len(bin_labels)} labels.")
-        else:
-            # Create bin edges based on user-defined labels
-            bins = [df[map_column].min()]  # Start with the minimum value
-            
-            # Generate bins dynamically based on user input
-            for i in range(num_bins - 1):
-                lower_limit = df[map_column].min() + (i * (df[map_column].max() - df[map_column].min()) / (num_bins - 1))
-                upper_limit = df[map_column].min() + ((i + 1) * (df[map_column].max() - df[map_column].min()) / (num_bins - 1))
-                bins.append(lower_limit)
-                bins.append(upper_limit)
-
-            bins.append(df[map_column].max())  # End with the maximum value
-
-            # Perform binning
-            if bins:
-                bins = sorted(set(bins))  # Ensure bins are unique and sorted
-                df[map_column + "_bins"] = pd.cut(df[map_column], bins=bins, labels=bin_labels, include_lowest=True)
-                map_column += "_bins"
-                selected_categories = bin_labels
-                category_counts = df[map_column].value_counts().to_dict()
+    # Reorder the categories
+    df[map_column] = pd.Categorical(df[map_column], categories=selected_categories, ordered=True)
 
     # Proceed with map generation if categories are selected
     if selected_categories:
@@ -131,9 +123,9 @@ if uploaded_file is not None:
 
         # Check if two columns are selected for merging
         if len(shapefile_columns) == 2 and len(excel_columns) == 2:
-            column1_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[0]}' boundaries:", options=["White", "Black", "Red"], index=1)
+            column1_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[0]}' boundaries:", options=line_colors, index=1)
             column1_line_width = st.slider(f"Select Line Width for '{shapefile_columns[0]}' boundaries:", min_value=0.5, max_value=10.0, value=2.5)
-            column2_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[1]}' boundaries:", options=["White", "Black", "Red"], index=1)
+            column2_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[1]}' boundaries:", options=line_colors, index=1)
             column2_line_width = st.slider(f"Select Line Width for '{shapefile_columns[1]}' boundaries:", min_value=0.5, max_value=10.0, value=2.5)
 
         # Generate the map upon button click
@@ -164,6 +156,9 @@ if uploaded_file is not None:
                     dissolved_gdf2 = merged_gdf.dissolve(by=shapefile_columns[1])
                     dissolved_gdf2.boundary.plot(ax=ax, edgecolor=column2_line_color.lower(), linewidth=column2_line_width)
 
+                    # Get legend position settings
+                    legend_loc, legend_bbox = legend_positions[legend_position]
+
                     # Check for missing data in the map column
                     if merged_gdf[map_column].isnull().sum() > 0:
                         # Add missing data to the legend
@@ -173,10 +168,17 @@ if uploaded_file is not None:
                         # Normal legend without missing data
                         handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
 
-                    # Create legend with bold text
-                    legend = ax.legend(handles=handles, title=legend_title, fontsize=10, loc='lower left', bbox_to_anchor=(-0.5, 0), frameon=True)
+                    # Create legend with bold text and border for white color patches
+                    legend = ax.legend(handles=handles, title=legend_title, fontsize=10, 
+                                      loc=legend_loc, bbox_to_anchor=legend_bbox, 
+                                      frameon=True, fancybox=True, shadow=True)
                     plt.setp(legend.get_title(), fontsize=10, fontweight='bold')
                     plt.setp(legend.get_texts(), fontweight='bold')
+                    
+                    # Add borders to legend patches (especially for white)
+                    for handle in legend.legendHandles:
+                        handle.set_edgecolor('black')
+                        handle.set_linewidth(0.5)
 
                     # Save the map to a BytesIO object for downloading
                     img_bytes = io.BytesIO()
