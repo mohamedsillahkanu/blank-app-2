@@ -3,6 +3,7 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
+import io
 
 # Title
 st.title("MAP GENERATOR")
@@ -24,11 +25,7 @@ nice_colors = {
     "Mint": "#98FB98",
     "Peach": "#FFDAB9",
     "White": "#FFFFFF",
-    "Light Gray": "#D3D3D3",
     "Gray": "#808080",
-    "Dark Gray": "#404040",
-    "Silver": "#C0C0C0",
-    "Slate Gray": "#708090",
     "Black": "#000000"
 }
 
@@ -44,10 +41,6 @@ if uploaded_file is not None:
     legend_title = st.text_input("Legend Title:")
     image_name = st.text_input("Image Name:", value="Generated_Map")
     font_size = st.slider("Font Size (for Map Title):", 8, 24, 15)
-
-    # Line settings
-    line_color = st.selectbox("Select Default Line Color:", list(nice_colors.keys()), index=1)
-    line_width = st.slider("Select Default Line Width:", 0.5, 5.0, 2.5)
 
     # Missing values settings
     missing_value_color = st.selectbox("Select Color for Missing Values:", list(nice_colors.keys()), index=1)
@@ -69,12 +62,6 @@ if uploaded_file is not None:
             selected_color = st.selectbox(f"Select Color for '{category}':", list(nice_colors.keys()), index=list(nice_colors.keys()).index(default_color))
             color_mapping[category] = nice_colors[selected_color]
 
-        # Custom line settings for boundaries
-        first_dnam_color = st.selectbox("Select Color for FIRST_DNAM:", list(nice_colors.keys()), index=0)
-        first_dnam_width = st.slider("Select Line Width for FIRST_DNAM:", 0.5, 5.0, 2.5)
-        first_chie_color = st.selectbox("Select Color for FIRST_CHIE:", list(nice_colors.keys()), index=1)
-        first_chie_width = st.slider("Select Line Width for FIRST_CHIE:", 0.5, 5.0, 2.5)
-
         # Generate Map Button
         if st.button("Generate Map"):
             try:
@@ -84,30 +71,24 @@ if uploaded_file is not None:
                 # Create figure
                 fig, ax = plt.subplots(figsize=(10, 8))
 
-                # Plot the default boundaries
-                gdf.boundary.plot(ax=ax, linewidth=line_width, edgecolor=nice_colors[line_color])
-
                 # Plot each category
                 legend_handles = []
                 for category in selected_categories:
                     sub_gdf = merged_gdf[merged_gdf[map_column] == category]
                     if not sub_gdf.empty:
-                        sub_gdf.plot(ax=ax, color=color_mapping[category], edgecolor=nice_colors[line_color], linewidth=line_width)
+                        sub_gdf.plot(ax=ax, color=color_mapping[category], edgecolor="white", linewidth=0.5)
                         count = category_counts.get(category, 0)
                         legend_handles.append(Patch(color=color_mapping[category], label=f"{category} ({count})"))
 
                 # Handle missing values
                 missing_data = merged_gdf[merged_gdf[map_column].isna()]
                 if not missing_data.empty:
-                    missing_data.plot(ax=ax, color=nice_colors[missing_value_color], edgecolor=nice_colors[line_color], linewidth=line_width)
+                    missing_data.plot(ax=ax, color=nice_colors[missing_value_color], edgecolor="white", linewidth=0.5)
                     legend_handles.append(Patch(color=nice_colors[missing_value_color], label=missing_value_label))
 
-                # Plot boundaries for FIRST_DNAM and FIRST_CHIE
-                dissolved_gdf1 = merged_gdf.dissolve(by='FIRST_DNAM')
-                dissolved_gdf1.boundary.plot(ax=ax, edgecolor=nice_colors[first_dnam_color], linewidth=first_dnam_width)
-
-                dissolved_gdf2 = merged_gdf.dissolve(by='FIRST_CHIE')
-                dissolved_gdf2.boundary.plot(ax=ax, edgecolor=nice_colors[first_chie_color], linewidth=first_chie_width)
+                # Plot boundaries for FIRST_DNAM (black) and FIRST_CHIE (gray)
+                merged_gdf.dissolve(by='FIRST_DNAM').boundary.plot(ax=ax, edgecolor="black", linewidth=2.5)
+                merged_gdf.dissolve(by='FIRST_CHIE').boundary.plot(ax=ax, edgecolor="gray", linewidth=1.5)
 
                 # Set title and hide axes
                 ax.set_title(map_title, fontsize=font_size, fontweight='bold')
@@ -117,5 +98,18 @@ if uploaded_file is not None:
                 # Show the map in Streamlit
                 st.pyplot(fig)
 
+                # Save map to buffer for download
+                buf = io.BytesIO()
+                fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+                buf.seek(0)
+
+                # Download button
+                st.download_button(
+                    label="Download Map",
+                    data=buf,
+                    file_name=f"{image_name}.png",
+                    mime="image/png"
+                )
+
             except Exception as e:
-                st.error(f"Error generating map: {e}")
+                st.error(f"Error: {e}")
