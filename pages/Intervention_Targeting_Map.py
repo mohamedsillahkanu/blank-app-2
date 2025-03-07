@@ -65,6 +65,17 @@ if uploaded_file is not None:
 
     # Line settings with more color options
     line_colors = ["White", "Black", "Red", "Gray", "Dark Gray", "Light Gray", "Blue", "Green"]
+    # Create a mapping for valid matplotlib color names
+    line_color_map = {
+        "White": "white",
+        "Black": "black", 
+        "Red": "red",
+        "Gray": "gray",
+        "Dark Gray": "darkgray",  # No space
+        "Light Gray": "lightgray",  # No space
+        "Blue": "blue",
+        "Green": "green"
+    }
     line_color = st.selectbox("Select Default Line Color:", options=line_colors, index=1)
     line_width = st.slider("Select Default Line Width:", min_value=0.5, max_value=5.0, value=2.5)
 
@@ -144,17 +155,23 @@ if uploaded_file is not None:
                     custom_cmap = ListedColormap(colors_list)
 
                     # Plot the map
-                    merged_gdf.plot(column=map_column, ax=ax, linewidth=line_width, edgecolor=line_color.lower(), cmap=custom_cmap,
-                                    legend=False, missing_kwds={'color': missing_value_color.lower(), 'edgecolor': line_color.lower(), 'label': missing_value_label})
+                    # Use the color mapping dictionary instead of lowercase conversion
+                    merged_gdf.plot(column=map_column, ax=ax, linewidth=line_width, 
+                                   edgecolor=line_color_map[line_color], cmap=custom_cmap,
+                                   legend=False, missing_kwds={'color': line_color_map[missing_value_color], 
+                                                            'edgecolor': line_color_map[line_color], 
+                                                            'label': missing_value_label})
                     ax.set_title(map_title, fontsize=font_size, fontweight='bold')
                     ax.set_axis_off()
 
                     # Add boundaries for 'FIRST_DNAM' and 'FIRST_CHIE'
                     dissolved_gdf1 = merged_gdf.dissolve(by=shapefile_columns[0])
-                    dissolved_gdf1.boundary.plot(ax=ax, edgecolor=column1_line_color.lower(), linewidth=column1_line_width)
+                    dissolved_gdf1.boundary.plot(ax=ax, edgecolor=line_color_map[column1_line_color], 
+                                               linewidth=column1_line_width)
 
                     dissolved_gdf2 = merged_gdf.dissolve(by=shapefile_columns[1])
-                    dissolved_gdf2.boundary.plot(ax=ax, edgecolor=column2_line_color.lower(), linewidth=column2_line_width)
+                    dissolved_gdf2.boundary.plot(ax=ax, edgecolor=line_color_map[column2_line_color], 
+                                               linewidth=column2_line_width)
 
                     # Get legend position settings
                     legend_loc, legend_bbox = legend_positions[legend_position]
@@ -163,7 +180,8 @@ if uploaded_file is not None:
                     if merged_gdf[map_column].isnull().sum() > 0:
                         # Add missing data to the legend
                         handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
-                        handles.append(Patch(color=missing_value_color.lower(), label=f"{missing_value_label} ({merged_gdf[map_column].isnull().sum()})"))
+                        handles.append(Patch(color=line_color_map[missing_value_color], 
+                                          label=f"{missing_value_label} ({merged_gdf[map_column].isnull().sum()})"))
                     else:
                         # Normal legend without missing data
                         handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
@@ -175,8 +193,8 @@ if uploaded_file is not None:
                     plt.setp(legend.get_title(), fontsize=10, fontweight='bold')
                     plt.setp(legend.get_texts(), fontweight='bold')
                     
-                    # Add borders to legend patches (especially for white)
-                    for handle in legend.legendHandles:
+                    # Fix: Use legend_handles instead of legendHandles
+                    for handle in legend.legend_handles:
                         handle.set_edgecolor('black')
                         handle.set_linewidth(0.5)
 
