@@ -70,7 +70,7 @@ if uploaded_file is not None:
         "White": "white",
         "Black": "black", 
         "Red": "red",
-        "Gray": "gray",
+        "Gray": "#808080",
         "Dark Gray": "darkgray",  # No space
         "Light Gray": "lightgray",  # No space
         "Blue": "blue",
