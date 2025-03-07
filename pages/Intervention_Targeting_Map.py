@@ -107,3 +107,16 @@ if uploaded_file is not None:
 
         # Display map in Streamlit
         st.pyplot(fig)
+
+        # Save map as a PNG file
+        img_buffer = io.BytesIO()
+        fig.savefig(img_buffer, format="png", dpi=300, bbox_inches="tight")
+        img_buffer.seek(0)
+
+        # Add download button
+        st.download_button(
+            label="Download Map as PNG",
+            data=img_buffer,
+            file_name="generated_map.png",
+            mime="image/png"
+        )
