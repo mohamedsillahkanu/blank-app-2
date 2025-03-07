@@ -51,20 +51,6 @@ if uploaded_file is not None:
     missing_value_color = st.selectbox("Select Color for Missing Values:", list(nice_colors.keys()), index=1)
     missing_value_label = st.text_input("Label for Missing Values:", value="No Data")
 
-    # Legend position
-    legend_positions = {
-        "Top Right": 'upper right',
-        "Top Left": 'upper left',
-        "Bottom Right": 'lower right',
-        "Bottom Left": 'lower left',
-        "Center Right": 'center right',
-        "Center Left": 'center left',
-        "Top Center": 'upper center',
-        "Bottom Center": 'lower center',
-        "Center": 'center'
-    }
-    legend_position = st.selectbox("Select Legend Position:", list(legend_positions.keys()), index=0)
-
     # Select categories
     unique_values = sorted(df[map_column].dropna().unique().tolist())
     selected_categories = st.multiselect(f"Select Categories for {map_column}:", unique_values, default=unique_values)
@@ -81,21 +67,18 @@ if uploaded_file is not None:
         gdf.boundary.plot(ax=ax, linewidth=line_width, edgecolor=nice_colors[line_color])
 
         # Plot each category
-        legend_handles = []
         for category, color in color_mapping.items():
             sub_gdf = gdf[gdf["FIRST_CHIE"].isin(df[df[map_column] == category]["FIRST_CHIE"])]
             if not sub_gdf.empty:
                 sub_gdf.plot(ax=ax, color=color, edgecolor=nice_colors[line_color], linewidth=line_width)
-                legend_handles.append(Patch(facecolor=color, edgecolor="black", label=category))
 
         # Handle missing values
         missing_gdf = gdf[~gdf["FIRST_CHIE"].isin(df[df[map_column].notna()]["FIRST_CHIE"])]
         if not missing_gdf.empty:
             missing_gdf.plot(ax=ax, color=nice_colors[missing_value_color], edgecolor=nice_colors[line_color], linewidth=line_width)
-            legend_handles.append(Patch(facecolor=nice_colors[missing_value_color], edgecolor="black", label=missing_value_label))
 
-        # Add legend
-        ax.legend(handles=legend_handles, title=legend_title, loc=legend_positions[legend_position])
+        # Add default legend at the center right
+        ax.legend(title=legend_title, loc='center right', fontsize=font_size)
 
         # Add title
         ax.set_title(map_title, fontsize=font_size)
