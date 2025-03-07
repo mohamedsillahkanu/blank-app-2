@@ -6,9 +6,9 @@ from matplotlib.patches import Patch
 from matplotlib.colors import ListedColormap, to_hex
 import io
 
-
-# Displaying the images
-st.image("icf_sl (1).jpg", caption="MAP GENERATOR", use_column_width=True)
+# Title instead of image
+st.title("MAP GENERATOR")
+st.subheader("Create customized maps with your data")
 
 # Load the shapefile
 gdf = gpd.read_file("https://raw.githubusercontent.com/mohamedsillahkanu/si/2b7f982174b609f9647933147dec2a59a33e736a/Chiefdom%202021.shp")
