@@ -3,17 +3,16 @@ import geopandas as gpd
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-from matplotlib.colors import ListedColormap, to_hex
 import io
 
-# Title instead of image
+# Title
 st.title("MAP GENERATOR")
 st.subheader("Create customized maps with your data")
 
 # Load the shapefile
 gdf = gpd.read_file("https://raw.githubusercontent.com/mohamedsillahkanu/si/2b7f982174b609f9647933147dec2a59a33e736a/Chiefdom%202021.shp")
 
-# Define a nice set of colors that go well with white, including gray colors
+# Define color options with hex codes
 nice_colors = {
     "Light Blue": "#4CA3DD",
     "Soft Green": "#5DBE7E",
@@ -33,9 +32,9 @@ nice_colors = {
     "Slate Gray": "#708090"
 }
 
-# Display colors in a more compact horizontal layout
+# Display colors in a horizontal layout
 st.subheader("Available Colors")
-cols = st.columns(5)  # Create 5 columns for a more compact horizontal display
+cols = st.columns(5)
 for i, (color_name, hex_code) in enumerate(nice_colors.items()):
     with cols[i % 5]:
         st.markdown(
@@ -43,190 +42,101 @@ for i, (color_name, hex_code) in enumerate(nice_colors.items()):
             unsafe_allow_html=True
         )
 
-# File upload (Excel or CSV)
+# File upload
 uploaded_file = st.file_uploader("Upload Excel or CSV file", type=["xlsx", "csv"])
 if uploaded_file is not None:
-    # Read the uploaded file (Excel or CSV)
-    if uploaded_file.name.endswith('.xlsx'):
-        df = pd.read_excel(uploaded_file)
-    else:
-        df = pd.read_csv(uploaded_file)
+    df = pd.read_excel(uploaded_file) if uploaded_file.name.endswith('.xlsx') else pd.read_csv(uploaded_file)
 
-    # Exclude certain columns from being selectable for the map
     excluded_columns = ['FIRST_DNAM', 'FIRST_CHIE', 'adm3']
     available_columns = [col for col in df.columns if col not in excluded_columns]
 
-    # UI elements for selecting map settings
     map_column = st.selectbox("Select Map Column:", available_columns)
     map_title = st.text_input("Map Title:")
     legend_title = st.text_input("Legend Title:")
     image_name = st.text_input("Image Name:", value="Generated_Map")
-    font_size = st.slider("Font Size (for Map Title):", min_value=8, max_value=24, value=15)
+    font_size = st.slider("Font Size (for Map Title):", 8, 24, 15)
 
-    # Line settings with more color options
-    line_colors = ["White", "Black", "Red", "Gray", "Dark Gray", "Light Gray", "Blue", "Green"]
-    # Create a mapping for valid matplotlib color names
+    # Line settings
     line_color_map = {
-        "White": "white",
-        "Black": "black", 
-        "Red": "red",
+        "White": "#FFFFFF",
+        "Black": "#000000", 
+        "Red": "#FF0000",
         "Gray": "#808080",
-        "Dark Gray": "darkgray",  # No space
-        "Light Gray": "lightgray",  # No space
-        "Blue": "blue",
-        "Green": "green"
+        "Dark Gray": "#404040",
+        "Light Gray": "#D3D3D3",  # ✅ Fixed invalid name
+        "Blue": "#0000FF",
+        "Green": "#008000"
     }
-    line_color = st.selectbox("Select Default Line Color:", options=line_colors, index=1)
-    line_width = st.slider("Select Default Line Width:", min_value=0.5, max_value=5.0, value=2.5)
+    line_color = st.selectbox("Select Default Line Color:", options=list(line_color_map.keys()), index=1)
+    line_width = st.slider("Select Default Line Width:", 0.5, 5.0, 2.5)
 
-    # Missing value settings with corrected color mapping
-    missing_value_color = st.selectbox("Select Color for Missing Values:", options=["White", "Gray", "Red", "Light Gray"], index=1)
+    # Missing value settings
+    missing_value_color = st.selectbox("Select Color for Missing Values:", ["White", "Gray", "Red", "Light Gray"], index=1)
     missing_value_label = st.text_input("Label for Missing Values:", value="No Data")
 
-    # Legend position settings
+    # Legend position
     legend_positions = {
-        "Top Right": ('upper right', (1, 1)),
-        "Top Left": ('upper left', (0, 1)),
-        "Bottom Right": ('lower right', (1, 0)),
-        "Bottom Left": ('lower left', (0, 0)),
-        "Center Right": ('center right', (1, 0.5)),
-        "Center Left": ('center left', (0, 0.5)),
-        "Top Center": ('upper center', (0.5, 1)),
-        "Bottom Center": ('lower center', (0.5, 0)),
-        "Center": ('center', (0.5, 0.5)),
-        "Outside Right": ('center left', (1.05, 0.5)),
-        "Outside Bottom": ('upper center', (0.5, -0.15))
+        "Top Right": 'upper right',
+        "Top Left": 'upper left',
+        "Bottom Right": 'lower right',
+        "Bottom Left": 'lower left',
+        "Center Right": 'center right',
+        "Center Left": 'center left',
+        "Top Center": 'upper center',
+        "Bottom Center": 'lower center',
+        "Center": 'center'
     }
-    legend_position = st.selectbox("Select Legend Position:", 
-                                  options=list(legend_positions.keys()), 
-                                  index=0)  # Default to Top Right
+    legend_position = st.selectbox("Select Legend Position:", list(legend_positions.keys()), index=0)
 
-    # Initialize category_counts dictionary for managing category counts
-    category_counts = {}
-    selected_categories = []  # Initialize selected_categories
-
-    # Only categorical variable selection (removed numeric option)
+    # Select categories
     unique_values = sorted(df[map_column].dropna().unique().tolist())
     selected_categories = st.multiselect(f"Select Categories for the Legend of {map_column}:", unique_values, default=unique_values)
-    category_counts = df[map_column].value_counts().to_dict()
 
-    # Reorder the categories
-    df[map_column] = pd.Categorical(df[map_column], categories=selected_categories, ordered=True)
-
-    # Proceed with map generation if categories are selected
+    # If categories are selected, proceed
     if selected_categories:
-        # Manual color mapping
-        color_mapping = {}
-        
-        # Color customization for categories
+        df[map_column] = pd.Categorical(df[map_column], categories=selected_categories, ordered=True)
+
+        # Assign colors to categories
         st.subheader("Select Colors for Categories")
+        color_mapping = {}
         for i, category in enumerate(selected_categories):
-            # Default to a color from our nice colors (cycling through the list)
             default_color = list(nice_colors.keys())[i % len(nice_colors)]
-            selected_color_name = st.selectbox(f"Select Color for '{category}':", 
-                                              options=list(nice_colors.keys()), 
-                                              index=list(nice_colors.keys()).index(default_color))
+            selected_color_name = st.selectbox(f"Select Color for '{category}':", list(nice_colors.keys()), index=i % len(nice_colors))
             color_mapping[category] = nice_colors[selected_color_name]
 
-        # Column1 and Column2 are selected automatically in the background
-        shapefile_columns = ['FIRST_DNAM', 'FIRST_CHIE']
-        excel_columns = ['FIRST_DNAM', 'FIRST_CHIE']
+        # Generate map
+        fig, ax = plt.subplots(figsize=(10, 8))
+        gdf.boundary.plot(ax=ax, linewidth=line_width, edgecolor=line_color_map[line_color])
 
-        # Check if two columns are selected for merging
-        if len(shapefile_columns) == 2 and len(excel_columns) == 2:
-            column1_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[0]}' boundaries:", options=line_colors, index=1)
-            column1_line_width = st.slider(f"Select Line Width for '{shapefile_columns[0]}' boundaries:", min_value=0.5, max_value=10.0, value=2.5)
-            column2_line_color = st.selectbox(f"Select Line Color for '{shapefile_columns[1]}' boundaries:", options=line_colors, index=1)
-            column2_line_width = st.slider(f"Select Line Width for '{shapefile_columns[1]}' boundaries:", min_value=0.5, max_value=10.0, value=2.5)
+        # Plot each category with its assigned color
+        legend_handles = []
+        for category, color in color_mapping.items():
+            sub_gdf = gdf[gdf["FIRST_CHIE"].isin(df[df[map_column] == category]["FIRST_CHIE"])]
+            if not sub_gdf.empty:
+                sub_gdf.plot(ax=ax, color=color, edgecolor=line_color_map[line_color], linewidth=line_width)
+                legend_handles.append(Patch(facecolor=color, edgecolor="black", label=category))
 
-        # Generate the map upon button click
-        if st.button("Generate Map"):
-            try:
-                # Merge the shapefile and Excel data
-                merged_gdf = gdf.merge(df, left_on=shapefile_columns, right_on=excel_columns, how='left')
+        # Handle missing values
+        missing_gdf = gdf[~gdf["FIRST_CHIE"].isin(df["FIRST_CHIE"])]
+        if not missing_gdf.empty:
+            missing_gdf.plot(ax=ax, color=line_color_map[missing_value_color], edgecolor=line_color_map[line_color], linewidth=line_width)
+            legend_handles.append(Patch(facecolor=line_color_map[missing_value_color], edgecolor="black", label=missing_value_label))
 
-                if map_column not in merged_gdf.columns:
-                    st.error(f"The column '{map_column}' does not exist in the merged dataset.")
-                else:
-                    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+        # Add legend
+        legend = ax.legend(handles=legend_handles, title=legend_title, loc=legend_positions[legend_position])
 
-                    # Create a custom colormap from the selected colors
-                    colors_list = [color_mapping[cat] for cat in selected_categories]
-                    custom_cmap = ListedColormap(colors_list)
+        # Add title
+        ax.set_title(map_title, fontsize=font_size)
 
-                    # Plot the map - use hex colors directly to avoid matplotlib color name issues
-                    missing_color_hex = nice_colors.get(missing_value_color, "#D3D3D3")  # Default to light gray hex if not found
-                    edge_color_hex = nice_colors.get(line_color, "#000000")  # Default to black hex if not found
-                    
-                    merged_gdf.plot(
-                        column=map_column, 
-                        ax=ax, 
-                        linewidth=line_width, 
-                        edgecolor=line_color_map.get(line_color, "black"),  # Use fallback if not in map
-                        cmap=custom_cmap,
-                        legend=False, 
-                        missing_kwds={
-                            'color': line_color_map.get(missing_value_color, "lightgray"),  # Use fallback if not in map
-                            'edgecolor': line_color_map.get(line_color, "black"),  # Use fallback if not in map
-                            'label': missing_value_label
-                        }
-                    )
-                    
-                    ax.set_title(map_title, fontsize=font_size, fontweight='bold')
-                    ax.set_axis_off()
+        # Remove axes
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_frame_on(False)
 
-                    # Add boundaries for 'FIRST_DNAM' and 'FIRST_CHIE'
-                    dissolved_gdf1 = merged_gdf.dissolve(by=shapefile_columns[0])
-                    dissolved_gdf1.boundary.plot(
-                        ax=ax, 
-                        edgecolor=line_color_map.get(column1_line_color, "black"),  # Use fallback if not in map
-                        linewidth=column1_line_width
-                    )
+        # Save image
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+        buf.seek(0)
 
-                    dissolved_gdf2 = merged_gdf.dissolve(by=shapefile_columns[1])
-                    dissolved_gdf2.boundary.plot(
-                        ax=ax, 
-                        edgecolor=line_color_map.get(column2_line_color, "black"),  # Use fallback if not in map
-                        linewidth=column2_line_width
-                    )
-
-                    # Get legend position settings
-                    legend_loc, legend_bbox = legend_positions[legend_position]
-
-                    # Check for missing data in the map column
-                    if merged_gdf[map_column].isnull().sum() > 0:
-                        # Add missing data to the legend
-                        handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
-                        handles.append(Patch(
-                            color=line_color_map.get(missing_value_color, "lightgray"),  # Use fallback if not in map
-                            label=f"{missing_value_label} ({merged_gdf[map_column].isnull().sum()})"
-                        ))
-                    else:
-                        # Normal legend without missing data
-                        handles = [Patch(color=color_mapping[cat], label=f"{cat} ({category_counts.get(cat, 0)})") for cat in selected_categories]
-
-                    # Create legend with bold text and border for white color patches
-                    legend = ax.legend(handles=handles, title=legend_title, fontsize=10, 
-                                      loc=legend_loc, bbox_to_anchor=legend_bbox, 
-                                      frameon=True, fancybox=True, shadow=True)
-                    plt.setp(legend.get_title(), fontsize=10, fontweight='bold')
-                    plt.setp(legend.get_texts(), fontweight='bold')
-                    
-                    # Fix: Use legend_handles instead of legendHandles
-                    for handle in legend.legend_handles:
-                        handle.set_edgecolor('black')
-                        handle.set_linewidth(0.5)
-
-                    # Save the map to a BytesIO object for downloading
-                    img_bytes = io.BytesIO()
-                    plt.savefig(img_bytes, format='png', bbox_inches='tight', pad_inches=0.1)
-                    img_bytes.seek(0)
-
-                    # Display the map
-                    st.pyplot(fig)
-
-                    # Download button for the generated image
-                    st.download_button("Download Map", img_bytes, file_name=f"{image_name}.png", mime="image/png")
-
-            except Exception as e:
-                st.error(f"An error occurred while generating the map: {e}")
+        st.image(buf, caption="Generated Map", use_column_width=True)
+        st.download_button("Download Map", buf, file_name=f"{image_name}.png", mime="image/png")
