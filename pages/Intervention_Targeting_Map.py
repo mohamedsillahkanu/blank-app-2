@@ -133,16 +133,13 @@ if uploaded_file is not None:
                         label=f"{missing_value_label} ({missing_count})"
                     ))
                 
-                # Add custom legend positioned at the top right
+                # Add custom legend at top-right corner
                 ax.legend(
                     handles=legend_handles,
                     title=legend_title, 
-                    loc='upper right', 
+                    loc='upper right',  # Fixed legend position at top-right
                     fontsize=10
                 )
-                
-                # Set the legend title with bold font
-                ax.get_legend().get_title().set_fontweight('bold')
                 
                 # Add title
                 ax.set_title(map_title, fontsize=font_size, fontweight='bold')
