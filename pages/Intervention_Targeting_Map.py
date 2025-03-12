@@ -58,7 +58,7 @@ if uploaded_file is not None:
     
     # Line settings
     line_color = st.selectbox("Select Default Line Color:", list(nice_colors.keys()), index=0)
-    line_width = st.slider("Select Default Line Width:", 0.5, 5.0, 2.5)
+    line_width = st.slider("Select Default Line Width:", 0.5, 5.0, 0.5)
     
     # Missing values settings
     missing_value_color = st.selectbox("Select Color for Missing Values:", list(nice_colors.keys()), index=1)
