@@ -56,7 +56,7 @@ if uploaded_file is not None:
     font_size = st.slider("Font Size (for Map Title):", 8, 24, 15)
     
     # Line settings
-    line_color = st.selectbox("Select Default Line Color:", list(nice_colors.keys()), index=1)
+    line_color = st.selectbox("Select Default Line Color:", list(nice_colors.keys()), index=12)
     line_width = st.slider("Select Default Line Width:", 0.5, 5.0, 2.5)
     
     # Missing values settings
