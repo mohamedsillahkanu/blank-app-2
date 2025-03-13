@@ -132,8 +132,8 @@ if uploaded_file:
         if 'adm1' in processed_df.columns:
             with st.expander("Health Facility Distribution by Region"):
                 hf_by_region = processed_df.groupby('adm1')['hf_uid'].nunique().reset_index()
-                hf_by_region.columns = ['Region', 'Number of Health Facilities']
-                st.dataframe(hf_by_region.sort_values('Number of Health Facilities', ascending=False))
+                hf_by_region.columns = ['District', 'Number of Health Facilities']
+                st.dataframe(hf_by_region.sort_values('Number of Health Facilities', ascending=True))
         
         with st.expander("View Processed Data"):
             st.dataframe(processed_df)
