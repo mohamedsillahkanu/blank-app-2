@@ -133,7 +133,7 @@ if uploaded_file:
             with st.expander("Health Facility Distribution by Region"):
                 hf_by_region = processed_df.groupby('adm1')['hf_uid'].nunique().reset_index()
                 hf_by_region.columns = ['District', 'Number of Health Facilities']
-                st.dataframe(hf_by_region.sort_values('Number of Health Facilities')
+                st.dataframe(hf_by_region.sort_values('Number of Health Facilities'))
         
         with st.expander("View Processed Data"):
             st.dataframe(processed_df)
