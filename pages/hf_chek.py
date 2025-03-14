@@ -24,17 +24,19 @@ if uploaded_file:
         # Drop duplicates to get unique HF per (adm1, adm2, adm3)
         df_unique = df.drop_duplicates(subset=['adm1', 'adm2', 'adm3', 'hf'])
 
-        # Group by 'adm1', 'adm2', 'adm3' and count unique HFs
-        grouped_df = df_unique.groupby(['adm1', 'adm2', 'adm3'])['hf'].nunique().reset_index()
-        grouped_df.rename(columns={'hf': 'Unique HF Count'}, inplace=True)
-
-        # Filter for unique HFs that contain CHC, MCHP, Clinic, Hospital, CHP
+        # Define HF types
         hf_types = ["CHC", "MCHP", "Clinic", "Hospital", "CHP"]
+
+        # Filter dataset to include only relevant HF types
         pattern = r'\b(' + '|'.join(hf_types) + r')\b'
         df_filtered = df_unique[df_unique['hf'].str.contains(pattern, regex=True, na=False)]
 
-        # Count occurrences of each HF type
-        type_counts = {hf_type: df_filtered['hf'].str.contains(hf_type, na=False).sum() for hf_type in hf_types}
+        # Group by 'adm1', 'adm2', 'adm3' and count unique HFs
+        grouped_df = df_filtered.groupby(['adm1', 'adm2', 'adm3'])['hf'].nunique().reset_index()
+        grouped_df.rename(columns={'hf': 'Unique HF Count'}, inplace=True)
+
+        # Count occurrences of each HF type using grouped_df
+        type_counts = {hf_type: df_filtered[df_filtered['hf'].str.contains(hf_type, na=False)].groupby(['adm1', 'adm2', 'adm3'])['hf'].nunique().sum() for hf_type in hf_types}
         type_counts_df = pd.DataFrame(list(type_counts.items()), columns=["HF Type", "Count"])
 
         # Display summary using grouped_df
