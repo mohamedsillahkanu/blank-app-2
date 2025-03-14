@@ -37,9 +37,9 @@ if uploaded_file:
         type_counts = {hf_type: df_filtered['hf'].str.contains(hf_type, na=False).sum() for hf_type in hf_types}
         type_counts_df = pd.DataFrame(list(type_counts.items()), columns=["HF Type", "Count"])
 
-        # Display summary
-        total_unique_hfs = df_filtered["hf"].nunique()
-        st.subheader(f"Total Unique Health Facilities (Filtered): {total_unique_hfs}")
+        # Display summary using grouped_df
+        total_unique_hfs = grouped_df["Unique HF Count"].sum()
+        st.subheader(f"Total Unique Health Facilities (Filtered & Grouped): {total_unique_hfs}")
 
         # Display HF Type Summary
         st.subheader("Filtered Unique HF Count by Type")
