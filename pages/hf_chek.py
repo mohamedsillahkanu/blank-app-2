@@ -21,27 +21,31 @@ if uploaded_file:
     if not required_columns.issubset(df.columns):
         st.error(f"The uploaded file must contain the following columns: {required_columns}")
     else:
-        # Drop duplicates to get unique HF per group
+        # Drop duplicates to get unique HF per (adm1, adm2, adm3)
         df_unique = df.drop_duplicates(subset=['adm1', 'adm2', 'adm3', 'hf'])
 
         # Group by 'adm1', 'adm2', 'adm3' and count unique HFs
         grouped_df = df_unique.groupby(['adm1', 'adm2', 'adm3'])['hf'].nunique().reset_index()
         grouped_df.rename(columns={'hf': 'Unique HF Count'}, inplace=True)
 
-        # Display summary
-        total_unique_hfs = df_unique['hf'].nunique()
-        st.subheader(f"Total Unique Health Facilities: {total_unique_hfs}")
+        # Filter for unique HFs that contain CHC, MCHP, Clinic, Hospital, CHP
+        hf_types = ["CHC", "MCHP", "Clinic", "Hospital", "CHP"]
+        pattern = r'\b(' + '|'.join(hf_types) + r')\b'
+        df_filtered = df_unique[df_unique['hf'].str.contains(pattern, regex=True, na=False)]
 
         # Count occurrences of each HF type
-        hf_types = ["CHC", "MCHP", "Clinic", "Hospital", "CHP"]
-        type_counts = {hf_type: df_unique['hf'].str.contains(hf_type, na=False).sum() for hf_type in hf_types}
+        type_counts = {hf_type: df_filtered['hf'].str.contains(hf_type, na=False).sum() for hf_type in hf_types}
         type_counts_df = pd.DataFrame(list(type_counts.items()), columns=["HF Type", "Count"])
 
+        # Display summary
+        total_unique_hfs = df_filtered["hf"].nunique()
+        st.subheader(f"Total Unique Health Facilities (Filtered): {total_unique_hfs}")
+
         # Display HF Type Summary
-        st.subheader("Unique HF Count by Type")
+        st.subheader("Filtered Unique HF Count by Type")
         st.dataframe(type_counts_df)
 
-        # Bar Chart
+        # Bar Chart for unique HF count by type
         st.subheader("Distribution of Unique Health Facility Types")
         fig, ax = plt.subplots()
         ax.bar(type_counts_df["HF Type"], type_counts_df["Count"], color=["blue", "green", "red", "orange", "purple"])
@@ -51,7 +55,7 @@ if uploaded_file:
         st.pyplot(fig)
 
         # Display grouped data
-        st.subheader("Unique Health Facilities by Region")
+        st.subheader("Unique Health Facilities by Region (adm1, adm2, adm3)")
         st.dataframe(grouped_df)
 
         # Download grouped data
