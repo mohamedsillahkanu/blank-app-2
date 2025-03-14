@@ -28,7 +28,29 @@ if uploaded_file:
         grouped_df = df_unique.groupby(['adm1', 'adm2', 'adm3'])['hf'].nunique().reset_index()
         grouped_df.rename(columns={'hf': 'Unique HF Count'}, inplace=True)
 
-        # Display the grouped DataFrame
+        # Display summary
+        total_unique_hfs = df_unique['hf'].nunique()
+        st.subheader(f"Total Unique Health Facilities: {total_unique_hfs}")
+
+        # Count occurrences of each HF type
+        hf_types = ["CHC", "MCHP", "Clinic", "Hospital", "CHP"]
+        type_counts = {hf_type: df_unique['hf'].str.contains(hf_type, na=False).sum() for hf_type in hf_types}
+        type_counts_df = pd.DataFrame(list(type_counts.items()), columns=["HF Type", "Count"])
+
+        # Display HF Type Summary
+        st.subheader("Unique HF Count by Type")
+        st.dataframe(type_counts_df)
+
+        # Bar Chart
+        st.subheader("Distribution of Unique Health Facility Types")
+        fig, ax = plt.subplots()
+        ax.bar(type_counts_df["HF Type"], type_counts_df["Count"], color=["blue", "green", "red", "orange", "purple"])
+        ax.set_ylabel("Count")
+        ax.set_xlabel("Health Facility Type")
+        ax.set_title("Unique HF Count by Type")
+        st.pyplot(fig)
+
+        # Display grouped data
         st.subheader("Unique Health Facilities by Region")
         st.dataframe(grouped_df)
 
