@@ -163,36 +163,37 @@ def main():
             df = st.session_state.data_file
             gdf = st.session_state.shapefile_data
             
-            # Check for FIRST_DNAM in data file
-            excel_join_col = 'FIRST_DNAM'
-            if excel_join_col not in df.columns:
-                excel_join_col = st.selectbox(
-                    "Select data join column:",
-                    options=df.columns.tolist()
-                )
+            # Check if both FIRST_DNAM and FIRST_CHIE exist in the datasets
+            first_dnam_in_data = 'FIRST_DNAM' in df.columns
+            first_chie_in_shape = 'FIRST_CHIE' in gdf.columns
             
-            # Check for FIRST_CHIE in shapefile
-            shape_join_col = 'FIRST_CHIE'
-            if shape_join_col not in gdf.columns:
-                shape_join_col = st.selectbox(
-                    "Select shapefile join column:",
-                    options=gdf.columns.tolist()
-                )
+            # Show status of join columns
+            if not first_dnam_in_data:
+                st.error("Column 'FIRST_DNAM' not found in data file. Cannot merge using the required parameters.")
             
-            # Join button
-            join_btn = st.button("Join Data")
+            if not first_chie_in_shape:
+                st.error("Column 'FIRST_CHIE' not found in shapefile. Cannot merge using the required parameters.")
+            
+            # Join button - only enable if both required columns exist
+            join_btn = st.button("Join Data", disabled=not (first_dnam_in_data and first_chie_in_shape))
             
             if join_btn:
                 try:
                     # Convert join columns to string for safer joining
-                    df[excel_join_col] = df[excel_join_col].astype(str)
-                    gdf[shape_join_col] = gdf[shape_join_col].astype(str)
+                    df['FIRST_DNAM'] = df['FIRST_DNAM'].astype(str)
+                    gdf['FIRST_CHIE'] = gdf['FIRST_CHIE'].astype(str)
                     
-                    # Merge dataframes
-                    merged_gdf = gdf.merge(df, left_on=shape_join_col, right_on=excel_join_col, how='inner')
+                    # Merge dataframes with specific parameters
+                    # Use left join on FIRST_DNAM and FIRST_CHIE with 1:1 validation
+                    merged_gdf = gdf.merge(df, how='left', on=['FIRST_DNAM', 'FIRST_CHIE'], validate='1:1')
                     
                     # Store the merged data
                     st.session_state.merged_data = merged_gdf
+                    
+                    # Show merge success info
+                    total_rows = len(gdf)
+                    matched_rows = merged_gdf.dropna(subset=[df.columns[0]]).shape[0]
+                    st.success(f"Join complete: {matched_rows} matches out of {total_rows} features")
                 except Exception as e:
                     st.error(f"Error joining data: {str(e)}")
             
@@ -205,7 +206,7 @@ def main():
                 
                 with col_select:
                     # Get all columns from data file (excluding geometry and join columns)
-                    all_columns = [col for col in merged_df.columns if col not in ['geometry', shape_join_col, excel_join_col]]
+                    all_columns = [col for col in merged_df.columns if col not in ['geometry', 'FIRST_DNAM', 'FIRST_CHIE']]
                     
                     # Column selection for filtering
                     st.subheader("Filter Columns")
