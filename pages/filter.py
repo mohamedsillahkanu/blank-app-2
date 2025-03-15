@@ -14,7 +14,7 @@ st.markdown("Upload your Excel data to create an interactive map with the Chiefd
 @st.cache_data
 def load_chiefdom_shapefile():
     # Replace with your actual GitHub repo URL - this is a placeholder
-    shapefile_url = "https://raw.githubusercontent.com/yourusername/yourrepository/mainChiefdom%202021.shp"
+    shapefile_url = "https://github.com/mohamedsillahkanu/blank-app-2/raw/30b91c6276a480fd7c2a3580c39a2d195c00ed86/Chiefdom%202021.shp"
     
     try:
         # For demonstration purposes - in production, use the BytesIO approach from the main app
