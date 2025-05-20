@@ -103,6 +103,64 @@ st.markdown("""
         cursor: pointer;
         font-size: 0.8rem;
     }
+    
+    .operation-symbol {
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+    }
+    
+    .floating-add-button {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: #4285F4;
+        color: white;
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        cursor: pointer;
+        z-index: 1000;
+        border: none;
+    }
+    
+    .floating-add-button:hover {
+        background-color: #1a73e8;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    
+    .computation-form {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .computation-form-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .new-computation-indicator {
+        background-color: #e7f3ff;
+        color: #1976d2;
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -127,6 +185,12 @@ if 'computed_df' not in st.session_state:
     st.session_state.computed_df = None
 if 'computations_applied' not in st.session_state:
     st.session_state.computations_applied = False
+if 'computation_forms' not in st.session_state:
+    st.session_state.computation_forms = 1
+if 'form_visibility' not in st.session_state:
+    st.session_state.form_visibility = [True]
+if 'last_operation' not in st.session_state:
+    st.session_state.last_operation = None
 
 # Helper functions
 def get_available_columns():
@@ -194,6 +258,23 @@ def apply_all_computations():
     
     return computed_df
 
+def add_new_computation_form():
+    """Add a new computation form"""
+    st.session_state.computation_forms += 1
+    st.session_state.form_visibility.append(True)
+    st.session_state.last_operation = "add_form"
+
+def remove_computation_form(form_index):
+    """Remove a computation form"""
+    st.session_state.form_visibility[form_index] = False
+    st.session_state.last_operation = "remove_form"
+
+def reset_form_after_add(form_index):
+    """Reset the form inputs after a computation is added"""
+    # We'll handle the form reset by using unique keys that include the index
+    # The state is automatically reset when the key changes
+    pass
+
 # Sidebar for file upload
 with st.sidebar:
     st.header("📁 File Upload")
@@ -221,6 +302,8 @@ with st.sidebar:
             st.session_state.used_variables = set()
             st.session_state.computed_df = None
             st.session_state.computations_applied = False
+            st.session_state.computation_forms = 1
+            st.session_state.form_visibility = [True]
             
             st.success(f"✅ File uploaded successfully!")
             st.info(f"📊 **File:** {uploaded_file.name}")
@@ -271,76 +354,119 @@ if st.session_state.df is not None:
                     st.session_state.computations_applied = False
                     st.rerun()
     
-    # Add new computation section
+    # Add new computation forms section
     st.markdown("---")
-    st.subheader("➕ Add New Computation")
+    st.subheader("➕ New Variable Computations")
     
     if available_cols:
-        col1, col2, col3 = st.columns([2, 2, 1])
+        for form_idx in range(st.session_state.computation_forms):
+            if st.session_state.form_visibility[form_idx]:
+                with st.container():
+                    st.markdown(f"""
+                    <div class="computation-form">
+                        <div class="computation-form-header">
+                            <h4>Computation #{form_idx + 1}</h4>
+                            <span class="new-computation-indicator">New</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Form inputs
+                    col1, col2, col3 = st.columns([2, 2, 1])
+                    
+                    with col1:
+                        new_var_name = st.text_input(
+                            "New Variable Name",
+                            key=f"new_var_input_{form_idx}",
+                            help="Enter the name for your new calculated variable"
+                        )
+                    
+                    # Column for operation selection with centered operation symbol
+                    with col2:
+                        operation = st.selectbox(
+                            "Operation",
+                            ["Addition", "Subtraction"],
+                            key=f"operation_{form_idx}",
+                            help="Choose the mathematical operation"
+                        )
+                        
+                        # Display operation symbol
+                        operation_symbol = "+" if operation == "Addition" else "-"
+                        st.markdown(f"""
+                        <div class="operation-symbol">
+                            {operation_symbol}
+                        </div>
+                        """, unsafe_allow_html=True)
+                    
+                    with col3:
+                        if form_idx > 0:  # Only show remove button for additional forms
+                            st.write("") # Spacer
+                            st.write("") # Spacer for alignment
+                            if st.button("❌", key=f"remove_form_{form_idx}", 
+                                        help="Remove this computation form"):
+                                remove_computation_form(form_idx)
+                                st.rerun()
+                    
+                    # Variable selection based on operation
+                    if operation == "Addition":
+                        selected_vars = st.multiselect(
+                            "Select Variables to Add",
+                            available_cols,
+                            key=f"selected_vars_{form_idx}",
+                            help="Select all variables you want to add together"
+                        )
+                    else:  # Subtraction
+                        selected_vars = st.multiselect(
+                            "Select Variables for Subtraction",
+                            available_cols,
+                            key=f"selected_vars_{form_idx}",
+                            max_selections=2,
+                            help="Select exactly 2 variables (first - second). Negative results will be set to 0."
+                        )
+                        
+                        if len(selected_vars) == 2:
+                            st.info(f"💡 Formula: {selected_vars[0]} - {selected_vars[1]} (negatives → 0)")
+                    
+                    # Add computation button
+                    col1, col2, col3 = st.columns([1, 1, 1])
+                    with col2:
+                        if st.button("➕ Add Computation", key=f"add_comp_btn_{form_idx}", 
+                                    type="primary", use_container_width=True):
+                            # Validate computation
+                            errors = validate_computation(new_var_name, selected_vars, operation)
+                            
+                            if errors:
+                                for error in errors:
+                                    st.error(f"❌ {error}")
+                            else:
+                                # Add computation
+                                new_computation = {
+                                    'new_variable': new_var_name.strip(),
+                                    'variables': selected_vars,
+                                    'operation': operation
+                                }
+                                
+                                st.session_state.computations.append(new_computation)
+                                
+                                # Mark variables as used
+                                for var in selected_vars:
+                                    st.session_state.used_variables.add(var)
+                                
+                                st.session_state.computations_applied = False
+                                reset_form_after_add(form_idx)
+                                st.success(f"✅ Computation for '{new_var_name}' added successfully!")
+                                st.rerun()
         
-        with col1:
-            new_var_name = st.text_input(
-                "New Variable Name",
-                key="new_var_input",
-                help="Enter the name for your new calculated variable"
-            )
-        
-        with col2:
-            operation = st.selectbox(
-                "Operation",
-                ["Addition", "Subtraction"],
-                help="Choose the mathematical operation"
-            )
-        
-        with col3:
-            st.write("") # Spacer
-            st.write("") # Spacer
-            
-        # Variable selection based on operation
-        if operation == "Addition":
-            selected_vars = st.multiselect(
-                "Select Variables to Add",
-                available_cols,
-                help="Select all variables you want to add together"
-            )
-        else:  # Subtraction
-            selected_vars = st.multiselect(
-                "Select Variables for Subtraction",
-                available_cols,
-                max_selections=2,
-                help="Select exactly 2 variables (first - second). Negative results will be set to 0."
-            )
-            
-            if len(selected_vars) == 2:
-                st.info(f"💡 Formula: {selected_vars[0]} - {selected_vars[1]} (negatives → 0)")
-        
-        # Add computation button
+        # Add the floating "+" button to add a new computation form
         col1, col2, col3 = st.columns([1, 1, 1])
         with col2:
-            if st.button("➕ Add Computation", type="primary", use_container_width=True):
-                # Validate computation
-                errors = validate_computation(new_var_name, selected_vars, operation)
-                
-                if errors:
-                    for error in errors:
-                        st.error(f"❌ {error}")
-                else:
-                    # Add computation
-                    new_computation = {
-                        'new_variable': new_var_name.strip(),
-                        'variables': selected_vars,
-                        'operation': operation
-                    }
-                    
-                    st.session_state.computations.append(new_computation)
-                    
-                    # Mark variables as used
-                    for var in selected_vars:
-                        st.session_state.used_variables.add(var)
-                    
-                    st.session_state.computations_applied = False
-                    st.success(f"✅ Computation for '{new_var_name}' added successfully!")
-                    st.rerun()
+            if st.button("➕ Add Another Variable", 
+                        key="add_another_variable",
+                        help="Add another variable computation form",
+                        use_container_width=True):
+                add_new_computation_form()
+                st.rerun()
+        
     else:
         st.markdown("""
         <div class="warning-message">
@@ -526,6 +652,11 @@ else:
         - Addition allows multiple variables
         - Automatic validation and error checking
         """)
+
+# Floating button to add a new computation form (HTML version)
+st.markdown("""
+    <button onclick="document.getElementById('add_another_variable').click()" class="floating-add-button">+</button>
+""", unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
