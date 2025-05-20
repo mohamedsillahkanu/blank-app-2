@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import io
-import numpy as np
 from datetime import datetime
 
 # Set page config for better layout
@@ -33,22 +32,29 @@ st.markdown("""
         margin: 1rem 0;
     }
     
-    .variable-container {
+    .computation-container {
         background-color: #f8f9fa;
         padding: 1.5rem;
         border-radius: 10px;
         margin: 1rem 0;
         border-left: 4px solid #667eea;
-        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
-    .compute-container {
-        background-color: #fff;
+    .new-computation-container {
+        background-color: #e8f5e9;
         padding: 1.5rem;
         border-radius: 10px;
         margin: 1rem 0;
-        border: 2px solid #667eea;
+        border-left: 4px solid #4caf50;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stats-container {
+        background-color: #e7f3ff;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 1px solid #b3d9ff;
     }
     
     .success-message {
@@ -78,12 +84,23 @@ st.markdown("""
         margin: 1rem 0;
     }
     
-    .operation-box {
-        background-color: #e7f3ff;
-        padding: 1rem;
-        border-radius: 10px;
-        border: 1px solid #b3d9ff;
-        margin: 0.5rem 0;
+    .operation-badge {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .addition-badge {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .subtraction-badge {
+        background-color: #f8d7da;
+        color: #721c24;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -92,23 +109,23 @@ st.markdown("""
 st.markdown("""
 <div class="main-header">
     <h1>🧮 Compute New Variables Tool</h1>
-    <p>Upload your data file and create new computed variables</p>
+    <p>Create new variables by adding or subtracting existing columns</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Initialize session state
 if 'df' not in st.session_state:
     st.session_state.df = None
-if 'original_columns' not in st.session_state:
-    st.session_state.original_columns = []
-if 'computed_variables' not in st.session_state:
-    st.session_state.computed_variables = []
-if 'pending_computations' not in st.session_state:
-    st.session_state.pending_computations = []
+if 'original_df' not in st.session_state:
+    st.session_state.original_df = None
 if 'file_name' not in st.session_state:
     st.session_state.file_name = ""
-if 'computation_applied' not in st.session_state:
-    st.session_state.computation_applied = False
+if 'computations' not in st.session_state:
+    st.session_state.computations = []
+if 'used_variables' not in st.session_state:
+    st.session_state.used_variables = set()
+if 'computations_applied' not in st.session_state:
+    st.session_state.computations_applied = False
 
 # Sidebar for file upload
 with st.sidebar:
@@ -129,21 +146,21 @@ with st.sidebar:
                 df = pd.read_excel(uploaded_file)
             
             # Store in session state
-            st.session_state.df = df
-            st.session_state.original_columns = list(df.columns)
+            st.session_state.df = df.copy()
+            st.session_state.original_df = df.copy()
             st.session_state.file_name = uploaded_file.name
             
-            # Reset computation states for new file
-            st.session_state.computed_variables = []
-            st.session_state.pending_computations = []
-            st.session_state.computation_applied = False
+            # Reset computations for new file
+            st.session_state.computations = []
+            st.session_state.used_variables = set()
+            st.session_state.computations_applied = False
             
             st.success(f"✅ File uploaded successfully!")
             st.info(f"📊 **File:** {uploaded_file.name}")
             st.info(f"📏 **Shape:** {df.shape[0]} rows × {df.shape[1]} columns")
             
-            # Show numeric columns
-            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+            # Show numeric columns info
+            numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
             st.info(f"🔢 **Numeric columns:** {len(numeric_cols)}")
             
         except Exception as e:
@@ -152,274 +169,300 @@ with st.sidebar:
 # Main content
 if st.session_state.df is not None:
     df = st.session_state.df
-    numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
     
-    if not numeric_cols:
-        st.error("❌ No numeric columns found in the dataset. Please upload a file with numeric data.")
-    else:
-        # Create computation interface
-        st.markdown("""
-        <div class="compute-container">
-            <h3>➕ Create New Computed Variable</h3>
-        </div>
-        """, unsafe_allow_html=True)
+    # Get numeric columns only
+    numeric_columns = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
+    available_columns = [col for col in numeric_columns if col not in st.session_state.used_variables]
+    
+    st.header("🧮 Create New Variables")
+    
+    # Show existing computations
+    if st.session_state.computations:
+        st.subheader("📋 Existing Computations")
         
-        # Three columns layout for creating new variables
-        col1, col2, col3 = st.columns([1, 1, 1])
+        for i, comp in enumerate(st.session_state.computations):
+            st.markdown(f"""
+            <div class="computation-container">
+                <h4>🔢 {comp['new_variable']}</h4>
+                <span class="operation-badge {'addition-badge' if comp['operation'] == 'Addition' else 'subtraction-badge'}">
+                    {comp['operation']}
+                </span>
+                <p><strong>Formula:</strong> {comp['formula']}</p>
+                <p><strong>Variables used:</strong> {', '.join(comp['variables'])}</p>
+                <small><strong>Created:</strong> {comp['timestamp']}</small>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    # New computation section
+    st.markdown("""
+    <div class="new-computation-container">
+        <h3>➕ Add New Computation</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if len(available_columns) < 2:
+        st.markdown("""
+        <div class="warning-message">
+            ⚠️ <strong>Not enough variables available!</strong> 
+            You need at least 2 numeric columns to create computations.
+            Available columns: {col_count}
+        </div>
+        """.format(col_count=len(available_columns)), unsafe_allow_html=True)
+        
+        if available_columns:
+            st.write("**Available columns:**", available_columns)
+    else:
+        # Create two columns for the interface
+        col1, col2 = st.columns([1, 1])
         
         with col1:
-            st.subheader("🏷️ Variable Name")
-            new_var_name = st.text_input(
-                "Enter new variable name",
-                placeholder="e.g., total_cases, difference_score",
-                help="Enter a unique name for your new computed variable"
+            st.subheader("🏷️ New Variable Name")
+            new_variable_name = st.text_input(
+                "Variable Name",
+                placeholder="Enter new variable name (e.g., total_cases)",
+                help="Enter a name for your new computed variable"
+            )
+            
+            # Operation selection
+            st.subheader("🔄 Operation Type")
+            operation = st.radio(
+                "Choose operation:",
+                ["Addition", "Subtraction"],
+                help="Addition: sum all selected variables | Subtraction: subtract second from first (min 0)"
             )
         
         with col2:
-            st.subheader("🔢 Operation Type")
-            operation = st.selectbox(
-                "Choose operation",
-                ["Addition", "Subtraction"],
-                help="Addition: sum all selected variables | Subtraction: subtract second from first"
+            st.subheader("📊 Select Variables")
+            
+            if operation == "Addition":
+                selected_vars = st.multiselect(
+                    "Select variables to add:",
+                    available_columns,
+                    help="Select 2 or more variables to add together"
+                )
+                min_vars = 2
+                max_vars = len(available_columns)
+            else:  # Subtraction
+                selected_vars = st.multiselect(
+                    "Select exactly 2 variables:",
+                    available_columns,
+                    help="First variable - Second variable (result will be >= 0)"
+                )
+                min_vars = 2
+                max_vars = 2
+            
+            # Validation
+            if selected_vars:
+                if operation == "Addition":
+                    formula = " + ".join(selected_vars)
+                    if len(selected_vars) >= 2:
+                        st.success(f"✅ Formula: **{formula}**")
+                    else:
+                        st.warning(f"⚠️ Select at least 2 variables for addition")
+                else:  # Subtraction
+                    if len(selected_vars) == 2:
+                        formula = f"{selected_vars[0]} - {selected_vars[1]}"
+                        st.success(f"✅ Formula: **{formula}** (minimum 0)")
+                    elif len(selected_vars) > 2:
+                        st.error(f"❌ Select exactly 2 variables for subtraction")
+                    else:
+                        st.warning(f"⚠️ Select exactly 2 variables for subtraction")
+        
+        # Add computation button
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            can_add = (
+                new_variable_name.strip() != "" and
+                len(selected_vars) >= min_vars and
+                len(selected_vars) <= max_vars and
+                new_variable_name not in df.columns and
+                new_variable_name not in [comp['new_variable'] for comp in st.session_state.computations]
+            )
+            
+            if st.button("➕ **ADD COMPUTATION**", 
+                        type="primary", 
+                        disabled=not can_add,
+                        help="Add this computation to the list",
+                        use_container_width=True):
+                
+                # Create computation record
+                computation = {
+                    'new_variable': new_variable_name.strip(),
+                    'operation': operation,
+                    'variables': selected_vars,
+                    'formula': formula,
+                    'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
+                
+                # Add to computations list
+                st.session_state.computations.append(computation)
+                
+                # Add variables to used set
+                st.session_state.used_variables.update(selected_vars)
+                
+                st.success(f"✅ Computation added: **{new_variable_name}**")
+                st.rerun()
+            
+            # Show validation messages
+            if new_variable_name.strip() == "":
+                st.error("❌ Please enter a variable name")
+            elif new_variable_name in df.columns:
+                st.error("❌ Variable name already exists in the dataset")
+            elif new_variable_name in [comp['new_variable'] for comp in st.session_state.computations]:
+                st.error("❌ Variable name already used in computations")
+            elif len(selected_vars) < min_vars:
+                st.error(f"❌ Select at least {min_vars} variables")
+            elif len(selected_vars) > max_vars:
+                st.error(f"❌ Select at most {max_vars} variables")
+    
+    # Apply computations section
+    if st.session_state.computations:
+        st.markdown("---")
+        st.subheader("🚀 Apply All Computations")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            if st.button("🚀 **APPLY ALL COMPUTATIONS**", 
+                        type="primary",
+                        help="Apply all computations to create new variables",
+                        use_container_width=True):
+                
+                try:
+                    # Start with original dataframe
+                    result_df = st.session_state.original_df.copy()
+                    
+                    # Apply each computation
+                    for comp in st.session_state.computations:
+                        if comp['operation'] == 'Addition':
+                            # Addition: sum all selected variables
+                            result_df[comp['new_variable']] = result_df[comp['variables']].sum(axis=1)
+                        else:  # Subtraction
+                            # Subtraction: first - second, minimum 0
+                            var1, var2 = comp['variables'][0], comp['variables'][1]
+                            result_df[comp['new_variable']] = (result_df[var1] - result_df[var2]).clip(lower=0)
+                    
+                    # Update session state
+                    st.session_state.df = result_df
+                    st.session_state.computations_applied = True
+                    
+                    st.markdown("""
+                    <div class="success-message">
+                        ✅ <strong>Success!</strong> All computations have been applied successfully!
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.rerun()
+                    
+                except Exception as e:
+                    st.markdown(f"""
+                    <div class="error-message">
+                        ❌ <strong>Error applying computations:</strong> {str(e)}
+                    </div>
+                    """, unsafe_allow_html=True)
+    
+    # Show results after applying computations
+    if st.session_state.computations_applied:
+        st.markdown("---")
+        st.subheader("📊 Results Summary")
+        
+        # Statistics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Original Columns", len(st.session_state.original_df.columns))
+        with col2:
+            st.metric("New Columns", len(st.session_state.computations))
+        with col3:
+            st.metric("Total Columns", len(st.session_state.df.columns))
+        with col4:
+            st.metric("Variables Used", len(st.session_state.used_variables))
+        
+        # Download section
+        st.markdown("---")
+        st.subheader("💾 Download Results")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            # Download as CSV
+            csv_buffer = io.StringIO()
+            st.session_state.df.to_csv(csv_buffer, index=False)
+            csv_data = csv_buffer.getvalue()
+            
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv_data,
+                file_name="computed_variables.csv",
+                mime="text/csv",
+                help="Download data with computed variables as CSV"
+            )
+        
+        with col2:
+            # Download as Excel
+            excel_buffer = io.BytesIO()
+            with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+                st.session_state.df.to_excel(writer, sheet_name='Data with Computed Variables', index=False)
+            excel_data = excel_buffer.getvalue()
+            
+            st.download_button(
+                label="📥 Download Excel",
+                data=excel_data,
+                file_name="computed_variables.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                help="Download data with computed variables as Excel"
             )
         
         with col3:
-            st.subheader("📊 Select Variables")
-            if operation == "Addition":
-                selected_vars = st.multiselect(
-                    "Select variables to add",
-                    options=numeric_cols,
-                    help="Select 2 or more variables to add together"
-                )
-                max_vars = len(numeric_cols)
-                min_vars = 2
-            else:  # Subtraction
-                selected_vars = st.multiselect(
-                    "Select exactly 2 variables",
-                    options=numeric_cols,
-                    max_selections=2,
-                    help="Select exactly 2 variables: result = first - second"
-                )
-                max_vars = 2
-                min_vars = 2
+            # Download computations log
+            computations_df = pd.DataFrame(st.session_state.computations)
+            comp_csv = computations_df.to_csv(index=False)
+            
+            st.download_button(
+                label="📥 Download Log",
+                data=comp_csv,
+                file_name="computations_log.csv",
+                mime="text/csv",
+                help="Download computations log"
+            )
+    
+    # Data preview section
+    if st.checkbox("👀 Show Data Preview", help="Preview first 10 rows of data"):
+        st.markdown("---")
+        st.subheader("📊 Data Preview")
         
-        # Add variable button
-        col1, col2, col3 = st.columns([1, 1, 1])
+        # Show new columns first if they exist
+        if st.session_state.computations_applied:
+            new_columns = [comp['new_variable'] for comp in st.session_state.computations]
+            reordered_columns = new_columns + [col for col in st.session_state.df.columns if col not in new_columns]
+            preview_df = st.session_state.df[reordered_columns]
+            
+            st.info(f"💡 Showing data with {len(new_columns)} new computed variables (highlighted first)")
+        else:
+            preview_df = st.session_state.df
+            st.info("💡 Showing original data. Apply computations to see new variables.")
+        
+        st.dataframe(
+            preview_df.head(10),
+            use_container_width=True,
+            height=400
+        )
+    
+    # Reset computations button
+    if st.session_state.computations:
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
         with col2:
-            if st.button("➕ Add to Pending Computations", 
-                        type="secondary", 
+            if st.button("🗑️ **RESET ALL COMPUTATIONS**", 
+                        help="Clear all computations and start over",
                         use_container_width=True):
-                
-                # Validation
-                errors = []
-                if not new_var_name:
-                    errors.append("Please enter a variable name")
-                elif new_var_name in df.columns:
-                    errors.append(f"Variable '{new_var_name}' already exists in the dataset")
-                elif new_var_name in [comp['name'] for comp in st.session_state.pending_computations]:
-                    errors.append(f"Variable '{new_var_name}' already exists in pending computations")
-                elif not new_var_name.replace('_', '').replace('-', '').isalnum():
-                    errors.append("Variable name should contain only letters, numbers, underscores, and hyphens")
-                
-                if len(selected_vars) < min_vars:
-                    errors.append(f"{operation} requires at least {min_vars} variables")
-                elif operation == "Subtraction" and len(selected_vars) != 2:
-                    errors.append("Subtraction requires exactly 2 variables")
-                
-                if errors:
-                    for error in errors:
-                        st.error(f"❌ {error}")
-                else:
-                    # Add to pending computations
-                    computation = {
-                        'name': new_var_name,
-                        'operation': operation,
-                        'variables': selected_vars,
-                        'formula': f"{' + '.join(selected_vars)}" if operation == "Addition" else f"{selected_vars[0]} - {selected_vars[1]}"
-                    }
-                    st.session_state.pending_computations.append(computation)
-                    st.success(f"✅ Added '{new_var_name}' to pending computations!")
-                    st.rerun()
-        
-        # Show pending computations
-        if st.session_state.pending_computations:
-            st.markdown("---")
-            st.subheader("⏳ Pending Computations")
-            
-            for i, comp in enumerate(st.session_state.pending_computations):
-                col1, col2 = st.columns([4, 1])
-                
-                with col1:
-                    if comp['operation'] == "Addition":
-                        operation_color = "blue"
-                        operation_symbol = "+"
-                    else:
-                        operation_color = "orange"
-                        operation_symbol = "-"
-                    
-                    st.markdown(f"""
-                    <div class="variable-container">
-                        <strong>🏷️ Variable:</strong> {comp['name']}<br>
-                        <strong>🔢 Operation:</strong> <span style="color: {operation_color};">{comp['operation']}</span><br>
-                        <strong>📊 Variables:</strong> {', '.join(comp['variables'])}<br>
-                        <strong>📝 Formula:</strong> <code>{comp['name']} = {comp['formula']}</code>
-                        {' (negative values replaced with 0)' if comp['operation'] == 'Subtraction' else ''}
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                with col2:
-                    if st.button(f"🗑️ Remove", key=f"remove_{i}", help=f"Remove {comp['name']} from pending"):
-                        st.session_state.pending_computations.pop(i)
-                        st.rerun()
-            
-            # Apply computations button
-            st.markdown("---")
-            col1, col2, col3 = st.columns([1, 2, 1])
-            
-            with col2:
-                if st.button("🧮 **APPLY ALL COMPUTATIONS**", 
-                           type="primary", 
-                           help="Apply all pending computations to create new variables",
-                           use_container_width=True):
-                    
-                    try:
-                        # Apply all computations
-                        new_df = df.copy()
-                        
-                        for comp in st.session_state.pending_computations:
-                            if comp['operation'] == "Addition":
-                                # Addition: sum all selected variables
-                                new_df[comp['name']] = new_df[comp['variables']].sum(axis=1)
-                            else:
-                                # Subtraction: first - second, replace negative with 0
-                                result = new_df[comp['variables'][0]] - new_df[comp['variables'][1]]
-                                new_df[comp['name']] = result.clip(lower=0)  # Replace negative with 0
-                        
-                        # Update session state
-                        st.session_state.df = new_df
-                        st.session_state.computed_variables.extend(st.session_state.pending_computations)
-                        st.session_state.pending_computations = []
-                        st.session_state.computation_applied = True
-                        
-                        st.markdown("""
-                        <div class="success-message">
-                            ✅ <strong>Success!</strong> All computations have been applied successfully!
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.rerun()
-                        
-                    except Exception as e:
-                        st.markdown(f"""
-                        <div class="error-message">
-                            ❌ <strong>Error applying computations:</strong> {str(e)}
-                        </div>
-                        """, unsafe_allow_html=True)
-        
-        # Show applied computations and download options
-        if st.session_state.computed_variables:
-            st.markdown("---")
-            st.subheader("✅ Applied Computations")
-            
-            # Show applied computations summary
-            applied_df = pd.DataFrame([
-                {
-                    "Variable Name": comp['name'],
-                    "Operation": comp['operation'],
-                    "Variables Used": ', '.join(comp['variables']),
-                    "Formula": comp['formula']
-                }
-                for comp in st.session_state.computed_variables
-            ])
-            
-            st.dataframe(applied_df, use_container_width=True)
-            
-            # Download section
-            st.markdown("---")
-            st.subheader("💾 Download Data with New Variables")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Download as CSV
-                csv_buffer = io.StringIO()
-                st.session_state.df.to_csv(csv_buffer, index=False)
-                csv_data = csv_buffer.getvalue()
-                
-                st.download_button(
-                    label="📥 Download CSV",
-                    data=csv_data,
-                    file_name="computed_variables_data.csv",
-                    mime="text/csv",
-                    help="Download data with computed variables as CSV file"
-                )
-            
-            with col2:
-                # Download as Excel
-                excel_buffer = io.BytesIO()
-                with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-                    st.session_state.df.to_excel(writer, sheet_name='Data with New Variables', index=False)
-                excel_data = excel_buffer.getvalue()
-                
-                st.download_button(
-                    label="📥 Download Excel",
-                    data=excel_data,
-                    file_name="computed_variables_data.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    help="Download data with computed variables as Excel file"
-                )
-            
-            with col3:
-                # Download computation log
-                computation_log = pd.DataFrame([
-                    {
-                        "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "Variable_Name": comp['name'],
-                        "Operation": comp['operation'],
-                        "Source_Variables": ', '.join(comp['variables']),
-                        "Formula": comp['formula'],
-                        "Notes": "Negative values replaced with 0" if comp['operation'] == "Subtraction" else "Sum of selected variables"
-                    }
-                    for comp in st.session_state.computed_variables
-                ])
-                
-                log_csv = computation_log.to_csv(index=False)
-                st.download_button(
-                    label="📥 Download Log",
-                    data=log_csv,
-                    file_name="computation_log.csv",
-                    mime="text/csv",
-                    help="Download computation history log"
-                )
-        
-        # Data preview section
-        if st.checkbox("👀 Show Data Preview", help="Preview first 10 rows with computed variables"):
-            st.markdown("---")
-            st.subheader("📊 Data Preview")
-            
-            # Show preview
-            preview_df = st.session_state.df.head(10)
-            st.dataframe(preview_df, use_container_width=True, height=400)
-            
-            # Highlight new variables
-            if st.session_state.computed_variables:
-                new_vars = [comp['name'] for comp in st.session_state.computed_variables]
-                st.markdown(f"""
-                <div class="success-message">
-                    🆕 <strong>New computed variables:</strong> {', '.join(new_vars)}
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Statistics
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Rows", f"{len(st.session_state.df):,}")
-            with col2:
-                st.metric("Total Columns", f"{len(st.session_state.df.columns):,}")
-            with col3:
-                st.metric("Computed Variables", f"{len(st.session_state.computed_variables):,}")
-            with col4:
-                memory_usage = st.session_state.df.memory_usage(deep=True).sum() / 1024 / 1024
-                st.metric("Memory Usage", f"{memory_usage:.1f} MB")
+                st.session_state.computations = []
+                st.session_state.used_variables = set()
+                st.session_state.computations_applied = False
+                st.session_state.df = st.session_state.original_df.copy()
+                st.rerun()
 
 else:
     # Show instructions when no file is uploaded
@@ -427,8 +470,7 @@ else:
     <div class="upload-box">
         <h3>📁 No file uploaded yet</h3>
         <p>Please upload a CSV or Excel file using the sidebar to get started.</p>
-        <p><strong>Supported formats:</strong> .csv, .xlsx, .xls</p>
-        <p><strong>Requirements:</strong> File must contain numeric columns for computations</p>
+        <p><strong>Requirements:</strong> File must contain at least 2 numeric columns</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -439,44 +481,24 @@ else:
     
     with col1:
         st.markdown("""
-        - **➕ Addition Operations** - Sum multiple variables together
-        - **➖ Subtraction Operations** - Subtract one variable from another
-        - **🔄 Automatic handling** - Negative values replaced with zero
-        - **📊 Variable validation** - Ensures only numeric columns are used
+        **🧮 Computation Types:**
+        - **Addition**: Sum 2+ variables
+        - **Subtraction**: Subtract second from first (min 0)
+        
+        **🔒 Smart Validation:**
+        - Variables can only be used once
+        - Duplicate names prevented
+        - Type checking for numeric columns
         """)
     
     with col2:
         st.markdown("""
-        - **⏳ Pending system** - Review before applying computations
-        - **💾 Multiple download formats** - CSV, Excel, computation log
-        - **👀 Live preview** - See results before downloading
-        - **📝 Formula tracking** - Keep record of all computations
+        **📊 Advanced Features:**
+        - **Multi-step workflow**: Add → Apply → Download
+        - **Real-time preview**: See formulas as you build
+        - **Computation log**: Track all operations
+        - **Reset functionality**: Start over anytime
         """)
-    
-    # Show operation examples
-    st.subheader("🧮 Operation Examples")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        <div class="operation-box">
-            <h4>➕ Addition Example</h4>
-            <p><strong>Variables:</strong> cases_2021, cases_2022, cases_2023</p>
-            <p><strong>Formula:</strong> total_cases = cases_2021 + cases_2022 + cases_2023</p>
-            <p><strong>Result:</strong> Sum of all three variables</p>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown("""
-        <div class="operation-box">
-            <h4>➖ Subtraction Example</h4>
-            <p><strong>Variables:</strong> total_population, affected_population</p>
-            <p><strong>Formula:</strong> unaffected = total_population - affected_population</p>
-            <p><strong>Result:</strong> Difference (negative values become 0)</p>
-        </div>
-        """, unsafe_allow_html=True)
 
 # Footer
 st.markdown("---")
