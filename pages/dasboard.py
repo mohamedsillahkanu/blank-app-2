@@ -106,7 +106,7 @@ def main():
             st.write(f"Details: {type(e).__name__}: {str(e)}")
             
     # Otherwise, show the main dashboard with the 10 boxes
-    st.header("Select a Module")
+    st.header("DATA ASSEMBLY")
     
     # Define the modules with their descriptions and icons
     modules = {
@@ -121,7 +121,21 @@ def main():
         "user_management.py": {"icon": "👥", "desc": "Manage users and permissions"},
         "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
     }
-    
+
+    st.header("DATA MANAGEMENT")
+    # Define the modules with their descriptions and icons
+    modules = {
+        "compute_new.py": {"icon": "📊", "desc": "Analyze your data with various techniques"},
+        "data_visualization.py": {"icon": "📈", "desc": "Create insightful visualizations"},
+        "machine_learning.py": {"icon": "🤖", "desc": "Train and deploy ML models"},
+        "data_processing.py": {"icon": "⚙️", "desc": "Process and transform your data"},
+        "statistics.py": {"icon": "📉", "desc": "Statistical analysis and testing"},
+        "reporting.py": {"icon": "📝", "desc": "Generate automated reports"},
+        "file_management.py": {"icon": "📁", "desc": "Manage your data files"},
+        "settings.py": {"icon": "⚙️", "desc": "Configure dashboard settings"},
+        "user_management.py": {"icon": "👥", "desc": "Manage users and permissions"},
+        "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
+    }
     # Get the correct pages directory path
     base_dir = os.path.abspath(os.path.dirname(__file__))
     pages_dir = os.path.join(base_dir, "pages")
