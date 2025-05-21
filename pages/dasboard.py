@@ -20,8 +20,11 @@ def main():
     # If a module is selected, import and run it
     if st.session_state.current_module:
         try:
+            # Extract module name without .py extension
+            module_name = st.session_state.current_module.replace('.py', '')
+            
             # Import the selected module dynamically
-            module = importlib.import_module(f"modules.{st.session_state.current_module}")
+            module = importlib.import_module(f"modules.{module_name}")
             # Run the module
             module.run()
             return
@@ -33,16 +36,16 @@ def main():
     
     # Define the modules with their descriptions and icons
     modules = {
-        "data_analysis": {"icon": "📊", "desc": "Analyze your data with various techniques"},
-        "data_visualization": {"icon": "📈", "desc": "Create insightful visualizations"},
-        "machine_learning": {"icon": "🤖", "desc": "Train and deploy ML models"},
-        "data_processing": {"icon": "⚙️", "desc": "Process and transform your data"},
-        "statistics": {"icon": "📉", "desc": "Statistical analysis and testing"},
-        "reporting": {"icon": "📝", "desc": "Generate automated reports"},
-        "file_management": {"icon": "📁", "desc": "Manage your data files"},
-        "settings": {"icon": "⚙️", "desc": "Configure dashboard settings"},
-        "user_management": {"icon": "👥", "desc": "Manage users and permissions"},
-        "dashboard_home": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
+        "data_analysis.py": {"icon": "📊", "desc": "Analyze your data with various techniques"},
+        "data_visualization.py": {"icon": "📈", "desc": "Create insightful visualizations"},
+        "machine_learning.py": {"icon": "🤖", "desc": "Train and deploy ML models"},
+        "data_processing.py": {"icon": "⚙️", "desc": "Process and transform your data"},
+        "statistics.py": {"icon": "📉", "desc": "Statistical analysis and testing"},
+        "reporting.py": {"icon": "📝", "desc": "Generate automated reports"},
+        "file_management.py": {"icon": "📁", "desc": "Manage your data files"},
+        "settings.py": {"icon": "⚙️", "desc": "Configure dashboard settings"},
+        "user_management.py": {"icon": "👥", "desc": "Manage users and permissions"},
+        "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
     }
     
     # Create 2 columns
@@ -51,9 +54,9 @@ def main():
     # First column - first 5 modules
     with col1:
         for name, info in list(modules.items())[:5]:
-            st.subheader(f"{info['icon']} {name.replace('_', ' ').title()}")
+            st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
             st.write(info['desc'])
-            if st.button(f"Open {name.replace('_', ' ').title()}", key=f"btn_{name}"):
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", key=f"btn_{name}"):
                 st.session_state.current_module = name
                 st.experimental_rerun()
             st.divider()
@@ -61,9 +64,9 @@ def main():
     # Second column - next 5 modules
     with col2:
         for name, info in list(modules.items())[5:]:
-            st.subheader(f"{info['icon']} {name.replace('_', ' ').title()}")
+            st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
             st.write(info['desc'])
-            if st.button(f"Open {name.replace('_', ' ').title()}", key=f"btn_{name}"):
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", key=f"btn_{name}"):
                 st.session_state.current_module = name
                 st.experimental_rerun()
             st.divider()
