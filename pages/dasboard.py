@@ -3,7 +3,7 @@ import importlib
 import os
 import sys
 
-# Set page configuration
+# Set page configuration for the main dashboard
 st.set_page_config(
     page_title="SNT Dashboard",
     page_icon="🧊",
@@ -25,16 +25,32 @@ def main():
             # Extract module name without .py extension
             module_name = st.session_state.current_module.replace('.py', '')
             
-            # Import the selected module dynamically
+            # Add current directory to path for imports
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            if base_dir not in sys.path:
+                sys.path.append(base_dir)
+            
+            # Import the module
             module = importlib.import_module(f"pages.{module_name}")
             
+            # Add a back button
+            if st.button("← Back to Dashboard"):
+                st.session_state.current_module = None
+                st.experimental_rerun()
+                
             # Run the module
-            module.run()
+            if hasattr(module, 'run'):
+                module.run()
+            else:
+                st.error(f"Module '{module_name}' does not have a run() function")
             return
-        except ImportError as e:
-            st.error(f"Error loading module: {e}")
-            st.info(f"Tried to import: pages.{module_name}")
-            st.info("Make sure your project structure is correct and the Python files exist.")
+        except Exception as e:
+            st.error(f"Error loading or running module: {str(e)}")
+            st.code(f"Details: {type(e).__name__}: {str(e)}", language="python")
+            
+            if st.button("← Back to Dashboard"):
+                st.session_state.current_module = None
+                st.experimental_rerun()
     
     # Otherwise, show the main dashboard with the 10 boxes
     st.header("Select a Module")
@@ -53,19 +69,9 @@ def main():
         "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
     }
     
-    # Get base project directory - should be /mount/src/blank-app-2
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
-    
-    # Correct pages directory path
+    # Get the correct pages directory path
+    base_dir = os.path.abspath(os.path.dirname(__file__))
     pages_dir = os.path.join(base_dir, "pages")
-    
-    # Add the base directory to Python path for imports
-    if base_dir not in sys.path:
-        sys.path.append(base_dir)
-    
-    if not os.path.exists(pages_dir):
-        st.warning(f"Pages directory not found at: {pages_dir}")
-        st.info("Please create a 'pages' folder in the same directory as this script.")
     
     # Create 2 columns
     col1, col2 = st.columns(2)
