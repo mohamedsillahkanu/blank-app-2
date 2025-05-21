@@ -4,7 +4,6 @@ import os
 import sys
 import types
 import importlib.util
-import base64
 from datetime import datetime
 
 # Set page configuration for the main dashboard
@@ -180,7 +179,7 @@ def import_module_safely(module_path, module_name):
         return None
 
 # Function to create a card for each module
-def create_module_card(name, info):
+def create_module_card(name, info, pages_dir):
     module_name = name.replace('.py', '').replace('_', ' ').title()
     
     card_html = f"""
@@ -275,7 +274,7 @@ def main():
     
     # Define the modules with their descriptions and icons
     modules = {
-        "Data_assembly.py": {"icon": "📊", "desc": "Import, clean, and prepare your data for analysis"},
+        "Data_assembly.py": {"icon": "📊", "desc": "Collect and gather all necessary data for the process"},
         "Data_management.py": {"icon": "💾", "desc": "Organize and manage your datasets efficiently"},
         "Epidemiological_stratification.py": {"icon": "🔬", "desc": "Analyze epidemiological data and identify patterns"},
         "Stratification_of_other_dterminants.py": {"icon": "🧩", "desc": "Explore other health determinants and their impacts"},
@@ -298,14 +297,14 @@ def main():
         for i in range(0, len(module_list), 2):
             if i < len(module_list):
                 name, info = module_list[i]
-                create_module_card(name, info)
+                create_module_card(name, info, pages_dir)
     
     # Second column - 3 modules
     with col2:
         for i in range(1, len(module_list), 2):
             if i < len(module_list):
                 name, info = module_list[i]
-                create_module_card(name, info)
+                create_module_card(name, info, pages_dir)
     
     # Create footer
     footer_html = """
