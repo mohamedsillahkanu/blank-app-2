@@ -43,141 +43,137 @@ def create_directory_structure():
         module_path = Path(f"modules/{file}")
         if not module_path.exists():
             with open(module_path, "w") as f:
-                f.write(f"""# {file}
-import streamlit as st
-
-def run():
-    st.title("{file.replace('.py', '').replace('_', ' ').title()}")
-    
-    # Add back button
-    if st.button("← Back to Dashboard"):
-        st.session_state.current_module = None
-        st.experimental_rerun()
-    
-    st.write("This is the {file.replace('.py', '').replace('_', ' ')} module.")
-    
-    # Add sample content specific to each module
-    content_generator('{file.replace('.py', '')}')
-    
-def content_generator(module_name):
-    """Generate sample content based on the module name"""
-    if module_name == 'data_analysis':
-        st.subheader("Sample Data Analysis")
-        st.write("Here you can perform exploratory data analysis on your datasets.")
-        st.code('''
-import pandas as pd
-import numpy as np
-
-# Load your data
-data = pd.read_csv('your_data.csv')
-
-# Display basic statistics
-data.describe()
-        ''')
+                module_name = file.replace('.py', '')
+                module_title = module_name.replace('_', ' ').title()
+                module_desc = module_name.replace('_', ' ')
+                f.write(f"# {file}\n")
+                f.write("import streamlit as st\n\n")
+                f.write("def run():\n")
+                f.write(f"    st.title(\"{module_title}\")\n\n")
+                f.write("    # Add back button\n")
+                f.write("    if st.button(\"← Back to Dashboard\"):\n")
+                f.write("        st.session_state.current_module = None\n")
+                f.write("        st.experimental_rerun()\n\n")
+                f.write(f"    st.write(\"This is the {module_desc} module.\")\n\n")
+                f.write("    # Add sample content specific to each module\n")
+                f.write(f"    content_generator('{module_name}')\n\n")
+                f.write("def content_generator(module_name):\n")
+                f.write("    \"\"\"Generate sample content based on the module name\"\"\"\n")
+                f.write("    if module_name == 'data_analysis':\n")
+                f.write("        st.subheader(\"Sample Data Analysis\")\n")
+                f.write("        st.write(\"Here you can perform exploratory data analysis on your datasets.\")\n")
+                f.write("        st.code(\"\"\"\n")
+                f.write("import pandas as pd\n")
+                f.write("import numpy as np\n\n")
+                f.write("# Load your data\n")
+                f.write("data = pd.read_csv('your_data.csv')\n\n")
+                f.write("# Display basic statistics\n")
+                f.write("data.describe()\n")
+                f.write("        \"\"\")\n")
         
-    elif module_name == 'data_visualization':
-        st.subheader("Data Visualization Tools")
-        st.write("Create various plots and charts to visualize your data.")
+                f.write("    elif module_name == 'data_visualization':\n")
+                f.write("        st.subheader(\"Data Visualization Tools\")\n")
+                f.write("        st.write(\"Create various plots and charts to visualize your data.\")\n")
+                f.write("        \n")
+                f.write("        import pandas as pd\n")
+                f.write("        import numpy as np\n")
+                f.write("        \n")
+                f.write("        chart_data = pd.DataFrame(\n")
+                f.write("            np.random.randn(20, 3),\n")
+                f.write("            columns=['A', 'B', 'C'])\n")
+                f.write("        \n")
+                f.write("        st.line_chart(chart_data)\n")
         
-        chart_data = pd.DataFrame(
-            np.random.randn(20, 3),
-            columns=['A', 'B', 'C'])
+                f.write("    elif module_name == 'machine_learning':\n")
+                f.write("        st.subheader(\"Machine Learning Models\")\n")
+                f.write("        st.write(\"Train and evaluate machine learning models.\")\n")
+                f.write("        st.code(\"\"\"\n")
+                f.write("from sklearn.model_selection import train_test_split\n")
+                f.write("from sklearn.ensemble import RandomForestClassifier\n")
+                f.write("from sklearn.metrics import accuracy_score\n\n")
+                f.write("# Split data\n")
+                f.write("X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)\n\n")
+                f.write("# Train model\n")
+                f.write("model = RandomForestClassifier()\n")
+                f.write("model.fit(X_train, y_train)\n\n")
+                f.write("# Evaluate\n")
+                f.write("accuracy = accuracy_score(y_test, model.predict(X_test))\n")
+                f.write("        \"\"\")\n")
         
-        st.line_chart(chart_data)
+                f.write("    elif module_name == 'data_processing':\n")
+                f.write("        st.subheader(\"Data Processing Pipeline\")\n")
+                f.write("        st.write(\"Clean, transform, and prepare your data for analysis.\")\n")
+                f.write("        st.code(\"\"\"\n")
+                f.write("# Data cleaning example\n")
+                f.write("def clean_data(df):\n")
+                f.write("    # Remove duplicates\n")
+                f.write("    df = df.drop_duplicates()\n")
+                f.write("    \n")
+                f.write("    # Handle missing values\n")
+                f.write("    df = df.fillna(df.mean())\n")
+                f.write("    \n")
+                f.write("    # Remove outliers\n")
+                f.write("    # ...\n")
+                f.write("    \n")
+                f.write("    return df\n")
+                f.write("        \"\"\")\n")
         
-    elif module_name == 'machine_learning':
-        st.subheader("Machine Learning Models")
-        st.write("Train and evaluate machine learning models.")
-        st.code('''
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
-
-# Split data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-# Train model
-model = RandomForestClassifier()
-model.fit(X_train, y_train)
-
-# Evaluate
-accuracy = accuracy_score(y_test, model.predict(X_test))
-        ''')
+                f.write("    elif module_name == 'statistics':\n")
+                f.write("        st.subheader(\"Statistical Analysis\")\n")
+                f.write("        st.write(\"Perform statistical tests and analysis on your data.\")\n")
+                f.write("        \n")
+                f.write("        import numpy as np\n")
+                f.write("        \n")
+                f.write("        data = np.random.normal(0, 1, 1000)\n")
+                f.write("        st.write(\"Sample statistics for normal distribution:\")\n")
+                f.write("        st.write(f\"Mean: {np.mean(data):.4f}\")\n")
+                f.write("        st.write(f\"Standard Deviation: {np.std(data):.4f}\")\n")
+                f.write("        st.write(f\"Min: {np.min(data):.4f}\")\n")
+                f.write("        st.write(f\"Max: {np.max(data):.4f}\")\n")
         
-    elif module_name == 'data_processing':
-        st.subheader("Data Processing Pipeline")
-        st.write("Clean, transform, and prepare your data for analysis.")
-        st.code('''
-# Data cleaning example
-def clean_data(df):
-    # Remove duplicates
-    df = df.drop_duplicates()
-    
-    # Handle missing values
-    df = df.fillna(df.mean())
-    
-    # Remove outliers
-    # ...
-    
-    return df
-        ''')
+                f.write("    elif module_name == 'reporting':\n")
+                f.write("        st.subheader(\"Automated Reports\")\n")
+                f.write("        st.write(\"Generate and export reports from your data.\")\n")
+                f.write("        \n")
+                f.write("        st.download_button(\n")
+                f.write("            label=\"Download Sample Report\",\n")
+                f.write("            data=\"This is a sample report content\",\n")
+                f.write("            file_name=\"sample_report.txt\",\n")
+                f.write("            mime=\"text/plain\"\n")
+                f.write("        )\n")
         
-    elif module_name == 'statistics':
-        st.subheader("Statistical Analysis")
-        st.write("Perform statistical tests and analysis on your data.")
-        
-        import numpy as np
-        
-        data = np.random.normal(0, 1, 1000)
-        st.write("Sample statistics for normal distribution:")
-        st.write(f"Mean: {np.mean(data):.4f}")
-        st.write(f"Standard Deviation: {np.std(data):.4f}")
-        st.write(f"Min: {np.min(data):.4f}")
-        st.write(f"Max: {np.max(data):.4f}")
-        
-    elif module_name == 'reporting':
-        st.subheader("Automated Reports")
-        st.write("Generate and export reports from your data.")
-        
-        st.download_button(
-            label="Download Sample Report",
-            data="This is a sample report content",
-            file_name="sample_report.txt",
-            mime="text/plain"
-        )
-        
-    elif module_name == 'file_management':
-        st.subheader("File Management")
-        st.write("Upload, download, and manage your data files.")
-        
-        uploaded_file = st.file_uploader("Choose a file")
-        if uploaded_file is not None:
-            st.write("Filename:", uploaded_file.name)
-            st.write("File size:", uploaded_file.size, "bytes")
+                f.write("    elif module_name == 'file_management':\n")
+                f.write("        st.subheader(\"File Management\")\n")
+                f.write("        st.write(\"Upload, download, and manage your data files.\")\n")
+                f.write("        \n")
+                f.write("        uploaded_file = st.file_uploader(\"Choose a file\")\n")
+                f.write("        if uploaded_file is not None:\n")
+                f.write("            st.write(\"Filename:\", uploaded_file.name)\n")
+                f.write("            st.write(\"File size:\", uploaded_file.size, \"bytes\")\n")
             
-    elif module_name == 'settings':
-        st.subheader("Dashboard Settings")
-        st.write("Configure your dashboard preferences.")
+                f.write("    elif module_name == 'settings':\n")
+                f.write("        st.subheader(\"Dashboard Settings\")\n")
+                f.write("        st.write(\"Configure your dashboard preferences.\")\n")
+                f.write("        \n")
+                f.write("        st.selectbox(\"Theme\", [\"Light\", \"Dark\", \"Custom\"])\n")
+                f.write("        st.slider(\"Update frequency (minutes)\", 1, 60, 5)\n")
+                f.write("        st.checkbox(\"Enable notifications\")\n")
         
-        st.selectbox("Theme", ["Light", "Dark", "Custom"])
-        st.slider("Update frequency (minutes)", 1, 60, 5)
-        st.checkbox("Enable notifications")
+                f.write("    elif module_name == 'user_management':\n")
+                f.write("        st.subheader(\"User Management\")\n")
+                f.write("        st.write(\"Manage user accounts and permissions.\")\n")
+                f.write("        \n")
+                f.write("        st.text_input(\"Username\")\n")
+                f.write("        st.text_input(\"Password\", type=\"password\")\n")
+                f.write("        st.selectbox(\"User Role\", [\"Admin\", \"Analyst\", \"Viewer\"])\n")
         
-    elif module_name == 'user_management':
-        st.subheader("User Management")
-        st.write("Manage user accounts and permissions.")
-        
-        st.text_input("Username")
-        st.text_input("Password", type="password")
-        st.selectbox("User Role", ["Admin", "Analyst", "Viewer"])
-        
-    elif module_name == 'dashboard_home':
-        st.subheader("Dashboard Overview")
-        st.write("Welcome to the SNT Dashboard!")
-        
-        st.metric(label="Active Users", value="42", delta="4")
-        st.metric(label="Processed Data", value="1.2 GB", delta="0.3 GB")
-        st.metric(label="Models Deployed", value="7", delta="-1")
+                f.write("    elif module_name == 'dashboard_home':\n")
+                f.write("        st.subheader(\"Dashboard Overview\")\n")
+                f.write("        st.write(\"Welcome to the SNT Dashboard!\")\n")
+                f.write("        \n")
+                f.write("        st.metric(label=\"Active Users\", value=\"42\", delta=\"4\")\n")
+                f.write("        st.metric(label=\"Processed Data\", value=\"1.2 GB\", delta=\"0.3 GB\")\n")
+                f.write("        st.metric(label=\"Models Deployed\", value=\"7\", delta=\"-1\")\n")
 """)
 
 # Create needed directories and files
