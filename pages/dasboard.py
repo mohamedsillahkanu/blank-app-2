@@ -1,5 +1,6 @@
 import streamlit as st
 import importlib
+import os
 
 # Set page configuration
 st.set_page_config(
@@ -23,13 +24,14 @@ def main():
             # Extract module name without .py extension
             module_name = st.session_state.current_module.replace('.py', '')
             
-            # Import the selected module dynamically
-            module = importlib.import_module(f"modules.{module_name}")
+            # Import the selected module dynamically from the 'pages' folder
+            module = importlib.import_module(f"pages.{module_name}")
             # Run the module
             module.run()
             return
         except ImportError as e:
             st.error(f"Error loading module: {e}")
+            st.info("Make sure the 'pages' folder is in the same directory as this script and contains the module files.")
     
     # Otherwise, show the main dashboard with the 10 boxes
     st.header("Select a Module")
@@ -48,25 +50,56 @@ def main():
         "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
     }
     
+    # Verify which modules actually exist in the pages directory
+    pages_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pages")
+    available_modules = {}
+    
+    if os.path.exists(pages_dir):
+        for name, info in modules.items():
+            if os.path.exists(os.path.join(pages_dir, name)):
+                available_modules[name] = info
+            else:
+                # Keep it in the list but mark as unavailable
+                available_modules[name] = {**info, "available": False}
+    else:
+        st.warning(f"Pages directory not found at: {pages_dir}")
+        available_modules = {name: {**info, "available": False} for name, info in modules.items()}
+    
     # Create 2 columns
     col1, col2 = st.columns(2)
     
     # First column - first 5 modules
     with col1:
-        for name, info in list(modules.items())[:5]:
+        for name, info in list(available_modules.items())[:5]:
             st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
             st.write(info['desc'])
-            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", key=f"btn_{name}"):
+            
+            # Disable button if module is not available
+            is_available = info.get("available", True)
+            if not is_available:
+                st.warning("Module file not found in pages directory")
+                
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", 
+                         key=f"btn_{name}",
+                         disabled=not is_available):
                 st.session_state.current_module = name
                 st.experimental_rerun()
             st.divider()
     
     # Second column - next 5 modules
     with col2:
-        for name, info in list(modules.items())[5:]:
+        for name, info in list(available_modules.items())[5:]:
             st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
             st.write(info['desc'])
-            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", key=f"btn_{name}"):
+            
+            # Disable button if module is not available
+            is_available = info.get("available", True)
+            if not is_available:
+                st.warning("Module file not found in pages directory")
+                
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", 
+                         key=f"btn_{name}",
+                         disabled=not is_available):
                 st.session_state.current_module = name
                 st.experimental_rerun()
             st.divider()
