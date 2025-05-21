@@ -1,110 +1,116 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
+import importlib
+import os
+import sys
 
-def generate_outlier_charts(df, column, chart_type):
-    if 'year' not in df.columns:
-        st.write("The dataset must contain a 'year' column for this analysis.")
-        return
-        
-    grouped = df.groupby(['year', column]).size().unstack(fill_value=0)
-    years = grouped.index.tolist()
-    categories = grouped.columns.tolist()
-    
-    colors = {'Outlier': 'lightpink', 'Non-Outlier': '#47B5FF'}
-    colors_list = [colors[cat] for cat in categories]
-    
-    if chart_type == "Bar Chart":
-        fig = plt.figure(figsize=(15, 15))
-        
-        # Title and legend placement
-        fig.suptitle("Outliers and Non-Outliers Bar Chart by Year\n", fontsize=16, y=0.98)
-        legend_elements = [plt.Rectangle((0,0),1,1, facecolor=color) for color in colors_list]
-        fig.legend(legend_elements, categories, 
-                  loc='upper center', bbox_to_anchor=(0.5, 0.96),
-                  ncol=len(categories), title="Categories")
-        
-        # Create subplot grid with more spacing
-        gs = fig.add_gridspec(3, 3, hspace=0.5, wspace=0.3)
-        axes = [fig.add_subplot(gs[i//3, i%3]) for i in range(9)]
-            
-        for i, year in enumerate(years):
-            if i < len(axes):
-                ax = axes[i]
-                year_data = grouped.loc[year]
-                bars = ax.bar(categories, year_data, color=colors_list)
-                ax.set_title(f"Year: {year}")
-                ax.set_ylabel("Count", labelpad=10)  # Added padding
-                ax.set_xlabel("Categories")
-                ax.set_xticklabels(categories, rotation=0, ha='right')
-                
-                # Add value labels with adjusted position
-                for bar in bars:
-                    height = bar.get_height()
-                    ax.text(bar.get_x() + bar.get_width()/2., height + 1,
-                           f'{int(height)}', ha='center', va='bottom')
-                           
-        for j in range(len(years), len(axes)):
-            fig.delaxes(axes[j])
-        
-        plt.tight_layout(rect=[0, 0.03, 1, 0.90])
-        
-    elif chart_type == "Pie Chart":
-        fig = plt.figure(figsize=(15, 15))
-        
-        fig.suptitle("Outliers and Non-Outliers Pie Chart by Year\n", fontsize=16, y=0.98)
-        legend_elements = [plt.Rectangle((0,0),1,1, facecolor=color) for color in colors_list]
-        fig.legend(legend_elements, categories, 
-                  loc='upper center', bbox_to_anchor=(0.5, 0.96),
-                  ncol=len(categories), title="Categories")
-        
-        gs = fig.add_gridspec(3, 3, hspace=0.5, wspace=0.3)
-        axes = [fig.add_subplot(gs[i//3, i%3]) for i in range(9)]
-            
-        for i, year in enumerate(years):
-            if i < len(axes):
-                ax = axes[i]
-                year_data = grouped.loc[year]
-                wedges, _, autotexts = ax.pie(year_data, colors=colors_list,
-                                            autopct='%1.1f%%')
-                ax.set_title(f"Year: {year}")
-                
-        for j in range(len(years), len(axes)):
-            fig.delaxes(axes[j])
-            
-        plt.tight_layout(rect=[0, 0.03, 1, 0.90])
-    
-    st.pyplot(fig)
+# Set page configuration
+st.set_page_config(
+    page_title="SNT Dashboard",
+    page_icon="🧊",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# Initialize session state for module navigation
+if 'current_module' not in st.session_state:
+    st.session_state.current_module = None
+
+# Main function to run the dashboard
 def main():
-    st.title("Outlier Analysis with Charts by Year")
-    uploaded_file = st.file_uploader("Upload the outlier_corrected_data.csv:", type=["csv", "xlsx"])
+    st.title("SNT Dashboard")
     
-    if uploaded_file:
+    # If a module is selected, import and run it
+    if st.session_state.current_module:
         try:
-            df = pd.read_csv(uploaded_file) if uploaded_file.name.endswith(".csv") else pd.read_excel(uploaded_file)
+            # Extract module name without .py extension
+            module_name = st.session_state.current_module.replace('.py', '')
             
-            if not df.empty:
-                st.write("### Preview of the dataset:")
-                st.write(df.head())
-                
-                category_columns = [col for col in df.columns 
-                                  if '_category' in col and 
-                                  df[col].isin(['Outlier', 'Non-Outlier']).any()]
-                
-                if category_columns:
-                    selected_column = st.selectbox("Select column for analysis:", 
-                                                 category_columns)
-                    chart_type = st.radio("Select chart type:", 
-                                        ["Bar Chart", "Pie Chart"])
-                    generate_outlier_charts(df, selected_column, chart_type)
-                else:
-                    st.write("No suitable category columns found.")
-            else:
-                st.write("No data to preview.")
-                
-        except Exception as e:
-            st.error(f"Error processing data: {str(e)}")
+            # Create full module path: pages.module_name
+            full_module_path = f"pages.{module_name}"
+            
+            # Make sure the directory is in the Python path
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            if current_dir not in sys.path:
+                sys.path.append(current_dir)
+            
+            # Import the selected module dynamically
+            module = importlib.import_module(full_module_path)
+            
+            # Run the module
+            module.run()
+            return
+        except ImportError as e:
+            st.error(f"Error loading module: {e}")
+            st.info(f"Tried to import: pages.{module_name}")
+            st.info("Make sure your project structure includes the 'pages' directory with the appropriate Python files.")
+    
+    # Otherwise, show the main dashboard with the 10 boxes
+    st.header("Select a Module")
+    
+    # Define the modules with their descriptions and icons
+    modules = {
+        "compute_new.py": {"icon": "📊", "desc": "Analyze your data with various techniques"},
+        "data_visualization.py": {"icon": "📈", "desc": "Create insightful visualizations"},
+        "machine_learning.py": {"icon": "🤖", "desc": "Train and deploy ML models"},
+        "data_processing.py": {"icon": "⚙️", "desc": "Process and transform your data"},
+        "statistics.py": {"icon": "📉", "desc": "Statistical analysis and testing"},
+        "reporting.py": {"icon": "📝", "desc": "Generate automated reports"},
+        "file_management.py": {"icon": "📁", "desc": "Manage your data files"},
+        "settings.py": {"icon": "⚙️", "desc": "Configure dashboard settings"},
+        "user_management.py": {"icon": "👥", "desc": "Manage users and permissions"},
+        "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
+    }
+    
+    # Check if pages directory exists
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    pages_dir = os.path.join(current_dir, "pages")
+    
+    if not os.path.exists(pages_dir):
+        st.warning(f"Pages directory not found at: {pages_dir}")
+        st.info("Please create a 'pages' folder in the same directory as this script.")
+    
+    # Create 2 columns
+    col1, col2 = st.columns(2)
+    
+    # First column - first 5 modules
+    with col1:
+        for name, info in list(modules.items())[:5]:
+            st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
+            st.write(info['desc'])
+            
+            # Check if the module file exists
+            module_file_path = os.path.join(pages_dir, name)
+            file_exists = os.path.exists(module_file_path) if os.path.exists(pages_dir) else False
+            
+            if not file_exists:
+                st.warning(f"Module file not found: {module_file_path}")
+            
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", 
+                         key=f"btn_{name}", 
+                         disabled=not file_exists):
+                st.session_state.current_module = name
+                st.experimental_rerun()
+            st.divider()
+    
+    # Second column - next 5 modules
+    with col2:
+        for name, info in list(modules.items())[5:]:
+            st.subheader(f"{info['icon']} {name.replace('.py', '').replace('_', ' ').title()}")
+            st.write(info['desc'])
+            
+            # Check if the module file exists
+            module_file_path = os.path.join(pages_dir, name)
+            file_exists = os.path.exists(module_file_path) if os.path.exists(pages_dir) else False
+            
+            if not file_exists:
+                st.warning(f"Module file not found: {module_file_path}")
+            
+            if st.button(f"Open {name.replace('.py', '').replace('_', ' ').title()}", 
+                         key=f"btn_{name}", 
+                         disabled=not file_exists):
+                st.session_state.current_module = name
+                st.experimental_rerun()
+            st.divider()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
