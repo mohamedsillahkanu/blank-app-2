@@ -36,7 +36,7 @@ def main():
     
     # Define the modules with their descriptions and icons
     modules = {
-        "data_analysis.py": {"icon": "📊", "desc": "Analyze your data with various techniques"},
+        "compute_new.py": {"icon": "📊", "desc": "Analyze your data with various techniques"},
         "data_visualization.py": {"icon": "📈", "desc": "Create insightful visualizations"},
         "machine_learning.py": {"icon": "🤖", "desc": "Train and deploy ML models"},
         "data_processing.py": {"icon": "⚙️", "desc": "Process and transform your data"},
