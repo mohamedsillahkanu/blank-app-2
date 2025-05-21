@@ -30,8 +30,35 @@ def main():
             if base_dir not in sys.path:
                 sys.path.append(base_dir)
             
-            # Import the module
+            # Import the selected module with special handling for set_page_config
+            # We need to modify the module's globals to skip the set_page_config call
+            import types
+            
+            # First, we'll create a fake streamlit module that ignores set_page_config
+            fake_st = types.ModuleType('streamlit')
+            
+            # Copy all attributes from the real streamlit module
+            for attr in dir(st):
+                if attr != '__name__':  # Keep the original module name
+                    setattr(fake_st, attr, getattr(st, attr))
+            
+            # Replace set_page_config with a no-op function
+            def dummy_set_page_config(*args, **kwargs):
+                pass
+            
+            fake_st.set_page_config = dummy_set_page_config
+            
+            # Store the original module
+            original_st = sys.modules.get('streamlit')
+            
+            # Replace streamlit with our fake module temporarily
+            sys.modules['streamlit'] = fake_st
+            
+            # Now import the module (it will use our fake streamlit)
             module = importlib.import_module(f"pages.{module_name}")
+            
+            # Restore the original streamlit module
+            sys.modules['streamlit'] = original_st
             
             # Add a back button
             if st.button("← Back to Dashboard"):
@@ -42,7 +69,34 @@ def main():
             if hasattr(module, 'run'):
                 module.run()
             else:
-                st.error(f"Module '{module_name}' does not have a run() function")
+                # If run() doesn't exist, try to execute the module's code anyways
+                # by calling all functions that seem like main functions
+                executed = False
+                
+                # For compute_new.py, we need to re-initialize session state
+                # This seems to be needed by your compute_new module
+                if module_name == "compute_new" and hasattr(module, 'st'):
+                    # The standard session state variables from compute_new.py
+                    session_vars = ['df', 'original_df', 'num_computations', 
+                                   'computations', 'used_variables', 'computed_df', 
+                                   'computations_applied']
+                    
+                    # Initialize any missing variables
+                    for var in session_vars:
+                        if var not in st.session_state:
+                            st.session_state[var] = None
+                    
+                    executed = True
+                
+                # Look for main function or content at module level
+                if hasattr(module, 'main'):
+                    module.main()
+                    executed = True
+                
+                if not executed:
+                    st.error(f"Module '{module_name}' doesn't have a run() or main() function")
+                    st.info("Please modify your module to include a run() function that contains all the main code.")
+            
             return
         except Exception as e:
             st.error(f"Error loading or running module: {str(e)}")
