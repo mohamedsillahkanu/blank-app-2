@@ -29,7 +29,7 @@ def get_css():
     <style>
         /* Main background */
         .stApp {{
-            background-color: {COLORS["background"]};
+            background-color: {COLORS["secondary"]};
         }}
         
         /* Headers */
@@ -277,7 +277,7 @@ def main():
         "Data_assembly.py": {"icon": "📊", "desc": "Collect and gather all necessary data for the process"},
         "Data_management.py": {"icon": "💾", "desc": "Organize and manage your datasets efficiently"},
         "Epidemiological_stratification.py": {"icon": "🔬", "desc": "Analyze epidemiological data and identify patterns"},
-        "Stratification_of_other_dterminants.py": {"icon": "🧩", "desc": "Explore other health determinants and their impacts"},
+        "Stratification_of_other_determinants.py": {"icon": "🧩", "desc": "Explore other health determinants and their impacts"},
         "Review_of_past_interventions.py": {"icon": "📈", "desc": "Evaluate the effectiveness of previous health interventions"},
         "Intervention_targeting.py": {"icon": "🎯", "desc": "Plan and optimize new health intervention strategies"},
     }
@@ -309,8 +309,9 @@ def main():
     # Create footer
     footer_html = """
     <div class="footer">
-        <p>© 2025 SNT Health Analytics Dashboard | Version 2.0</p>
+        <p>© 2025 SNT Health Analytics Dashboard | Version 1.0</p>
         <p>Last updated: May 21, 2025</p>
+        <p>Developer: MS Kanu</p>
     </div>
     """
     st.markdown(footer_html, unsafe_allow_html=True)
