@@ -2,6 +2,8 @@ import streamlit as st
 import importlib
 import os
 import sys
+import types
+import inspect
 
 # Set page configuration for the main dashboard
 st.set_page_config(
@@ -15,91 +17,75 @@ st.set_page_config(
 if 'current_module' not in st.session_state:
     st.session_state.current_module = None
 
+# Function to extract module code and create a clean run function
+def create_module_function(module_path):
+    try:
+        with open(module_path, 'r') as file:
+            code = file.read()
+        
+        # Remove the set_page_config call from the code
+        lines = code.split('\n')
+        filtered_lines = []
+        skip_line = False
+        config_removed = False
+        
+        for line in lines:
+            if 'st.set_page_config(' in line and not config_removed:
+                skip_line = True
+                config_removed = True
+            elif skip_line and ')' in line:
+                skip_line = False
+                continue
+            
+            if not skip_line:
+                filtered_lines.append(line)
+        
+        module_code = '\n'.join(filtered_lines)
+        
+        # Create a function that will execute the module code
+        def run_function():
+            # Create a new module namespace
+            module_globals = {
+                'st': st,
+                '__name__': '__main__',
+                '__file__': module_path,
+            }
+            
+            # Execute the module code in this namespace
+            exec(module_code, module_globals)
+        
+        return run_function
+    
+    except Exception as e:
+        st.error(f"Error creating module function: {str(e)}")
+        return None
+
 # Main function to run the dashboard
 def main():
     st.title("SNT Dashboard")
     
-    # If a module is selected, import and run it
+    # If a module is selected, execute it
     if st.session_state.current_module:
         try:
-            # Extract module name without .py extension
-            module_name = st.session_state.current_module.replace('.py', '')
-            
-            # Add current directory to path for imports
+            # Get module path
             base_dir = os.path.abspath(os.path.dirname(__file__))
-            if base_dir not in sys.path:
-                sys.path.append(base_dir)
+            module_path = os.path.join(base_dir, "pages", st.session_state.current_module)
             
-            # Import the selected module with special handling for set_page_config
-            # We need to modify the module's globals to skip the set_page_config call
-            import types
-            
-            # First, we'll create a fake streamlit module that ignores set_page_config
-            fake_st = types.ModuleType('streamlit')
-            
-            # Copy all attributes from the real streamlit module
-            for attr in dir(st):
-                if attr != '__name__':  # Keep the original module name
-                    setattr(fake_st, attr, getattr(st, attr))
-            
-            # Replace set_page_config with a no-op function
-            def dummy_set_page_config(*args, **kwargs):
-                pass
-            
-            fake_st.set_page_config = dummy_set_page_config
-            
-            # Store the original module
-            original_st = sys.modules.get('streamlit')
-            
-            # Replace streamlit with our fake module temporarily
-            sys.modules['streamlit'] = fake_st
-            
-            # Now import the module (it will use our fake streamlit)
-            module = importlib.import_module(f"pages.{module_name}")
-            
-            # Restore the original streamlit module
-            sys.modules['streamlit'] = original_st
-            
-            # Add a back button
+            # Back button
             if st.button("← Back to Dashboard"):
                 st.session_state.current_module = None
                 st.experimental_rerun()
-                
-            # Run the module
-            if hasattr(module, 'run'):
-                module.run()
+            
+            # Create and run the module function
+            run_function = create_module_function(module_path)
+            if run_function:
+                run_function()
             else:
-                # If run() doesn't exist, try to execute the module's code anyways
-                # by calling all functions that seem like main functions
-                executed = False
-                
-                # For compute_new.py, we need to re-initialize session state
-                # This seems to be needed by your compute_new module
-                if module_name == "compute_new" and hasattr(module, 'st'):
-                    # The standard session state variables from compute_new.py
-                    session_vars = ['df', 'original_df', 'num_computations', 
-                                   'computations', 'used_variables', 'computed_df', 
-                                   'computations_applied']
-                    
-                    # Initialize any missing variables
-                    for var in session_vars:
-                        if var not in st.session_state:
-                            st.session_state[var] = None
-                    
-                    executed = True
-                
-                # Look for main function or content at module level
-                if hasattr(module, 'main'):
-                    module.main()
-                    executed = True
-                
-                if not executed:
-                    st.error(f"Module '{module_name}' doesn't have a run() or main() function")
-                    st.info("Please modify your module to include a run() function that contains all the main code.")
+                st.error(f"Could not create a runnable function from {st.session_state.current_module}")
             
             return
         except Exception as e:
-            st.error(f"Error loading or running module: {str(e)}")
+            st.error(f"Error running module: {str(e)}")
             st.code(f"Details: {type(e).__name__}: {str(e)}", language="python")
             
             if st.button("← Back to Dashboard"):
