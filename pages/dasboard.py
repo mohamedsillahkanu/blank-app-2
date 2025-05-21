@@ -25,16 +25,8 @@ def main():
             # Extract module name without .py extension
             module_name = st.session_state.current_module.replace('.py', '')
             
-            # Create full module path: pages.module_name
-            full_module_path = f"pages.{module_name}"
-            
-            # Make sure the directory is in the Python path
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            if current_dir not in sys.path:
-                sys.path.append(current_dir)
-            
             # Import the selected module dynamically
-            module = importlib.import_module(full_module_path)
+            module = importlib.import_module(f"pages.{module_name}")
             
             # Run the module
             module.run()
@@ -42,7 +34,7 @@ def main():
         except ImportError as e:
             st.error(f"Error loading module: {e}")
             st.info(f"Tried to import: pages.{module_name}")
-            st.info("Make sure your project structure includes the 'pages' directory with the appropriate Python files.")
+            st.info("Make sure your project structure is correct and the Python files exist.")
     
     # Otherwise, show the main dashboard with the 10 boxes
     st.header("Select a Module")
@@ -61,9 +53,15 @@ def main():
         "dashboard_home.py": {"icon": "🏠", "desc": "Dashboard overview and metrics"}
     }
     
-    # Check if pages directory exists
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    pages_dir = os.path.join(current_dir, "pages")
+    # Get base project directory - should be /mount/src/blank-app-2
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__)))
+    
+    # Correct pages directory path
+    pages_dir = os.path.join(base_dir, "pages")
+    
+    # Add the base directory to Python path for imports
+    if base_dir not in sys.path:
+        sys.path.append(base_dir)
     
     if not os.path.exists(pages_dir):
         st.warning(f"Pages directory not found at: {pages_dir}")
@@ -80,7 +78,7 @@ def main():
             
             # Check if the module file exists
             module_file_path = os.path.join(pages_dir, name)
-            file_exists = os.path.exists(module_file_path) if os.path.exists(pages_dir) else False
+            file_exists = os.path.exists(module_file_path)
             
             if not file_exists:
                 st.warning(f"Module file not found: {module_file_path}")
@@ -100,7 +98,7 @@ def main():
             
             # Check if the module file exists
             module_file_path = os.path.join(pages_dir, name)
-            file_exists = os.path.exists(module_file_path) if os.path.exists(pages_dir) else False
+            file_exists = os.path.exists(module_file_path)
             
             if not file_exists:
                 st.warning(f"Module file not found: {module_file_path}")
