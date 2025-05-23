@@ -203,51 +203,51 @@ def process_chirps_data(_gdf, year, month):
 st.title("🌧️ CHIRPS Rainfall Data Analysis and Map Generation")
 st.markdown("*Analyze seasonal rainfall patterns for malaria intervention planning*")
 
+# Define country codes globally to avoid scope issues
+COUNTRY_OPTIONS = {
+    "Sierra Leone": "SLE",
+    "Guinea": "GIN", 
+    "Mali": "MLI",
+    "Burkina Faso": "BFA",
+    "Niger": "NER",
+    "Ghana": "GHA",
+    "Ivory Coast": "CIV",
+    "Liberia": "LBR",
+    "Senegal": "SEN",
+    "Guinea-Bissau": "GNB",
+    "Mauritania": "MRT",
+    "Nigeria": "NGA",
+    "Benin": "BEN",
+    "Togo": "TGO",
+    "Chad": "TCD",
+    "Cameroon": "CMR",
+    "Central African Republic": "CAF",
+    "Gabon": "GAB",
+    "Equatorial Guinea": "GNQ",
+    "Republic of the Congo": "COG",
+    "Democratic Republic of the Congo": "COD",
+    "Angola": "AGO",
+    "Zambia": "ZMB",
+    "Kenya": "KEN",
+    "Tanzania": "TZA",
+    "Uganda": "UGA",
+    "Rwanda": "RWA",
+    "Burundi": "BDI",
+    "Ethiopia": "ETH",
+    "South Sudan": "SSD",
+    "Sudan": "SDN",
+    "Madagascar": "MDG",
+    "Mozambique": "MOZ",
+    "Malawi": "MWI",
+    "Zimbabwe": "ZWE",
+    "Botswana": "BWA",
+    "Namibia": "NAM",
+    "South Africa": "ZAF"
+}
+
 # Sidebar for controls
 with st.sidebar:
     st.header("Analysis Parameters")
-    
-    # Define country codes (ISO 3166-1 alpha-3) - moved outside the conditional
-    country_options = {
-        "Sierra Leone": "SLE",
-        "Guinea": "GIN", 
-        "Mali": "MLI",
-        "Burkina Faso": "BFA",
-        "Niger": "NER",
-        "Ghana": "GHA",
-        "Ivory Coast": "CIV",
-        "Liberia": "LBR",
-        "Senegal": "SEN",
-        "Guinea-Bissau": "GNB",
-        "Mauritania": "MRT",
-        "Nigeria": "NGA",
-        "Benin": "BEN",
-        "Togo": "TGO",
-        "Chad": "TCD",
-        "Cameroon": "CMR",
-        "Central African Republic": "CAF",
-        "Gabon": "GAB",
-        "Equatorial Guinea": "GNQ",
-        "Republic of the Congo": "COG",
-        "Democratic Republic of the Congo": "COD",
-        "Angola": "AGO",
-        "Zambia": "ZMB",
-        "Kenya": "KEN",
-        "Tanzania": "TZA",
-        "Uganda": "UGA",
-        "Rwanda": "RWA",
-        "Burundi": "BDI",
-        "Ethiopia": "ETH",
-        "South Sudan": "SSD",
-        "Sudan": "SDN",
-        "Madagascar": "MDG",
-        "Mozambique": "MOZ",
-        "Malawi": "MWI",
-        "Zimbabwe": "ZWE",
-        "Botswana": "BWA",
-        "Namibia": "NAM",
-        "South Africa": "ZAF"
-    }
     
     # Data source selection
     data_source = st.radio(
@@ -258,7 +258,7 @@ with st.sidebar:
     
     if data_source == "GADM Database":
         # Country and admin level selection
-        country = st.selectbox("🌍 Select Country", list(country_options.keys()), 
+        country = st.selectbox("🌍 Select Country", list(COUNTRY_OPTIONS.keys()), 
                               help="Select any African country")
         admin_level = st.selectbox("🏛️ Administrative Level", [0, 1, 2, 3, 4], 
                                   help="0=Country, 1=Regions, 2=Districts, 3=Communes, 4=Localities")
@@ -274,7 +274,7 @@ with st.sidebar:
         st.caption(f"Level {admin_level}: {level_descriptions.get(admin_level, 'Administrative division')}")
         
         # Set variables for GADM mode
-        country_code = country_options[country]
+        country_code = COUNTRY_OPTIONS[country]
         use_custom_shapefile = False
         
     else:  # Upload Custom Shapefile
@@ -748,7 +748,7 @@ with col2:
     # Show current system info
     with st.expander("📊 System Information"):
         st.write(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        st.write(f"Available countries: {len(country_options)}")
+        st.write(f"Available countries: {len(COUNTRY_OPTIONS)}")
         st.write("Supported formats: CSV, Excel (.xlsx)")
         st.write("Max recommended: 12 months, Admin level ≤3 for large countries")
 # Footer
