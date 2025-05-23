@@ -22,34 +22,50 @@ st.set_page_config(
     layout="wide"
 )
 
+# Define country codes globally to avoid scope issues
+COUNTRY_OPTIONS = {
+    "Sierra Leone": "SLE",
+    "Guinea": "GIN", 
+    "Mali": "MLI",
+    "Burkina Faso": "BFA",
+    "Niger": "NER",
+    "Ghana": "GHA",
+    "Ivory Coast": "CIV",
+    "Liberia": "LBR",
+    "Senegal": "SEN",
+    "Guinea-Bissau": "GNB",
+    "Mauritania": "MRT",
+    "Nigeria": "NGA",
+    "Benin": "BEN",
+    "Togo": "TGO",
+    "Chad": "TCD",
+    "Cameroon": "CMR",
+    "Central African Republic": "CAF",
+    "Gabon": "GAB",
+    "Equatorial Guinea": "GNQ",
+    "Republic of the Congo": "COG",
+    "Democratic Republic of the Congo": "COD",
+    "Angola": "AGO",
+    "Zambia": "ZMB",
+    "Kenya": "KEN",
+    "Tanzania": "TZA",
+    "Uganda": "UGA",
+    "Rwanda": "RWA",
+    "Burundi": "BDI",
+    "Ethiopia": "ETH",
+    "South Sudan": "SSD",
+    "Sudan": "SDN",
+    "Madagascar": "MDG",
+    "Mozambique": "MOZ",
+    "Malawi": "MWI",
+    "Zimbabwe": "ZWE",
+    "Botswana": "BWA",
+    "Namibia": "NAM",
+    "South Africa": "ZAF"
+}
+
 # Add caching for better performance
-def load_uploaded_shapefile(shp_file, shx_file, dbf_file):
-    """Load shapefile from uploaded files"""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        # Save uploaded files
-        shp_path = os.path.join(tmpdir, "uploaded.shp")
-        shx_path = os.path.join(tmpdir, "uploaded.shx") 
-        dbf_path = os.path.join(tmpdir, "uploaded.dbf")
-        
-        with open(shp_path, "wb") as f:
-            f.write(shp_file.getvalue())
-        with open(shx_path, "wb") as f:
-            f.write(shx_file.getvalue())
-        with open(dbf_path, "wb") as f:
-            f.write(dbf_file.getvalue())
-        
-        try:
-            # Load the shapefile
-            gdf = gpd.read_file(shp_path)
-        except Exception as e:
-            raise ValueError(f"Failed to read uploaded shapefile: {str(e)}")
-    
-    # Ensure CRS is set
-    if gdf.crs is None:
-        st.warning("⚠️ No coordinate reference system detected. Assuming WGS84 (EPSG:4326)")
-        gdf = gdf.set_crs("EPSG:4326")
-    
-    return gdf
+@st.cache_data
 def check_file_exists(url):
     """Check if a file exists on GitHub with timeout"""
     try:
@@ -105,6 +121,34 @@ def download_shapefile_from_gadm(country_code, admin_level):
     
     # Ensure CRS is set
     if gdf.crs is None:
+        gdf = gdf.set_crs("EPSG:4326")
+    
+    return gdf
+
+def load_uploaded_shapefile(shp_file, shx_file, dbf_file):
+    """Load shapefile from uploaded files"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save uploaded files
+        shp_path = os.path.join(tmpdir, "uploaded.shp")
+        shx_path = os.path.join(tmpdir, "uploaded.shx") 
+        dbf_path = os.path.join(tmpdir, "uploaded.dbf")
+        
+        with open(shp_path, "wb") as f:
+            f.write(shp_file.getvalue())
+        with open(shx_path, "wb") as f:
+            f.write(shx_file.getvalue())
+        with open(dbf_path, "wb") as f:
+            f.write(dbf_file.getvalue())
+        
+        try:
+            # Load the shapefile
+            gdf = gpd.read_file(shp_path)
+        except Exception as e:
+            raise ValueError(f"Failed to read uploaded shapefile: {str(e)}")
+    
+    # Ensure CRS is set
+    if gdf.crs is None:
+        st.warning("⚠️ No coordinate reference system detected. Assuming WGS84 (EPSG:4326)")
         gdf = gdf.set_crs("EPSG:4326")
     
     return gdf
@@ -202,48 +246,6 @@ def process_chirps_data(_gdf, year, month):
 # Main app layout
 st.title("🌧️ CHIRPS Rainfall Data Analysis and Map Generation")
 st.markdown("*Analyze seasonal rainfall patterns for malaria intervention planning*")
-
-# Define country codes globally to avoid scope issues
-COUNTRY_OPTIONS = {
-    "Sierra Leone": "SLE",
-    "Guinea": "GIN", 
-    "Mali": "MLI",
-    "Burkina Faso": "BFA",
-    "Niger": "NER",
-    "Ghana": "GHA",
-    "Ivory Coast": "CIV",
-    "Liberia": "LBR",
-    "Senegal": "SEN",
-    "Guinea-Bissau": "GNB",
-    "Mauritania": "MRT",
-    "Nigeria": "NGA",
-    "Benin": "BEN",
-    "Togo": "TGO",
-    "Chad": "TCD",
-    "Cameroon": "CMR",
-    "Central African Republic": "CAF",
-    "Gabon": "GAB",
-    "Equatorial Guinea": "GNQ",
-    "Republic of the Congo": "COG",
-    "Democratic Republic of the Congo": "COD",
-    "Angola": "AGO",
-    "Zambia": "ZMB",
-    "Kenya": "KEN",
-    "Tanzania": "TZA",
-    "Uganda": "UGA",
-    "Rwanda": "RWA",
-    "Burundi": "BDI",
-    "Ethiopia": "ETH",
-    "South Sudan": "SSD",
-    "Sudan": "SDN",
-    "Madagascar": "MDG",
-    "Mozambique": "MOZ",
-    "Malawi": "MWI",
-    "Zimbabwe": "ZWE",
-    "Botswana": "BWA",
-    "Namibia": "NAM",
-    "South Africa": "ZAF"
-}
 
 # Sidebar for controls
 with st.sidebar:
@@ -602,7 +604,6 @@ with col1:
                     
                     with col_excel:
                         # Create Excel file in memory
-                        from io import BytesIO
                         excel_buffer = BytesIO()
                         
                         with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
@@ -652,26 +653,30 @@ with col1:
                     # Data description
                     with st.expander("📖 Data Dictionary"):
                         st.markdown("""
-                        **Administrative Columns:**
-                        - `country`: Country name
+                        **Core Columns:**
+                        - `area_name`: Name of analysis area
+                        - `data_source`: "GADM Database" or "Upload Custom Shapefile"
                         - `year`: Analysis year
                         - `month`: Month number (1-12)
                         - `month_name`: Month name
+                        
+                        **GADM Database Columns (when applicable):**
+                        - `country_code`: ISO country code
                         - `admin_level`: Administrative level (0-4)
                         - `NAME_X`: Administrative unit names at level X
                         - `GID_X`: Global administrative unit IDs
+                        - `CC_X`: Country/region codes
+                        - `TYPE_X`: Administrative unit types
+                        - `HASC_X`: Hierarchical administrative subdivision codes
+                        
+                        **Custom Shapefile Columns:**
+                        - All original attribute columns from uploaded shapefile
+                        - Variable names depend on the uploaded data
                         
                         **Rainfall Columns:**
                         - `mean_rain`: Average rainfall in mm for the administrative unit
                         - `valid_pixels`: Number of valid satellite pixels used in calculation
-                        
-                        **Other GADM Columns:**
-                        - `CC_X`: Country/region codes
-                        - `TYPE_X`: Administrative unit types
-                        - `HASC_X`: Hierarchical administrative subdivision codes
                         """)
-
-
 
             except Exception as e:
                 st.error(f"❌ Unexpected error: {str(e)}")
@@ -679,9 +684,14 @@ with col1:
                 
                 # Debug information
                 with st.expander("🔧 Debug Information"):
-                    st.write(f"Country: {country}")
-                    st.write(f"Country Code: {country_code}")
-                    st.write(f"Admin Level: {admin_level}")
+                    st.write(f"Data Source: {data_source}")
+                    if data_source == "GADM Database":
+                        st.write(f"Country: {country}")
+                        st.write(f"Country Code: {country_code}")
+                        st.write(f"Admin Level: {admin_level}")
+                    else:
+                        st.write(f"Custom Area: {country}")
+                        st.write(f"Files Uploaded: {use_custom_shapefile}")
                     st.write(f"Year: {year}")
                     st.write(f"Months: {selected_months}")
 
@@ -700,6 +710,7 @@ with col2:
     - All African countries supported
     - Administrative levels 0-4 (where available)
     - Monthly rainfall data from 1981-present
+    - Custom shapefile upload capability
     
     **Use Cases:**
     - Seasonal Malaria Chemoprevention planning
@@ -751,6 +762,7 @@ with col2:
         st.write(f"Available countries: {len(COUNTRY_OPTIONS)}")
         st.write("Supported formats: CSV, Excel (.xlsx)")
         st.write("Max recommended: 12 months, Admin level ≤3 for large countries")
+
 # Footer
 st.markdown("---")
 st.markdown("*Built for malaria researchers and public health professionals*")
