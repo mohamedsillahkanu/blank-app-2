@@ -95,9 +95,8 @@ def validate_chirps_date(year, month):
     return True, ""
 
 @st.cache_data
-def process_chirps_data(gdf, year, month):
-    """Process CHIRPS rainfall data with improved error handling"""
-    
+def download_chirps_data(year, month):
+    """Download CHIRPS data and return the file path"""
     # Validate date first
     is_valid, error_msg = validate_chirps_date(year, month)
     if not is_valid:
@@ -111,13 +110,24 @@ def process_chirps_data(gdf, year, month):
     except requests.exceptions.RequestException as e:
         raise ConnectionError(f"Failed to download CHIRPS data for {year}-{month:02d}: {str(e)}")
 
+    # Return the raw data as bytes
+    return response.content
+
+def process_chirps_data(_gdf, year, month):
+    """Process CHIRPS rainfall data with improved error handling"""
+    
+    # Create a copy to avoid modifying the original
+    gdf = _gdf.copy()
+    
+    # Download the CHIRPS data (this part is cached)
+    chirps_data = download_chirps_data(year, month)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         zipped_file_path = os.path.join(tmpdir, "chirps.tif.gz")
         
-        # Download with progress
+        # Save the downloaded data
         with open(zipped_file_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+            f.write(chirps_data)
 
         unzipped_file_path = os.path.join(tmpdir, "chirps.tif")
         
@@ -280,9 +290,25 @@ with col1:
                 
                 # Show some basic info about the shapefile
                 if hasattr(gdf, 'NAME_1') and admin_level >= 1:
-                    st.info(f"📋 Contains regions: {', '.join(gdf['NAME_1'].unique()[:5])}{'...' if len(gdf['NAME_1'].unique()) > 5 else ''}")
+                    region_names = gdf['NAME_1'].unique()[:5]
+                    st.info(f"📋 Contains regions: {', '.join(region_names)}{'...' if len(gdf['NAME_1'].unique()) > 5 else ''}")
                 elif hasattr(gdf, 'NAME_0'):
                     st.info(f"📋 Country: {gdf['NAME_0'].iloc[0]}")
+                
+                # Test CHIRPS data availability before processing all months
+                status_text.text("🔍 Testing CHIRPS data availability...")
+                test_month = selected_months[0]
+                test_url = f"https://data.chc.ucsb.edu/products/CHIRPS-2.0/africa_monthly/tifs/chirps-v2.0.{year}.{test_month:02d}.tif.gz"
+                
+                try:
+                    test_response = requests.head(test_url, timeout=30)
+                    if test_response.status_code != 200:
+                        st.error(f"❌ CHIRPS data not available for {year}-{test_month:02d}")
+                        st.error("Try selecting a different year or check if the data exists for your selected period.")
+                        st.stop()
+                except requests.exceptions.RequestException as e:
+                    st.error(f"❌ Cannot access CHIRPS server: {str(e)}")
+                    st.stop()
                 
                 # Step 2: Process CHIRPS data
                 status_text.text("🌧️ Processing CHIRPS rainfall data...")
@@ -294,14 +320,22 @@ with col1:
                     status_text.text(f"🌧️ Processing {month_names[month]} {year}...")
                     
                     try:
-                        processed_gdf = process_chirps_data(gdf.copy(), year, month)
+                        processed_gdf = process_chirps_data(gdf, year, month)
                         processed_data.append((month, processed_gdf))
                     except Exception as e:
                         st.error(f"❌ Error processing {month_names[month]}: {str(e)}")
+                        st.write(f"Debug: Error type: {type(e).__name__}")
                         continue
 
                 if not processed_data:
                     st.error("❌ No data could be processed for the selected months.")
+                    st.markdown("""
+                    **Possible solutions:**
+                    - Try a different year (1981-2023 are most reliable)
+                    - Check if the selected months have data available
+                    - Ensure internet connection is stable
+                    - Try fewer months at once
+                    """)
                     st.stop()
 
                 # Step 3: Generate visualizations
