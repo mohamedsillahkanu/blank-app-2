@@ -23,7 +23,33 @@ st.set_page_config(
 )
 
 # Add caching for better performance
-@st.cache_data
+def load_uploaded_shapefile(shp_file, shx_file, dbf_file):
+    """Load shapefile from uploaded files"""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Save uploaded files
+        shp_path = os.path.join(tmpdir, "uploaded.shp")
+        shx_path = os.path.join(tmpdir, "uploaded.shx") 
+        dbf_path = os.path.join(tmpdir, "uploaded.dbf")
+        
+        with open(shp_path, "wb") as f:
+            f.write(shp_file.getvalue())
+        with open(shx_path, "wb") as f:
+            f.write(shx_file.getvalue())
+        with open(dbf_path, "wb") as f:
+            f.write(dbf_file.getvalue())
+        
+        try:
+            # Load the shapefile
+            gdf = gpd.read_file(shp_path)
+        except Exception as e:
+            raise ValueError(f"Failed to read uploaded shapefile: {str(e)}")
+    
+    # Ensure CRS is set
+    if gdf.crs is None:
+        st.warning("⚠️ No coordinate reference system detected. Assuming WGS84 (EPSG:4326)")
+        gdf = gdf.set_crs("EPSG:4326")
+    
+    return gdf
 def check_file_exists(url):
     """Check if a file exists on GitHub with timeout"""
     try:
@@ -181,63 +207,118 @@ st.markdown("*Analyze seasonal rainfall patterns for malaria intervention planni
 with st.sidebar:
     st.header("Analysis Parameters")
     
-    # Define country codes (ISO 3166-1 alpha-3)
-    country_options = {
-        "Sierra Leone": "SLE",
-        "Guinea": "GIN", 
-        "Mali": "MLI",
-        "Burkina Faso": "BFA",
-        "Niger": "NER",
-        "Ghana": "GHA",
-        "Ivory Coast": "CIV",
-        "Liberia": "LBR",
-        "Senegal": "SEN",
-        "Guinea-Bissau": "GNB",
-        "Mauritania": "MRT",
-        "Nigeria": "NGA",
-        "Benin": "BEN",
-        "Togo": "TGO",
-        "Chad": "TCD",
-        "Cameroon": "CMR",
-        "Central African Republic": "CAF",
-        "Gabon": "GAB",
-        "Equatorial Guinea": "GNQ",
-        "Republic of the Congo": "COG",
-        "Democratic Republic of the Congo": "COD",
-        "Angola": "AGO",
-        "Zambia": "ZMB",
-        "Kenya": "KEN",
-        "Tanzania": "TZA",
-        "Uganda": "UGA",
-        "Rwanda": "RWA",
-        "Burundi": "BDI",
-        "Ethiopia": "ETH",
-        "South Sudan": "SSD",
-        "Sudan": "SDN",
-        "Madagascar": "MDG",
-        "Mozambique": "MOZ",
-        "Malawi": "MWI",
-        "Zimbabwe": "ZWE",
-        "Botswana": "BWA",
-        "Namibia": "NAM",
-        "South Africa": "ZAF"
-    }
-
-    # Country and admin level selection
-    country = st.selectbox("🌍 Select Country", list(country_options.keys()), 
-                          help="Select any African country")
-    admin_level = st.selectbox("🏛️ Administrative Level", [0, 1, 2, 3, 4], 
-                              help="0=Country, 1=Regions, 2=Districts, 3=Communes, 4=Localities")
+    # Data source selection
+    data_source = st.radio(
+        "📂 Select Data Source", 
+        ["GADM Database", "Upload Custom Shapefile"],
+        help="Choose between official GADM boundaries or upload your own shapefile"
+    )
     
-    # Show admin level description
-    level_descriptions = {
-        0: "Country boundary",
-        1: "First-level admin (regions/states)",
-        2: "Second-level admin (districts/provinces)", 
-        3: "Third-level admin (communes/counties)",
-        4: "Fourth-level admin (localities/wards)"
-    }
-    st.caption(f"Level {admin_level}: {level_descriptions.get(admin_level, 'Administrative division')}")
+    if data_source == "GADM Database":
+        # Define country codes (ISO 3166-1 alpha-3)
+        country_options = {
+            "Sierra Leone": "SLE",
+            "Guinea": "GIN", 
+            "Mali": "MLI",
+            "Burkina Faso": "BFA",
+            "Niger": "NER",
+            "Ghana": "GHA",
+            "Ivory Coast": "CIV",
+            "Liberia": "LBR",
+            "Senegal": "SEN",
+            "Guinea-Bissau": "GNB",
+            "Mauritania": "MRT",
+            "Nigeria": "NGA",
+            "Benin": "BEN",
+            "Togo": "TGO",
+            "Chad": "TCD",
+            "Cameroon": "CMR",
+            "Central African Republic": "CAF",
+            "Gabon": "GAB",
+            "Equatorial Guinea": "GNQ",
+            "Republic of the Congo": "COG",
+            "Democratic Republic of the Congo": "COD",
+            "Angola": "AGO",
+            "Zambia": "ZMB",
+            "Kenya": "KEN",
+            "Tanzania": "TZA",
+            "Uganda": "UGA",
+            "Rwanda": "RWA",
+            "Burundi": "BDI",
+            "Ethiopia": "ETH",
+            "South Sudan": "SSD",
+            "Sudan": "SDN",
+            "Madagascar": "MDG",
+            "Mozambique": "MOZ",
+            "Malawi": "MWI",
+            "Zimbabwe": "ZWE",
+            "Botswana": "BWA",
+            "Namibia": "NAM",
+            "South Africa": "ZAF"
+        }
+
+        # Country and admin level selection
+        country = st.selectbox("🌍 Select Country", list(country_options.keys()), 
+                              help="Select any African country")
+        admin_level = st.selectbox("🏛️ Administrative Level", [0, 1, 2, 3, 4], 
+                                  help="0=Country, 1=Regions, 2=Districts, 3=Communes, 4=Localities")
+        
+        # Show admin level description
+        level_descriptions = {
+            0: "Country boundary",
+            1: "First-level admin (regions/states)",
+            2: "Second-level admin (districts/provinces)", 
+            3: "Third-level admin (communes/counties)",
+            4: "Fourth-level admin (localities/wards)"
+        }
+        st.caption(f"Level {admin_level}: {level_descriptions.get(admin_level, 'Administrative division')}")
+        
+        # Set variables for GADM mode
+        country_code = country_options[country]
+        use_custom_shapefile = False
+        
+    else:  # Upload Custom Shapefile
+        st.markdown("**📁 Upload Shapefile Components**")
+        st.caption("Upload all required files for your shapefile")
+        
+        # File uploaders
+        shp_file = st.file_uploader("🗺️ Shapefile (.shp)", type=['shp'], help="Main geometry file (required)")
+        shx_file = st.file_uploader("🔍 Shape Index (.shx)", type=['shx'], help="Spatial index file (required)")
+        dbf_file = st.file_uploader("📊 Attribute Table (.dbf)", type=['dbf'], help="Attribute data file (required)")
+        
+        # Check if required files are uploaded
+        if shp_file and shx_file and dbf_file:
+            st.success("✅ Required files uploaded successfully!")
+            use_custom_shapefile = True
+            
+            # Show file details
+            with st.expander("📋 File Details"):
+                st.write(f"**SHP file**: {shp_file.name} ({shp_file.size:,} bytes)")
+                st.write(f"**SHX file**: {shx_file.name} ({shx_file.size:,} bytes)")
+                st.write(f"**DBF file**: {dbf_file.name} ({dbf_file.size:,} bytes)")
+        else:
+            use_custom_shapefile = False
+            st.info("📤 Please upload .shp, .shx, and .dbf files to proceed")
+            
+            # Show upload requirements
+            with st.expander("ℹ️ Shapefile Upload Requirements"):
+                st.markdown("""
+                **Required Files:**
+                - **.shp**: Contains the geometry data
+                - **.shx**: Spatial index for quick access
+                - **.dbf**: Attribute table with feature data
+                
+                **Important Notes:**
+                - All files must have the same base name
+                - Maximum file size: 200MB per file
+                - Will assume WGS84 coordinate system if no projection is defined
+                - Ensure your shapefile contains administrative boundaries or areas of interest
+                """)
+        
+        # Set variables for custom mode
+        country = "Custom Area"
+        country_code = "CUSTOM"
+        admin_level = "Custom"
 
     # Date selection with validation
     current_year = datetime.now().year
@@ -270,32 +351,54 @@ with col1:
     if st.button("🔄 Generate Analysis", type="primary", use_container_width=True):
         if not selected_months:
             st.error("Please select at least one month for analysis.")
+        elif data_source == "Upload Custom Shapefile" and not use_custom_shapefile:
+            st.error("Please upload all required shapefile components (.shp, .shx, .dbf)")
         else:
             # Progress tracking
             progress_bar = st.progress(0)
             status_text = st.empty()
             
             try:
-                # Step 1: Download shapefile from GADM
-                status_text.text("🔍 Checking GADM database...")
-                progress_bar.progress(10)
-                
-                country_code = country_options[country]
-                
-                status_text.text(f"📥 Downloading {country} shapefile from GADM...")
-                progress_bar.progress(20)
-                
-                gdf = download_shapefile_from_gadm(country_code, admin_level)
-                st.success(f"✅ {country} Admin Level {admin_level} shapefile loaded ({len(gdf)} features)")
+                # Step 1: Load shapefile (GADM or uploaded)
+                if data_source == "GADM Database":
+                    status_text.text("🔍 Checking GADM database...")
+                    progress_bar.progress(10)
+                    
+                    status_text.text(f"📥 Downloading {country} shapefile from GADM...")
+                    progress_bar.progress(20)
+                    
+                    gdf = download_shapefile_from_gadm(country_code, admin_level)
+                    st.success(f"✅ {country} Admin Level {admin_level} shapefile loaded ({len(gdf)} features)")
+                    
+                else:  # Custom shapefile
+                    status_text.text("📁 Processing uploaded shapefile...")
+                    progress_bar.progress(10)
+                    
+                    gdf = load_uploaded_shapefile(shp_file, shx_file, dbf_file)
+                    progress_bar.progress(20)
+                    st.success(f"✅ Custom shapefile loaded ({len(gdf)} features)")
+                    
+                    # Show coordinate system info
+                    if gdf.crs:
+                        st.info(f"📍 Coordinate System: {gdf.crs}")
+                    
+                    # Show attribute columns
+                    attribute_cols = [col for col in gdf.columns if col != 'geometry']
+                    if attribute_cols:
+                        st.info(f"📊 Available attributes: {', '.join(attribute_cols[:5])}{'...' if len(attribute_cols) > 5 else ''}")
                 
                 # Show some basic info about the shapefile
-                if hasattr(gdf, 'NAME_1') and admin_level >= 1:
+                if hasattr(gdf, 'NAME_1') and (data_source == "GADM Database" and admin_level >= 1):
                     region_names = gdf['NAME_1'].unique()[:5]
                     st.info(f"📋 Contains regions: {', '.join(region_names)}{'...' if len(gdf['NAME_1'].unique()) > 5 else ''}")
                 elif hasattr(gdf, 'NAME_0'):
                     st.info(f"📋 Country: {gdf['NAME_0'].iloc[0]}")
+                elif data_source == "Upload Custom Shapefile":
+                    # For custom shapefiles, show basic geometry info
+                    geom_types = gdf.geometry.type.unique()
+                    st.info(f"📋 Geometry types: {', '.join(geom_types)}")
                 
-                # Test CHIRPS data availability before processing all months
+                # Test CHIRPS data availability before processing all months (only for first month)
                 status_text.text("🔍 Testing CHIRPS data availability...")
                 test_month = selected_months[0]
                 test_url = f"https://data.chc.ucsb.edu/products/CHIRPS-2.0/africa_monthly/tifs/chirps-v2.0.{year}.{test_month:02d}.tif.gz"
@@ -436,13 +539,22 @@ with col1:
                     df['month'] = month
                     df['month_name'] = month_names[month]
                     df['year'] = year
-                    df['country'] = country
-                    df['admin_level'] = admin_level
+                    df['area_name'] = country
+                    df['data_source'] = data_source
+                    if data_source == "GADM Database":
+                        df['country_code'] = country_code
+                        df['admin_level'] = admin_level
+                    else:
+                        df['country_code'] = "CUSTOM"
+                        df['admin_level'] = "Custom"
                     
                     # Reorder columns for better readability
-                    column_order = ['country', 'year', 'month', 'month_name', 'admin_level']
+                    column_order = ['area_name', 'data_source', 'year', 'month', 'month_name']
                     
-                    # Add name columns if they exist
+                    if data_source == "GADM Database":
+                        column_order.extend(['country_code', 'admin_level'])
+                    
+                    # Add name columns if they exist (for GADM data)
                     name_cols = [col for col in df.columns if col.startswith('NAME_')]
                     column_order.extend(sorted(name_cols))
                     
@@ -455,7 +567,7 @@ with col1:
                     # Add rainfall data columns
                     column_order.extend(['mean_rain', 'valid_pixels'])
                     
-                    # Add any remaining columns
+                    # Add any remaining columns (for custom shapefiles)
                     remaining_cols = [col for col in df.columns if col not in column_order]
                     column_order.extend(remaining_cols)
                     
@@ -474,10 +586,16 @@ with col1:
                     
                     with col_csv:
                         csv_data = final_df.to_csv(index=False)
+                        filename_base = f"chirps_rainfall_{country_code}_{year}"
+                        if data_source == "Upload Custom Shapefile":
+                            filename_base = f"chirps_rainfall_custom_{year}"
+                        elif data_source == "GADM Database":
+                            filename_base = f"chirps_rainfall_{country_code}_{year}_admin{admin_level}"
+                        
                         st.download_button(
                             label="📄 Download as CSV",
                             data=csv_data,
-                            file_name=f"chirps_rainfall_{country_code}_{year}_admin{admin_level}.csv",
+                            file_name=f"{filename_base}.csv",
                             mime="text/csv",
                             use_container_width=True
                         )
@@ -498,17 +616,20 @@ with col1:
                             # Metadata sheet
                             metadata = pd.DataFrame({
                                 'Parameter': [
-                                    'Country', 'Country Code', 'Admin Level', 'Year', 
-                                    'Months Analyzed', 'Data Source', 'Generated On',
+                                    'Area Name', 'Data Source', 'Country Code', 'Admin Level', 'Year', 
+                                    'Months Analyzed', 'CHIRPS Source', 'Boundary Source', 'Generated On',
                                     'Total Records', 'Tool Version'
                                 ],
                                 'Value': [
-                                    country, country_code, admin_level, year,
+                                    country, data_source, country_code, 
+                                    str(admin_level) if data_source == "GADM Database" else "Custom",
+                                    year,
                                     ', '.join([month_names[m] for m in selected_months]),
-                                    'CHIRPS v2.0 + GADM v4.1',
+                                    'CHIRPS v2.0',
+                                    'GADM v4.1' if data_source == "GADM Database" else 'User Upload',
                                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                                     len(final_df),
-                                    'CHIRPS Rainfall Analysis Tool v1.0'
+                                    'CHIRPS Rainfall Analysis Tool v2.0'
                                 ]
                             })
                             metadata.to_excel(writer, sheet_name='Metadata', index=False)
@@ -518,7 +639,7 @@ with col1:
                         st.download_button(
                             label="📊 Download as Excel",
                             data=excel_buffer.getvalue(),
-                            file_name=f"chirps_rainfall_{country_code}_{year}_admin{admin_level}.xlsx",
+                            file_name=f"{filename_base}.xlsx",
                             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                             use_container_width=True
                         )
@@ -598,6 +719,20 @@ with col2:
         - **Color schemes**: Blues for rainfall, viridis for diversity
         - **Performance**: Fewer months = faster processing
         - **Large countries**: Use higher admin levels for better detail
+        - **Downloads**: CSV for analysis, Excel for reports with metadata
+        """)
+    
+    with st.expander("💾 Download Features"):
+        st.markdown("""
+        **CSV Download:**
+        - Clean tabular data ready for analysis
+        - All administrative attributes included
+        - Compatible with R, Python, SPSS, etc.
+        
+        **Excel Download:**
+        - Multiple sheets: Data, Statistics, Metadata
+        - Professional format for reports
+        - Includes analysis parameters and timestamps
         """)
     
     with st.expander("🔧 Troubleshooting"):
@@ -607,13 +742,15 @@ with col2:
         - **Error messages**: Often due to network connectivity
         - **Missing admin levels**: Not all countries have all 5 levels
         - **Large downloads**: Be patient with countries like Nigeria, DRC
+        - **Download issues**: Try smaller date ranges if files are too large
         """)
 
     # Show current system info
     with st.expander("📊 System Information"):
         st.write(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         st.write(f"Available countries: {len(country_options)}")
-
+        st.write("Supported formats: CSV, Excel (.xlsx)")
+        st.write("Max recommended: 12 months, Admin level ≤3 for large countries")
 # Footer
 st.markdown("---")
 st.markdown("*Built for malaria researchers and public health professionals*")
