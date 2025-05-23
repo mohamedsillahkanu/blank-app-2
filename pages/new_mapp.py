@@ -6,12 +6,13 @@ import requests
 import tempfile
 import os
 import gzip
-from io import BytesIO
+import zipfile
 import math
 import numpy as np
-from matplotlib import pyplot as plt
-import zipfile
 import pandas as pd
+from io import BytesIO
+from matplotlib import pyplot as plt
+from datetime import datetime
 import time
 
 # Set page config
@@ -38,7 +39,7 @@ def download_shapefile_from_gadm(country_code, admin_level):
     
     try:
         # Download the zip file
-        response = requests.get(gadm_url, timeout=60, stream=True)
+        response = requests.get(gadm_url, timeout=120, stream=True)
         response.raise_for_status()
         
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -49,7 +50,6 @@ def download_shapefile_from_gadm(country_code, admin_level):
                     f.write(chunk)
             
             # Extract zip file
-            import zipfile
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(tmpdir)
             
@@ -59,7 +59,13 @@ def download_shapefile_from_gadm(country_code, admin_level):
             
             if not os.path.exists(shapefile_path):
                 available_files = [f for f in os.listdir(tmpdir) if f.endswith('.shp')]
-                raise FileNotFoundError(f"Admin level {admin_level} not found. Available levels: {available_files}")
+                available_levels = []
+                for file in available_files:
+                    if f"gadm41_{country_code}_" in file:
+                        level = file.split('_')[-1].replace('.shp', '')
+                        if level.isdigit():
+                            available_levels.append(level)
+                raise FileNotFoundError(f"Admin level {admin_level} not found for {country_code}. Available levels: {sorted(available_levels)}")
             
             # Load the shapefile
             gdf = gpd.read_file(shapefile_path)
@@ -100,10 +106,10 @@ def process_chirps_data(gdf, year, month):
     link = f"https://data.chc.ucsb.edu/products/CHIRPS-2.0/africa_monthly/tifs/chirps-v2.0.{year}.{month:02d}.tif.gz"
     
     try:
-        response = requests.get(link, timeout=60, stream=True)
+        response = requests.get(link, timeout=120, stream=True)
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
-        raise ConnectionError(f"Failed to download CHIRPS data: {str(e)}")
+        raise ConnectionError(f"Failed to download CHIRPS data for {year}-{month:02d}: {str(e)}")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         zipped_file_path = os.path.join(tmpdir, "chirps.tif.gz")
@@ -388,13 +394,21 @@ with col1:
             except Exception as e:
                 st.error(f"❌ Unexpected error: {str(e)}")
                 st.error("Please try again or contact support if the issue persists.")
+                
+                # Debug information
+                with st.expander("🔧 Debug Information"):
+                    st.write(f"Country: {country}")
+                    st.write(f"Country Code: {country_code}")
+                    st.write(f"Admin Level: {admin_level}")
+                    st.write(f"Year: {year}")
+                    st.write(f"Months: {selected_months}")
 
 with col2:
     st.subheader("ℹ️ About This Tool")
     st.markdown("""
     **CHIRPS Rainfall Analysis Tool**
     
-    This tool analyzes satellite-derived rainfall data for malaria intervention planning in West Africa.
+    This tool analyzes satellite-derived rainfall data for malaria intervention planning in Africa.
     
     **Data Sources:**
     - **CHIRPS**: Climate Hazards Group InfraRed Precipitation with Station data
@@ -422,6 +436,7 @@ with col2:
         - **Admin levels**: Use level 2 for districts
         - **Color schemes**: Blues for rainfall, viridis for diversity
         - **Performance**: Fewer months = faster processing
+        - **Large countries**: Use higher admin levels for better detail
         """)
     
     with st.expander("🔧 Troubleshooting"):
@@ -429,7 +444,14 @@ with col2:
         - **Slow loading**: Try fewer months or lower admin level
         - **No data**: Check if recent months (data has ~2 month delay)
         - **Error messages**: Often due to network connectivity
+        - **Missing admin levels**: Not all countries have all 5 levels
+        - **Large downloads**: Be patient with countries like Nigeria, DRC
         """)
+
+    # Show current system info
+    with st.expander("📊 System Information"):
+        st.write(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        st.write(f"Available countries: {len(country_options)}")
 
 # Footer
 st.markdown("---")
