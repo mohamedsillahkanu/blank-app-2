@@ -207,6 +207,48 @@ st.markdown("*Analyze seasonal rainfall patterns for malaria intervention planni
 with st.sidebar:
     st.header("Analysis Parameters")
     
+    # Define country codes (ISO 3166-1 alpha-3) - moved outside the conditional
+    country_options = {
+        "Sierra Leone": "SLE",
+        "Guinea": "GIN", 
+        "Mali": "MLI",
+        "Burkina Faso": "BFA",
+        "Niger": "NER",
+        "Ghana": "GHA",
+        "Ivory Coast": "CIV",
+        "Liberia": "LBR",
+        "Senegal": "SEN",
+        "Guinea-Bissau": "GNB",
+        "Mauritania": "MRT",
+        "Nigeria": "NGA",
+        "Benin": "BEN",
+        "Togo": "TGO",
+        "Chad": "TCD",
+        "Cameroon": "CMR",
+        "Central African Republic": "CAF",
+        "Gabon": "GAB",
+        "Equatorial Guinea": "GNQ",
+        "Republic of the Congo": "COG",
+        "Democratic Republic of the Congo": "COD",
+        "Angola": "AGO",
+        "Zambia": "ZMB",
+        "Kenya": "KEN",
+        "Tanzania": "TZA",
+        "Uganda": "UGA",
+        "Rwanda": "RWA",
+        "Burundi": "BDI",
+        "Ethiopia": "ETH",
+        "South Sudan": "SSD",
+        "Sudan": "SDN",
+        "Madagascar": "MDG",
+        "Mozambique": "MOZ",
+        "Malawi": "MWI",
+        "Zimbabwe": "ZWE",
+        "Botswana": "BWA",
+        "Namibia": "NAM",
+        "South Africa": "ZAF"
+    }
+    
     # Data source selection
     data_source = st.radio(
         "📂 Select Data Source", 
@@ -215,48 +257,6 @@ with st.sidebar:
     )
     
     if data_source == "GADM Database":
-        # Define country codes (ISO 3166-1 alpha-3)
-        country_options = {
-            "Sierra Leone": "SLE",
-            "Guinea": "GIN", 
-            "Mali": "MLI",
-            "Burkina Faso": "BFA",
-            "Niger": "NER",
-            "Ghana": "GHA",
-            "Ivory Coast": "CIV",
-            "Liberia": "LBR",
-            "Senegal": "SEN",
-            "Guinea-Bissau": "GNB",
-            "Mauritania": "MRT",
-            "Nigeria": "NGA",
-            "Benin": "BEN",
-            "Togo": "TGO",
-            "Chad": "TCD",
-            "Cameroon": "CMR",
-            "Central African Republic": "CAF",
-            "Gabon": "GAB",
-            "Equatorial Guinea": "GNQ",
-            "Republic of the Congo": "COG",
-            "Democratic Republic of the Congo": "COD",
-            "Angola": "AGO",
-            "Zambia": "ZMB",
-            "Kenya": "KEN",
-            "Tanzania": "TZA",
-            "Uganda": "UGA",
-            "Rwanda": "RWA",
-            "Burundi": "BDI",
-            "Ethiopia": "ETH",
-            "South Sudan": "SSD",
-            "Sudan": "SDN",
-            "Madagascar": "MDG",
-            "Mozambique": "MOZ",
-            "Malawi": "MWI",
-            "Zimbabwe": "ZWE",
-            "Botswana": "BWA",
-            "Namibia": "NAM",
-            "South Africa": "ZAF"
-        }
-
         # Country and admin level selection
         country = st.selectbox("🌍 Select Country", list(country_options.keys()), 
                               help="Select any African country")
