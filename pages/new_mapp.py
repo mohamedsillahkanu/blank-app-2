@@ -425,6 +425,133 @@ with col1:
                         stats_df = pd.DataFrame(stats_data)
                         st.dataframe(stats_df, use_container_width=True)
 
+                # Data download section
+                st.subheader("📥 Download Data")
+                
+                # Prepare combined dataset for download
+                combined_data = []
+                for month, processed_gdf in processed_data:
+                    # Convert to regular DataFrame (drop geometry)
+                    df = pd.DataFrame(processed_gdf.drop(columns='geometry'))
+                    df['month'] = month
+                    df['month_name'] = month_names[month]
+                    df['year'] = year
+                    df['country'] = country
+                    df['admin_level'] = admin_level
+                    
+                    # Reorder columns for better readability
+                    column_order = ['country', 'year', 'month', 'month_name', 'admin_level']
+                    
+                    # Add name columns if they exist
+                    name_cols = [col for col in df.columns if col.startswith('NAME_')]
+                    column_order.extend(sorted(name_cols))
+                    
+                    # Add other standard GADM columns
+                    standard_cols = ['GID_0', 'GID_1', 'GID_2', 'GID_3', 'GID_4', 'CC_0', 'CC_1', 'HASC_1', 'HASC_2', 'TYPE_1', 'TYPE_2', 'ENGTYPE_1', 'ENGTYPE_2']
+                    for col in standard_cols:
+                        if col in df.columns and col not in column_order:
+                            column_order.append(col)
+                    
+                    # Add rainfall data columns
+                    column_order.extend(['mean_rain', 'valid_pixels'])
+                    
+                    # Add any remaining columns
+                    remaining_cols = [col for col in df.columns if col not in column_order]
+                    column_order.extend(remaining_cols)
+                    
+                    # Reorder DataFrame
+                    available_cols = [col for col in column_order if col in df.columns]
+                    df = df[available_cols]
+                    
+                    combined_data.append(df)
+                
+                if combined_data:
+                    # Combine all months into one dataset
+                    final_df = pd.concat(combined_data, ignore_index=True)
+                    
+                    # Create download buttons
+                    col_csv, col_excel = st.columns(2)
+                    
+                    with col_csv:
+                        csv_data = final_df.to_csv(index=False)
+                        st.download_button(
+                            label="📄 Download as CSV",
+                            data=csv_data,
+                            file_name=f"chirps_rainfall_{country_code}_{year}_admin{admin_level}.csv",
+                            mime="text/csv",
+                            use_container_width=True
+                        )
+                    
+                    with col_excel:
+                        # Create Excel file in memory
+                        from io import BytesIO
+                        excel_buffer = BytesIO()
+                        
+                        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+                            # Main data sheet
+                            final_df.to_excel(writer, sheet_name='Rainfall_Data', index=False)
+                            
+                            # Summary statistics sheet
+                            if stats_data:
+                                stats_df.to_excel(writer, sheet_name='Summary_Stats', index=False)
+                            
+                            # Metadata sheet
+                            metadata = pd.DataFrame({
+                                'Parameter': [
+                                    'Country', 'Country Code', 'Admin Level', 'Year', 
+                                    'Months Analyzed', 'Data Source', 'Generated On',
+                                    'Total Records', 'Tool Version'
+                                ],
+                                'Value': [
+                                    country, country_code, admin_level, year,
+                                    ', '.join([month_names[m] for m in selected_months]),
+                                    'CHIRPS v2.0 + GADM v4.1',
+                                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                                    len(final_df),
+                                    'CHIRPS Rainfall Analysis Tool v1.0'
+                                ]
+                            })
+                            metadata.to_excel(writer, sheet_name='Metadata', index=False)
+                        
+                        excel_buffer.seek(0)
+                        
+                        st.download_button(
+                            label="📊 Download as Excel",
+                            data=excel_buffer.getvalue(),
+                            file_name=f"chirps_rainfall_{country_code}_{year}_admin{admin_level}.xlsx",
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            use_container_width=True
+                        )
+                    
+                    # Show data preview
+                    with st.expander("👀 Preview Downloaded Data"):
+                        st.dataframe(final_df.head(10), use_container_width=True)
+                        st.caption(f"Showing first 10 rows of {len(final_df)} total records")
+                    
+                    # Data description
+                    with st.expander("📖 Data Dictionary"):
+                        st.markdown("""
+                        **Administrative Columns:**
+                        - `country`: Country name
+                        - `year`: Analysis year
+                        - `month`: Month number (1-12)
+                        - `month_name`: Month name
+                        - `admin_level`: Administrative level (0-4)
+                        - `NAME_X`: Administrative unit names at level X
+                        - `GID_X`: Global administrative unit IDs
+                        
+                        **Rainfall Columns:**
+                        - `mean_rain`: Average rainfall in mm for the administrative unit
+                        - `valid_pixels`: Number of valid satellite pixels used in calculation
+                        
+                        **Other GADM Columns:**
+                        - `CC_X`: Country/region codes
+                        - `TYPE_X`: Administrative unit types
+                        - `HASC_X`: Hierarchical administrative subdivision codes
+                        """)
+
+
+
             except Exception as e:
                 st.error(f"❌ Unexpected error: {str(e)}")
                 st.error("Please try again or contact support if the issue persists.")
