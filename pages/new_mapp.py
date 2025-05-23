@@ -22,7 +22,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Define country codes globally to avoid scope issues
+# Define country codes globally - THIS MUST BE AT TOP LEVEL
 COUNTRY_OPTIONS = {
     "Sierra Leone": "SLE",
     "Guinea": "GIN", 
@@ -63,6 +63,18 @@ COUNTRY_OPTIONS = {
     "Namibia": "NAM",
     "South Africa": "ZAF"
 }
+
+# Initialize session state variables to avoid NameError
+if 'data_source' not in st.session_state:
+    st.session_state.data_source = "GADM Database"
+if 'country' not in st.session_state:
+    st.session_state.country = "Sierra Leone"
+if 'country_code' not in st.session_state:
+    st.session_state.country_code = "SLE"
+if 'admin_level' not in st.session_state:
+    st.session_state.admin_level = 1
+if 'use_custom_shapefile' not in st.session_state:
+    st.session_state.use_custom_shapefile = False
 
 # Add caching for better performance
 @st.cache_data
@@ -257,6 +269,7 @@ with st.sidebar:
         ["GADM Database", "Upload Custom Shapefile"],
         help="Choose between official GADM boundaries or upload your own shapefile"
     )
+    st.session_state.data_source = data_source
     
     if data_source == "GADM Database":
         # Country and admin level selection
@@ -278,6 +291,12 @@ with st.sidebar:
         # Set variables for GADM mode
         country_code = COUNTRY_OPTIONS[country]
         use_custom_shapefile = False
+        
+        # Update session state
+        st.session_state.country = country
+        st.session_state.country_code = country_code
+        st.session_state.admin_level = admin_level
+        st.session_state.use_custom_shapefile = False
         
     else:  # Upload Custom Shapefile
         st.markdown("**📁 Upload Shapefile Components**")
@@ -321,6 +340,12 @@ with st.sidebar:
         country = "Custom Area"
         country_code = "CUSTOM"
         admin_level = "Custom"
+        
+        # Update session state
+        st.session_state.country = country
+        st.session_state.country_code = country_code
+        st.session_state.admin_level = admin_level
+        st.session_state.use_custom_shapefile = use_custom_shapefile
 
     # Date selection with validation
     current_year = datetime.now().year
@@ -353,7 +378,7 @@ with col1:
     if st.button("🔄 Generate Analysis", type="primary", use_container_width=True):
         if not selected_months:
             st.error("Please select at least one month for analysis.")
-        elif data_source == "Upload Custom Shapefile" and not use_custom_shapefile:
+        elif st.session_state.data_source == "Upload Custom Shapefile" and not st.session_state.use_custom_shapefile:
             st.error("Please upload all required shapefile components (.shp, .shx, .dbf)")
         else:
             # Progress tracking
@@ -362,15 +387,15 @@ with col1:
             
             try:
                 # Step 1: Load shapefile (GADM or uploaded)
-                if data_source == "GADM Database":
+                if st.session_state.data_source == "GADM Database":
                     status_text.text("🔍 Checking GADM database...")
                     progress_bar.progress(10)
                     
-                    status_text.text(f"📥 Downloading {country} shapefile from GADM...")
+                    status_text.text(f"📥 Downloading {st.session_state.country} shapefile from GADM...")
                     progress_bar.progress(20)
                     
-                    gdf = download_shapefile_from_gadm(country_code, admin_level)
-                    st.success(f"✅ {country} Admin Level {admin_level} shapefile loaded ({len(gdf)} features)")
+                    gdf = download_shapefile_from_gadm(st.session_state.country_code, st.session_state.admin_level)
+                    st.success(f"✅ {st.session_state.country} Admin Level {st.session_state.admin_level} shapefile loaded ({len(gdf)} features)")
                     
                 else:  # Custom shapefile
                     status_text.text("📁 Processing uploaded shapefile...")
@@ -390,12 +415,12 @@ with col1:
                         st.info(f"📊 Available attributes: {', '.join(attribute_cols[:5])}{'...' if len(attribute_cols) > 5 else ''}")
                 
                 # Show some basic info about the shapefile
-                if hasattr(gdf, 'NAME_1') and (data_source == "GADM Database" and admin_level >= 1):
+                if hasattr(gdf, 'NAME_1') and (st.session_state.data_source == "GADM Database" and st.session_state.admin_level >= 1):
                     region_names = gdf['NAME_1'].unique()[:5]
                     st.info(f"📋 Contains regions: {', '.join(region_names)}{'...' if len(gdf['NAME_1'].unique()) > 5 else ''}")
                 elif hasattr(gdf, 'NAME_0'):
                     st.info(f"📋 Country: {gdf['NAME_0'].iloc[0]}")
-                elif data_source == "Upload Custom Shapefile":
+                elif st.session_state.data_source == "Upload Custom Shapefile":
                     # For custom shapefiles, show basic geometry info
                     geom_types = gdf.geometry.type.unique()
                     st.info(f"📋 Geometry types: {', '.join(geom_types)}")
@@ -478,7 +503,7 @@ with col1:
                     if plot_data['mean_rain'].isna().all():
                         ax.text(0.5, 0.5, f'No data available\nfor {month_names[month]} {year}', 
                                ha='center', va='center', transform=ax.transAxes)
-                        ax.set_title(f"{country} - {month_names[month]} {year}")
+                        ax.set_title(f"{st.session_state.country} - {month_names[month]} {year}")
                         ax.set_axis_off()
                         continue
                     
@@ -495,7 +520,7 @@ with col1:
                         vmax=vmax,
                         missing_kwds={"color": "lightgray", "label": "No data"}
                     )
-                    ax.set_title(f"{country} - {month_names[month]} {year}", fontweight='bold')
+                    ax.set_title(f"{st.session_state.country} - {month_names[month]} {year}", fontweight='bold')
                     ax.set_axis_off()
 
                 # Remove empty subplots
@@ -541,11 +566,11 @@ with col1:
                     df['month'] = month
                     df['month_name'] = month_names[month]
                     df['year'] = year
-                    df['area_name'] = country
-                    df['data_source'] = data_source
-                    if data_source == "GADM Database":
-                        df['country_code'] = country_code
-                        df['admin_level'] = admin_level
+                    df['area_name'] = st.session_state.country
+                    df['data_source'] = st.session_state.data_source
+                    if st.session_state.data_source == "GADM Database":
+                        df['country_code'] = st.session_state.country_code
+                        df['admin_level'] = st.session_state.admin_level
                     else:
                         df['country_code'] = "CUSTOM"
                         df['admin_level'] = "Custom"
@@ -553,7 +578,7 @@ with col1:
                     # Reorder columns for better readability
                     column_order = ['area_name', 'data_source', 'year', 'month', 'month_name']
                     
-                    if data_source == "GADM Database":
+                    if st.session_state.data_source == "GADM Database":
                         column_order.extend(['country_code', 'admin_level'])
                     
                     # Add name columns if they exist (for GADM data)
@@ -588,11 +613,11 @@ with col1:
                     
                     with col_csv:
                         csv_data = final_df.to_csv(index=False)
-                        filename_base = f"chirps_rainfall_{country_code}_{year}"
-                        if data_source == "Upload Custom Shapefile":
+                        filename_base = f"chirps_rainfall_{st.session_state.country_code}_{year}"
+                        if st.session_state.data_source == "Upload Custom Shapefile":
                             filename_base = f"chirps_rainfall_custom_{year}"
-                        elif data_source == "GADM Database":
-                            filename_base = f"chirps_rainfall_{country_code}_{year}_admin{admin_level}"
+                        elif st.session_state.data_source == "GADM Database":
+                            filename_base = f"chirps_rainfall_{st.session_state.country_code}_{year}_admin{st.session_state.admin_level}"
                         
                         st.download_button(
                             label="📄 Download as CSV",
@@ -622,12 +647,12 @@ with col1:
                                     'Total Records', 'Tool Version'
                                 ],
                                 'Value': [
-                                    country, data_source, country_code, 
-                                    str(admin_level) if data_source == "GADM Database" else "Custom",
+                                    st.session_state.country, st.session_state.data_source, st.session_state.country_code, 
+                                    str(st.session_state.admin_level) if st.session_state.data_source == "GADM Database" else "Custom",
                                     year,
                                     ', '.join([month_names[m] for m in selected_months]),
                                     'CHIRPS v2.0',
-                                    'GADM v4.1' if data_source == "GADM Database" else 'User Upload',
+                                    'GADM v4.1' if st.session_state.data_source == "GADM Database" else 'User Upload',
                                     datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                                     len(final_df),
                                     'CHIRPS Rainfall Analysis Tool v2.0'
@@ -684,14 +709,14 @@ with col1:
                 
                 # Debug information
                 with st.expander("🔧 Debug Information"):
-                    st.write(f"Data Source: {data_source}")
-                    if data_source == "GADM Database":
-                        st.write(f"Country: {country}")
-                        st.write(f"Country Code: {country_code}")
-                        st.write(f"Admin Level: {admin_level}")
+                    st.write(f"Data Source: {st.session_state.data_source}")
+                    if st.session_state.data_source == "GADM Database":
+                        st.write(f"Country: {st.session_state.country}")
+                        st.write(f"Country Code: {st.session_state.country_code}")
+                        st.write(f"Admin Level: {st.session_state.admin_level}")
                     else:
-                        st.write(f"Custom Area: {country}")
-                        st.write(f"Files Uploaded: {use_custom_shapefile}")
+                        st.write(f"Custom Area: {st.session_state.country}")
+                        st.write(f"Files Uploaded: {st.session_state.use_custom_shapefile}")
                     st.write(f"Year: {year}")
                     st.write(f"Months: {selected_months}")
 
@@ -756,10 +781,14 @@ with col2:
         - **Download issues**: Try smaller date ranges if files are too large
         """)
 
-    # Show current system info
+    # Show current system info - SAFE VERSION
     with st.expander("📊 System Information"):
         st.write(f"Current time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        st.write(f"Available countries: {len(COUNTRY_OPTIONS)}")
+        # Only show country count when using GADM mode to avoid NameError
+        if st.session_state.data_source == "GADM Database":
+            st.write(f"Available countries: {len(COUNTRY_OPTIONS)}")
+        else:
+            st.write("Mode: Custom Shapefile Upload")
         st.write("Supported formats: CSV, Excel (.xlsx)")
         st.write("Max recommended: 12 months, Admin level ≤3 for large countries")
 
