@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Streamlit App
-st.title("School Based Distribution of ITNs")
+st.title("📊 Text Data Extraction & Visualization")
 
 # Upload file
 uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
@@ -212,4 +212,4 @@ if uploaded_file:
         ax.set_ylabel("Count")
         plt.xticks(rotation=0, ha='right')
         plt.tight_layout()
-        st.pyplot
+        st.pyplot(fig)
