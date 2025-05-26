@@ -69,11 +69,36 @@ st.markdown("""
         margin: 1rem 0;
         border-left: 5px solid #2196f3;
         transition: transform 0.3s ease;
+        height: 280px;
+        display: flex;
+        flex-direction: column;
     }
     
     .feature-card:hover {
         transform: translateY(-5px);
         box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+    
+    .feature-card h3 {
+        margin-bottom: 1rem;
+        height: 60px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .feature-card p {
+        height: 80px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+    }
+    
+    .feature-card ul {
+        flex-grow: 1;
+        margin: 0;
+        padding-left: 1.2rem;
     }
     
     /* Metric cards */
@@ -84,6 +109,40 @@ st.markdown("""
         text-align: center;
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         border: 1px solid #e3f2fd;
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    
+    /* Overview cards */
+    .overview-card {
+        text-align: center;
+        padding: 1.5rem;
+        border-radius: 10px;
+        height: 140px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    .overview-card-icon {
+        font-size: 2rem;
+        margin-bottom: 0.8rem;
+    }
+    
+    .overview-card-title {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        height: 20px;
+    }
+    
+    .overview-card-subtitle {
+        font-size: 0.9rem;
+        color: #666;
+        height: 18px;
     }
     
     .metric-value {
@@ -171,25 +230,25 @@ st.markdown("""
         and evaluation capabilities for tracking ITN distribution across districts, chiefdoms, PHUs, communities, and schools.
     </p>
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
-        <div style="text-align: center; padding: 1rem; background: #e3f2fd; border-radius: 10px;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏫</div>
-            <div style="font-weight: bold; color: #1976d2;">School-Based</div>
-            <div style="font-size: 0.9rem; color: #666;">Distribution Model</div>
+        <div class="overview-card" style="background: #e3f2fd;">
+            <div class="overview-card-icon">🏫</div>
+            <div class="overview-card-title" style="color: #1976d2;">School-Based</div>
+            <div class="overview-card-subtitle">Distribution Model</div>
         </div>
-        <div style="text-align: center; padding: 1rem; background: #e8f5e8; border-radius: 10px;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🛡️</div>
-            <div style="font-weight: bold; color: #2e7d32;">Malaria Prevention</div>
-            <div style="font-size: 0.9rem; color: #666;">ITN Coverage</div>
+        <div class="overview-card" style="background: #e8f5e8;">
+            <div class="overview-card-icon">🛡️</div>
+            <div class="overview-card-title" style="color: #2e7d32;">Malaria Prevention</div>
+            <div class="overview-card-subtitle">ITN Coverage</div>
         </div>
-        <div style="text-align: center; padding: 1rem; background: #fff3e0; border-radius: 10px;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
-            <div style="font-weight: bold; color: #f57c00;">Real-time Monitoring</div>
-            <div style="font-size: 0.9rem; color: #666;">Data Analytics</div>
+        <div class="overview-card" style="background: #fff3e0;">
+            <div class="overview-card-icon">📈</div>
+            <div class="overview-card-title" style="color: #f57c00;">Real-time Monitoring</div>
+            <div class="overview-card-subtitle">Data Analytics</div>
         </div>
-        <div style="text-align: center; padding: 1rem; background: #f3e5f5; border-radius: 10px;">
-            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
-            <div style="font-weight: bold; color: #7b1fa2;">Universal Coverage</div>
-            <div style="font-size: 0.9rem; color: #666;">Health Equity</div>
+        <div class="overview-card" style="background: #f3e5f5;">
+            <div class="overview-card-icon">🎯</div>
+            <div class="overview-card-title" style="color: #7b1fa2;">Universal Coverage</div>
+            <div class="overview-card-subtitle">Health Equity</div>
         </div>
     </div>
 </div>
@@ -312,7 +371,7 @@ if uploaded_file:
         with col1:
             st.markdown("""
             <div class="feature-card">
-                <h3 style="color: #1976d2; margin-bottom: 1rem;">📊 Multi-Level Analysis</h3>
+                <h3 style="color: #1976d2;">📊 Multi-Level Analysis</h3>
                 <p>Analyze distribution data across multiple administrative levels including districts, chiefdoms, PHUs, communities, and schools.</p>
                 <ul style="color: #666;">
                     <li>Hierarchical filtering</li>
@@ -325,8 +384,8 @@ if uploaded_file:
         with col2:
             st.markdown("""
             <div class="feature-card">
-                <h3 style="color: #1976d2; margin-bottom: 1rem;">📈 Real-time Monitoring</h3>
-                <p>Track ITN distribution progress with live data updates and comprehensive performance metrics.</p>
+                <h3 style="color: #1976d2;">📈 Real-time Monitoring</h3>
+                <p>Track ITN distribution progress with live data updates and comprehensive performance metrics for better decision making.</p>
                 <ul style="color: #666;">
                     <li>Distribution rates</li>
                     <li>Coverage analysis</li>
@@ -338,8 +397,8 @@ if uploaded_file:
         with col3:
             st.markdown("""
             <div class="feature-card">
-                <h3 style="color: #1976d2; margin-bottom: 1rem;">🎯 Data Visualization</h3>
-                <p>Interactive charts and graphs for better insights into distribution patterns and trends.</p>
+                <h3 style="color: #1976d2;">🎯 Data Visualization</h3>
+                <p>Interactive charts and graphs for better insights into distribution patterns and trends across all locations.</p>
                 <ul style="color: #666;">
                     <li>Interactive charts</li>
                     <li>Comparative analysis</li>
