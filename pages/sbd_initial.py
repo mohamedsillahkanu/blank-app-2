@@ -2,451 +2,445 @@ import streamlit as st
 import pandas as pd
 import re
 import numpy as np
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+import io
+from datetime import datetime
+import gc
 
-# Configure page
+# Set page config
 st.set_page_config(
-    page_title="ITN Data Dashboard",
+    page_title="Text Data Extraction & Visualization",
     page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Custom CSS for light blue theme
+# Custom CSS for better styling
 st.markdown("""
 <style>
-    /* Main theme colors */
-    .stApp {
-        background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-    }
-    
-    /* Header styling */
-    .header-container {
-        background: linear-gradient(90deg, #87ceeb 0%, #b0e0e6 50%, #87ceeb 100%);
-        padding: 1rem 2rem;
-        margin: -1rem -1rem 2rem -1rem;
-        border-bottom: 3px solid #4682b4;
-        box-shadow: 0 2px 10px rgba(70, 130, 180, 0.3);
-    }
-    
-    .header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-    
-    .logo-placeholder {
-        width: 80px;
-        height: 80px;
-        background: white;
-        border: 2px dashed #4682b4;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.8rem;
-        color: #4682b4;
+    .main-header {
         text-align: center;
-    }
-    
-    .main-title {
-        color: #2c5aa0;
-        font-size: 2.5rem;
-        font-weight: bold;
-        text-align: center;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        margin: 0;
-    }
-    
-    .subtitle {
-        color: #4682b4;
-        font-size: 1.2rem;
-        text-align: center;
-        margin: 0.5rem 0 0 0;
-    }
-    
-    /* Footer styling */
-    .footer-container {
-        background: linear-gradient(90deg, #87ceeb 0%, #b0e0e6 50%, #87ceeb 100%);
-        padding: 2rem;
-        margin: 3rem -1rem -1rem -1rem;
-        border-top: 3px solid #4682b4;
-        text-align: center;
-        color: #2c5aa0;
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #f0f8ff 0%, #e1f5fe 100%);
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background: linear-gradient(45deg, #4682b4, #87ceeb);
+        padding: 2rem 0;
+        background: linear-gradient(90deg, #FF6B6B 0%, #4ECDC4 100%);
         color: white;
-        border: none;
-        border-radius: 10px;
-        padding: 0.5rem 1rem;
-        font-weight: bold;
-        box-shadow: 0 4px 8px rgba(70, 130, 180, 0.3);
-        transition: all 0.3s ease;
+        margin: -1rem -1rem 2rem -1rem;
+        border-radius: 0 0 1rem 1rem;
     }
     
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(70, 130, 180, 0.4);
-    }
-    
-    /* Card styling for metrics */
-    .metric-card {
-        background: white;
+    .stats-card {
+        background-color: #fff;
         padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        text-align: center;
+        border-top: 3px solid #FF6B6B;
+        margin: 0.5rem 0;
+    }
+    
+    .filter-section {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
         border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(70, 130, 180, 0.1);
-        border-left: 4px solid #4682b4;
+        border-left: 4px solid #4ECDC4;
         margin: 1rem 0;
     }
     
-    /* Custom selectbox styling */
-    .stSelectbox > div > div {
-        background-color: white;
-        border: 2px solid #87ceeb;
-        border-radius: 5px;
+    .summary-card {
+        background-color: #e8f5e8;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #4CAF50;
+        margin: 0.5rem 0;
     }
     
-    /* Section headers */
-    .section-header {
-        color: #2c5aa0;
-        border-bottom: 2px solid #87ceeb;
-        padding-bottom: 0.5rem;
-        margin: 2rem 0 1rem 0;
+    .memory-info {
+        background-color: #e3f2fd;
+        padding: 0.5rem;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        color: #1976d2;
+        margin: 0.5rem 0;
+    }
+    
+    .upload-section {
+        background-color: #fff3e0;
+        padding: 2rem;
+        border-radius: 10px;
+        border: 2px dashed #FF6B6B;
+        text-align: center;
+        margin: 1rem 0;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header with logo placeholders
+# Header
 st.markdown("""
-<div class="header-container">
-    <div class="header-content">
-        <div class="logo-placeholder">
-            Logo<br>Left
-        </div>
-        <div>
-            <h1 class="main-title">📊 ITN Data Dashboard</h1>
-            <p class="subtitle">Text Data Extraction & Visualization Platform</p>
-        </div>
-        <div class="logo-placeholder">
-            Logo<br>Right
-        </div>
-    </div>
+<div class="main-header">
+    <h1>📊 Text Data Extraction & Visualization Tool</h1>
+    <p>Advanced QR code data extraction with interactive visualization and filtering</p>
 </div>
 """, unsafe_allow_html=True)
 
-# File upload section
-uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
+# Memory optimization functions
+@st.cache_data
+def optimize_dataframe_memory(df):
+    """Optimize dataframe memory usage"""
+    df_optimized = df.copy()
+    
+    for col in df_optimized.columns:
+        if df_optimized[col].dtype == 'object':
+            # Convert to category if unique values < 50% of total
+            unique_ratio = df_optimized[col].nunique() / len(df_optimized)
+            if unique_ratio < 0.5:
+                df_optimized[col] = df_optimized[col].astype('category')
+        elif df_optimized[col].dtype in ['int64', 'int32']:
+            df_optimized[col] = pd.to_numeric(df_optimized[col], downcast='integer')
+        elif df_optimized[col].dtype in ['float64', 'float32']:
+            df_optimized[col] = pd.to_numeric(df_optimized[col], downcast='float')
+    
+    return df_optimized
 
-if uploaded_file:
-    # Read the uploaded Excel file
-    try:
-        df_original = pd.read_excel(uploaded_file)
-        
-        # Create empty lists to store extracted data
-        districts, chiefdoms, phu_names, community_names, school_names = [], [], [], [], []
-        
-        # Process each row in the "Scan QR code" column
-        for qr_text in df_original["Scan QR code"]:
-            if pd.isna(qr_text):
-                districts.append(None)
-                chiefdoms.append(None)
-                phu_names.append(None)
-                community_names.append(None)
-                school_names.append(None)
-                continue
-                
-            # Extract values using regex patterns
-            district_match = re.search(r"District:\s*([^\n]+)", str(qr_text))
-            districts.append(district_match.group(1).strip() if district_match else None)
+def get_memory_usage(df):
+    """Get memory usage information"""
+    memory_usage = df.memory_usage(deep=True).sum()
+    return f"{memory_usage / 1024**2:.2f} MB"
+
+@st.cache_data
+def extract_qr_data(df_original):
+    """Optimized QR code data extraction with caching"""
+    # Pre-compile regex patterns for better performance
+    patterns = {
+        'district': re.compile(r"District:\s*([^\n]+)", re.IGNORECASE),
+        'chiefdom': re.compile(r"Chiefdom:\s*([^\n]+)", re.IGNORECASE),
+        'phu': re.compile(r"PHU name:\s*([^\n]+)", re.IGNORECASE),
+        'community': re.compile(r"Community name:\s*([^\n]+)", re.IGNORECASE),
+        'school': re.compile(r"Name of school:\s*([^\n]+)", re.IGNORECASE)
+    }
+    
+    # Initialize lists with proper capacity
+    num_rows = len(df_original)
+    extracted_data = {
+        "District": [None] * num_rows,
+        "Chiefdom": [None] * num_rows,
+        "PHU Name": [None] * num_rows,
+        "Community Name": [None] * num_rows,
+        "School Name": [None] * num_rows
+    }
+    
+    # Vectorized processing
+    qr_column = df_original["Scan QR code"].fillna('')
+    
+    for idx, qr_text in enumerate(qr_column):
+        if qr_text:
+            qr_str = str(qr_text)
             
-            chiefdom_match = re.search(r"Chiefdom:\s*([^\n]+)", str(qr_text))
-            chiefdoms.append(chiefdom_match.group(1).strip() if chiefdom_match else None)
+            # Extract using pre-compiled patterns
+            district_match = patterns['district'].search(qr_str)
+            extracted_data["District"][idx] = district_match.group(1).strip() if district_match else None
             
-            phu_match = re.search(r"PHU name:\s*([^\n]+)", str(qr_text))
-            phu_names.append(phu_match.group(1).strip() if phu_match else None)
+            chiefdom_match = patterns['chiefdom'].search(qr_str)
+            extracted_data["Chiefdom"][idx] = chiefdom_match.group(1).strip() if chiefdom_match else None
             
-            community_match = re.search(r"Community name:\s*([^\n]+)", str(qr_text))
-            community_names.append(community_match.group(1).strip() if community_match else None)
+            phu_match = patterns['phu'].search(qr_str)
+            extracted_data["PHU Name"][idx] = phu_match.group(1).strip() if phu_match else None
             
-            school_match = re.search(r"Name of school:\s*([^\n]+)", str(qr_text))
-            school_names.append(school_match.group(1).strip() if school_match else None)
+            community_match = patterns['community'].search(qr_str)
+            extracted_data["Community Name"][idx] = community_match.group(1).strip() if community_match else None
+            
+            school_match = patterns['school'].search(qr_str)
+            extracted_data["School Name"][idx] = school_match.group(1).strip() if school_match else None
+    
+    # Create DataFrame and add other columns efficiently
+    extracted_df = pd.DataFrame(extracted_data)
+    
+    # Add other columns (excluding QR code column)
+    for column in df_original.columns:
+        if column != "Scan QR code":
+            extracted_df[column] = df_original[column]
+    
+    # Optimize memory
+    extracted_df = optimize_dataframe_memory(extracted_df)
+    
+    return extracted_df
+
+@st.cache_data
+def create_summary_data(df, group_columns, metrics=['ITN received', 'ITN given']):
+    """Create optimized summary data with caching"""
+    if df.empty:
+        return pd.DataFrame()
+    
+    # Group and aggregate efficiently
+    grouped_data = df.groupby(group_columns)[metrics].sum().reset_index()
+    
+    # Calculate difference
+    if len(metrics) >= 2:
+        grouped_data["Difference"] = grouped_data[metrics[0]] - grouped_data[metrics[1]]
+        grouped_data["Efficiency (%)"] = (grouped_data[metrics[1]] / grouped_data[metrics[0]] * 100).round(2)
+    
+    return grouped_data
+
+def create_interactive_chart(data, title, x_col, y_cols, chart_type="bar"):
+    """Create interactive Plotly charts"""
+    if data.empty:
+        st.warning("No data available for visualization")
+        return
+    
+    if chart_type == "bar":
+        fig = go.Figure()
         
-        # Create a new DataFrame with extracted values
-        extracted_df = pd.DataFrame({
-            "District": districts,
-            "Chiefdom": chiefdoms,
-            "PHU Name": phu_names,
-            "Community Name": community_names,
-            "School Name": school_names
-        })
+        colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4']
         
-        # Add all other columns from the original DataFrame
-        for column in df_original.columns:
-            if column != "Scan QR code":
-                extracted_df[column] = df_original[column]
+        for i, col in enumerate(y_cols):
+            fig.add_trace(go.Bar(
+                name=col,
+                x=data[x_col],
+                y=data[col],
+                marker_color=colors[i % len(colors)],
+                text=data[col],
+                textposition='auto',
+            ))
         
-        # Key metrics section
-        st.markdown('<h2 class="section-header">📈 Key Metrics Overview</h2>', unsafe_allow_html=True)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            total_received = extracted_df["ITN received"].sum()
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #4682b4; margin: 0;">Total ITN Received</h3>
-                <h2 style="color: #2c5aa0; margin: 0.5rem 0 0 0;">{total_received:,}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            total_given = extracted_df["ITN given"].sum()
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #4682b4; margin: 0;">Total ITN Given</h3>
-                <h2 style="color: #2c5aa0; margin: 0.5rem 0 0 0;">{total_given:,}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            difference = total_received - total_given
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #4682b4; margin: 0;">Difference</h3>
-                <h2 style="color: {'#d32f2f' if difference < 0 else '#2e7d32'}; margin: 0.5rem 0 0 0;">{difference:,}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            districts_count = extracted_df["District"].nunique()
-            st.markdown(f"""
-            <div class="metric-card">
-                <h3 style="color: #4682b4; margin: 0;">Total Districts</h3>
-                <h2 style="color: #2c5aa0; margin: 0.5rem 0 0 0;">{districts_count}</h2>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Interactive dashboard section
-        st.markdown('<h2 class="section-header">🎛️ Interactive Dashboard</h2>', unsafe_allow_html=True)
-        
-        # Sidebar for filtering options
-        st.sidebar.markdown('<h2 style="color: #2c5aa0;">🔍 Filter Options</h2>', unsafe_allow_html=True)
-        
-        # Dashboard type selection
-        dashboard_type = st.sidebar.selectbox(
-            "📊 Select Dashboard Type:",
-            ["Overview", "District Analysis", "Chiefdom Analysis", "Detailed Filtering"],
-            index=0
+        fig.update_layout(
+            title=title,
+            xaxis_title="",
+            yaxis_title="Count",
+            barmode='group',
+            height=500,
+            showlegend=True,
+            hovermode='x unified'
         )
         
-        if dashboard_type == "Overview":
-            # Overview dashboard with pie charts and bar charts
-            col1, col2 = st.columns(2)
+        fig.update_xaxes(tickangle=45)
+        
+    elif chart_type == "pie":
+        fig = go.Figure(data=[go.Pie(
+            labels=data[x_col],
+            values=data[y_cols[0]],
+            hole=0.3,
+            textinfo='label+percent',
+            textposition='outside'
+        )])
+        
+        fig.update_layout(
+            title=title,
+            height=500
+        )
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+# Initialize session state
+if 'extracted_df' not in st.session_state:
+    st.session_state.extracted_df = None
+if 'original_df' not in st.session_state:
+    st.session_state.original_df = None
+
+# File upload section
+st.markdown("""
+<div class="upload-section">
+    <h3>📁 Upload Your Excel File</h3>
+    <p>Upload an Excel file containing QR code data for extraction and analysis</p>
+</div>
+""", unsafe_allow_html=True)
+
+uploaded_file = st.file_uploader(
+    "Choose an Excel file",
+    type=['xlsx', 'xls'],
+    help="Upload Excel files with QR code data"
+)
+
+if uploaded_file is not None:
+    with st.spinner("Loading and processing file..."):
+        try:
+            # Read Excel file
+            df_original = pd.read_excel(uploaded_file)
             
-            with col1:
-                # District distribution pie chart
-                district_summary = extracted_df.groupby("District").agg({
-                    "ITN received": "sum",
-                    "ITN given": "sum"
-                }).reset_index()
+            # Check for required column
+            if "Scan QR code" not in df_original.columns:
+                st.error("❌ File must contain a 'Scan QR code' column")
+                st.stop()
+            
+            # Extract QR data
+            extracted_df = extract_qr_data(df_original)
+            
+            # Store in session state
+            st.session_state.original_df = df_original
+            st.session_state.extracted_df = extracted_df
+            
+            st.success("✅ File processed successfully!")
+            
+        except Exception as e:
+            st.error(f"❌ Error processing file: {str(e)}")
+            st.stop()
+
+# Main content when file is uploaded
+if st.session_state.extracted_df is not None:
+    df_original = st.session_state.original_df
+    extracted_df = st.session_state.extracted_df
+    
+    # Show file statistics
+    st.subheader("📊 File Overview")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown(f"""
+        <div class="stats-card">
+            <h3>{len(extracted_df):,}</h3>
+            <p>Total Records</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        valid_extractions = extracted_df['District'].notna().sum()
+        st.markdown(f"""
+        <div class="stats-card">
+            <h3>{valid_extractions:,}</h3>
+            <p>Valid Extractions</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        extraction_rate = (valid_extractions / len(extracted_df) * 100) if len(extracted_df) > 0 else 0
+        st.markdown(f"""
+        <div class="stats-card">
+            <h3>{extraction_rate:.1f}%</h3>
+            <p>Extraction Rate</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown(f"""
+        <div class="stats-card">
+            <h3>{get_memory_usage(extracted_df)}</h3>
+            <p>Memory Usage</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Data preview section
+    with st.expander("📄 View Data Samples", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("**Original Data (first 5 rows):**")
+            st.dataframe(df_original.head(), use_container_width=True, height=200)
+        
+        with col2:
+            st.markdown("**Extracted Data (first 5 rows):**")
+            st.dataframe(extracted_df.head(), use_container_width=True, height=200)
+    
+    # Quick Summary Section
+    st.subheader("⚡ Quick Summaries")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        if st.button("📈 District Summary", type="secondary"):
+            st.session_state.show_district_summary = True
+            st.session_state.show_chiefdom_summary = False
+            st.session_state.show_detailed_analysis = False
+    
+    with col2:
+        if st.button("🏘️ Chiefdom Summary", type="secondary"):
+            st.session_state.show_chiefdom_summary = True
+            st.session_state.show_district_summary = False
+            st.session_state.show_detailed_analysis = False
+    
+    with col3:
+        if st.button("🔍 Detailed Analysis", type="primary"):
+            st.session_state.show_detailed_analysis = True
+            st.session_state.show_district_summary = False
+            st.session_state.show_chiefdom_summary = False
+    
+    # District Summary
+    if st.session_state.get('show_district_summary', False):
+        st.markdown("### 📈 District Summary")
+        
+        with st.spinner("Generating district summary..."):
+            district_summary = create_summary_data(extracted_df, ["District"])
+            
+            if not district_summary.empty:
+                st.markdown(f"""
+                <div class="summary-card">
+                    <strong>District Analysis</strong><br>
+                    📊 Total Districts: {len(district_summary)}<br>
+                    📈 Total ITN Received: {district_summary['ITN received'].sum():,}<br>
+                    📉 Total ITN Given: {district_summary['ITN given'].sum():,}<br>
+                    🎯 Overall Efficiency: {(district_summary['ITN given'].sum() / district_summary['ITN received'].sum() * 100):.1f}%
+                </div>
+                """, unsafe_allow_html=True)
                 
-                fig_pie1 = px.pie(
+                # Display table
+                st.dataframe(district_summary, use_container_width=True, height=300)
+                
+                # Interactive chart
+                create_interactive_chart(
                     district_summary, 
-                    values='ITN received', 
-                    names='District',
-                    title='ITN Received Distribution by District',
-                    color_discrete_sequence=px.colors.sequential.Blues_r
+                    "📊 ITN Distribution by District",
+                    "District", 
+                    ["ITN received", "ITN given"]
                 )
-                fig_pie1.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font_color='#2c5aa0'
+                
+                # Download option
+                csv_buffer = io.StringIO()
+                district_summary.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    label="📥 Download District Summary (CSV)",
+                    data=csv_buffer.getvalue(),
+                    file_name=f"district_summary_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv"
                 )
-                st.plotly_chart(fig_pie1, use_container_width=True)
-            
-            with col2:
-                # ITN Given distribution pie chart
-                fig_pie2 = px.pie(
-                    district_summary, 
-                    values='ITN given', 
-                    names='District',
-                    title='ITN Given Distribution by District',
-                    color_discrete_sequence=px.colors.sequential.Blues_r
-                )
-                fig_pie2.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font_color='#2c5aa0'
-                )
-                st.plotly_chart(fig_pie2, use_container_width=True)
-            
-            # Interactive bar chart
-            fig_bar = px.bar(
-                district_summary,
-                x='District',
-                y=['ITN received', 'ITN given'],
-                title='ITN Received vs Given by District',
-                barmode='group',
-                color_discrete_sequence=['#4682b4', '#87ceeb']
-            )
-            fig_bar.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font_color='#2c5aa0',
-                xaxis_title="",
-                yaxis_title="Count"
-            )
-            st.plotly_chart(fig_bar, use_container_width=True)
+    
+    # Chiefdom Summary
+    if st.session_state.get('show_chiefdom_summary', False):
+        st.markdown("### 🏘️ Chiefdom Summary")
         
-        elif dashboard_type == "District Analysis":
-            # District-specific analysis
-            selected_district = st.sidebar.selectbox(
-                "Select District:",
-                sorted(extracted_df["District"].dropna().unique())
-            )
+        with st.spinner("Generating chiefdom summary..."):
+            chiefdom_summary = create_summary_data(extracted_df, ["District", "Chiefdom"])
             
-            if selected_district:
-                district_data = extracted_df[extracted_df["District"] == selected_district]
+            if not chiefdom_summary.empty:
+                st.markdown(f"""
+                <div class="summary-card">
+                    <strong>Chiefdom Analysis</strong><br>
+                    🏘️ Total Chiefdoms: {len(chiefdom_summary)}<br>
+                    📈 Total ITN Received: {chiefdom_summary['ITN received'].sum():,}<br>
+                    📉 Total ITN Given: {chiefdom_summary['ITN given'].sum():,}<br>
+                    🎯 Overall Efficiency: {(chiefdom_summary['ITN given'].sum() / chiefdom_summary['ITN received'].sum() * 100):.1f}%
+                </div>
+                """, unsafe_allow_html=True)
                 
-                st.subheader(f"📊 Analysis for {selected_district} District")
+                # Create display labels
+                chiefdom_summary['Display_Label'] = chiefdom_summary['District'] + ' - ' + chiefdom_summary['Chiefdom']
                 
-                # Metrics for selected district
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    dist_received = district_data["ITN received"].sum()
-                    st.metric("ITN Received", f"{dist_received:,}")
-                with col2:
-                    dist_given = district_data["ITN given"].sum()
-                    st.metric("ITN Given", f"{dist_given:,}")
-                with col3:
-                    dist_chiefdoms = district_data["Chiefdom"].nunique()
-                    st.metric("Chiefdoms", dist_chiefdoms)
+                # Display table
+                st.dataframe(chiefdom_summary.drop('Display_Label', axis=1), use_container_width=True, height=300)
                 
-                # Chiefdom breakdown
-                chiefdom_summary = district_data.groupby("Chiefdom").agg({
-                    "ITN received": "sum",
-                    "ITN given": "sum"
-                }).reset_index()
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    fig_pie = px.pie(
-                        chiefdom_summary,
-                        values='ITN received',
-                        names='Chiefdom',
-                        title=f'ITN Received by Chiefdom in {selected_district}',
-                        color_discrete_sequence=px.colors.sequential.Blues_r
-                    )
-                    fig_pie.update_layout(
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font_color='#2c5aa0'
-                    )
-                    st.plotly_chart(fig_pie, use_container_width=True)
-                
-                with col2:
-                    fig_bar = px.bar(
-                        chiefdom_summary,
-                        x='Chiefdom',
-                        y=['ITN received', 'ITN given'],
-                        title=f'ITN Distribution in {selected_district}',
-                        barmode='group',
-                        color_discrete_sequence=['#4682b4', '#87ceeb']
-                    )
-                    fig_bar.update_layout(
-                        plot_bgcolor='rgba(0,0,0,0)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        font_color='#2c5aa0',
-                        xaxis_title="",
-                        yaxis_title="Count"
-                    )
-                    st.plotly_chart(fig_bar, use_container_width=True)
-        
-        elif dashboard_type == "Chiefdom Analysis":
-            # Chiefdom-specific analysis
-            selected_district = st.sidebar.selectbox(
-                "Select District:",
-                sorted(extracted_df["District"].dropna().unique())
-            )
-            
-            if selected_district:
-                district_data = extracted_df[extracted_df["District"] == selected_district]
-                selected_chiefdom = st.sidebar.selectbox(
-                    "Select Chiefdom:",
-                    sorted(district_data["Chiefdom"].dropna().unique())
+                # Interactive chart
+                create_interactive_chart(
+                    chiefdom_summary, 
+                    "📊 ITN Distribution by District and Chiefdom",
+                    "Display_Label", 
+                    ["ITN received", "ITN given"]
                 )
                 
-                if selected_chiefdom:
-                    chiefdom_data = district_data[district_data["Chiefdom"] == selected_chiefdom]
-                    
-                    st.subheader(f"📊 Analysis for {selected_chiefdom} Chiefdom, {selected_district} District")
-                    
-                    # PHU analysis
-                    phu_summary = chiefdom_data.groupby("PHU Name").agg({
-                        "ITN received": "sum",
-                        "ITN given": "sum"
-                    }).reset_index()
-                    
-                    col1, col2 = st.columns(2)
-                    
-                    with col1:
-                        if not phu_summary.empty:
-                            fig_pie = px.pie(
-                                phu_summary,
-                                values='ITN received',
-                                names='PHU Name',
-                                title='ITN Received by PHU',
-                                color_discrete_sequence=px.colors.sequential.Blues_r
-                            )
-                            fig_pie.update_layout(
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                font_color='#2c5aa0'
-                            )
-                            st.plotly_chart(fig_pie, use_container_width=True)
-                    
-                    with col2:
-                        if not phu_summary.empty:
-                            fig_bar = px.bar(
-                                phu_summary,
-                                x='PHU Name',
-                                y=['ITN received', 'ITN given'],
-                                title='ITN Distribution by PHU',
-                                barmode='group',
-                                color_discrete_sequence=['#4682b4', '#87ceeb']
-                            )
-                            fig_bar.update_layout(
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                paper_bgcolor='rgba(0,0,0,0)',
-                                font_color='#2c5aa0',
-                                xaxis_title="",
-                                yaxis_title="Count"
-                            )
-                            st.plotly_chart(fig_bar, use_container_width=True)
+                # Download option
+                csv_buffer = io.StringIO()
+                chiefdom_summary.drop('Display_Label', axis=1).to_csv(csv_buffer, index=False)
+                st.download_button(
+                    label="📥 Download Chiefdom Summary (CSV)",
+                    data=csv_buffer.getvalue(),
+                    file_name=f"chiefdom_summary_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv"
+                )
+    
+    # Detailed Analysis Section
+    if st.session_state.get('show_detailed_analysis', False):
+        st.markdown("### 🔍 Detailed Analysis & Filtering")
         
-        else:  # Detailed Filtering
-            # Original detailed filtering functionality with enhancements
-            grouping_selection = st.sidebar.radio(
-                "Select the level for grouping:",
-                ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-                index=0
-            )
+        # Sidebar for filtering
+        with st.sidebar:
+            st.header("🎛️ Filter Controls")
             
-            # Dictionary to define the hierarchy for each grouping level
+            # Grouping selection
             hierarchy = {
                 "District": ["District"],
                 "Chiefdom": ["District", "Chiefdom"],
@@ -455,107 +449,162 @@ if uploaded_file:
                 "School Name": ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"]
             }
             
-            # Initialize filtered dataframe with the full dataset
-            filtered_df = extracted_df.copy()
-            selected_values = {}
+            grouping_selection = st.radio(
+                "📊 Select grouping level:",
+                list(hierarchy.keys()),
+                index=0
+            )
             
-            # Apply filters based on the hierarchy for the selected grouping level
+            # Chart type selection
+            chart_type = st.selectbox(
+                "📈 Chart type:",
+                ["Bar Chart", "Pie Chart"],
+                index=0
+            )
+            
+            # Metric selection
+            available_metrics = ['ITN received', 'ITN given']
+            numeric_cols = extracted_df.select_dtypes(include=[np.number]).columns.tolist()
+            
+            if len(numeric_cols) > 2:
+                available_metrics.extend([col for col in numeric_cols if col not in available_metrics])
+            
+            selected_metrics = st.multiselect(
+                "📊 Select metrics:",
+                available_metrics,
+                default=['ITN received', 'ITN given']
+            )
+        
+        # Apply hierarchical filtering
+        filtered_df = extracted_df.copy()
+        selected_values = {}
+        
+        col1, col2 = st.columns([1, 2])
+        
+        with col1:
+            st.markdown("""
+            <div class="filter-section">
+                <h4>🎯 Apply Filters</h4>
+            </div>
+            """, unsafe_allow_html=True)
+            
             for level in hierarchy[grouping_selection]:
                 level_values = sorted(filtered_df[level].dropna().unique())
                 
                 if level_values:
-                    selected_value = st.sidebar.selectbox(f"Select {level}", level_values)
-                    selected_values[level] = selected_value
-                    filtered_df = filtered_df[filtered_df[level] == selected_value]
-            
-            # Check if data is available after filtering
-            if filtered_df.empty:
-                st.warning("⚠️ No data available for the selected filters.")
-            else:
-                st.write(f"### 📋 Filtered Data - {len(filtered_df)} records")
-                
-                # Display filtered data in an interactive table
-                st.dataframe(filtered_df, use_container_width=True)
-                
-                # Define the hierarchy levels to include in the summary
-                group_columns = hierarchy[grouping_selection]
-                
-                # Group by the selected hierarchical columns
-                grouped_data = filtered_df.groupby(group_columns).agg({
-                    "ITN received": "sum",
-                    "ITN given": "sum"
-                }).reset_index()
-                
-                # Add difference column
-                grouped_data["Difference"] = grouped_data["ITN received"] - grouped_data["ITN given"]
-                
-                # Summary with interactive charts
-                st.subheader("📊 Interactive Summary")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    # Interactive pie chart
-                    if not grouped_data.empty:
-                        fig_pie = px.pie(
-                            grouped_data,
-                            values='ITN received',
-                            names=group_columns[-1],  # Use the last level for names
-                            title=f'ITN Received Distribution by {grouping_selection}',
-                            color_discrete_sequence=px.colors.sequential.Blues_r
-                        )
-                        fig_pie.update_layout(
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            font_color='#2c5aa0'
-                        )
-                        st.plotly_chart(fig_pie, use_container_width=True)
-                
-                with col2:
-                    # Interactive bar chart
-                    if not grouped_data.empty:
-                        fig_bar = px.bar(
-                            grouped_data,
-                            x=group_columns[-1],
-                            y=['ITN received', 'ITN given'],
-                            title=f'ITN Distribution by {grouping_selection}',
-                            barmode='group',
-                            color_discrete_sequence=['#4682b4', '#87ceeb']
-                        )
-                        fig_bar.update_layout(
-                            plot_bgcolor='rgba(0,0,0,0)',
-                            paper_bgcolor='rgba(0,0,0,0)',
-                            font_color='#2c5aa0',
-                            xaxis_title="",
-                            yaxis_title="Count"
-                        )
-                        st.plotly_chart(fig_bar, use_container_width=True)
-                
-                # Summary table
-                st.dataframe(grouped_data, use_container_width=True)
+                    selected_value = st.selectbox(
+                        f"📍 Select {level}:",
+                        ["All"] + list(level_values),
+                        key=f"filter_{level}"
+                    )
+                    
+                    if selected_value != "All":
+                        selected_values[level] = selected_value
+                        filtered_df = filtered_df[filtered_df[level] == selected_value]
         
-        # Raw data section (collapsible)
-        with st.expander("📄 View Raw Data"):
-            st.subheader("Original Data Sample")
-            st.dataframe(df_original.head(10), use_container_width=True)
-            
-            st.subheader("Extracted Data Sample")
-            st.dataframe(extracted_df.head(10), use_container_width=True)
+        with col2:
+            if not filtered_df.empty and selected_metrics:
+                # Create summary
+                group_columns = hierarchy[grouping_selection]
+                summary_data = create_summary_data(filtered_df, group_columns, selected_metrics)
+                
+                if not summary_data.empty:
+                    # Display metrics
+                    metrics_cols = st.columns(len(selected_metrics))
+                    for i, metric in enumerate(selected_metrics):
+                        with metrics_cols[i]:
+                            total_value = summary_data[metric].sum()
+                            st.metric(metric, f"{total_value:,}")
+                    
+                    # Display summary table
+                    st.markdown("**📋 Summary Table:**")
+                    st.dataframe(summary_data, use_container_width=True, height=250)
+                    
+                    # Create visualization
+                    if len(summary_data) > 0:
+                        # Create display column for chart
+                        if len(group_columns) == 1:
+                            display_col = group_columns[0]
+                        else:
+                            summary_data['Display'] = summary_data[group_columns].apply(
+                                lambda row: ' - '.join(row.astype(str)), axis=1
+                            )
+                            display_col = 'Display'
+                        
+                        chart_type_map = {"Bar Chart": "bar", "Pie Chart": "pie"}
+                        create_interactive_chart(
+                            summary_data,
+                            f"📊 {grouping_selection} Analysis",
+                            display_col,
+                            selected_metrics,
+                            chart_type_map[chart_type]
+                        )
+                        
+                        # Download filtered data
+                        csv_buffer = io.StringIO()
+                        filtered_df.to_csv(csv_buffer, index=False)
+                        st.download_button(
+                            label="📥 Download Filtered Data (CSV)",
+                            data=csv_buffer.getvalue(),
+                            file_name=f"filtered_data_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                            mime="text/csv"
+                        )
+                else:
+                    st.warning("No data available for the selected filters and metrics.")
+            else:
+                st.info("Apply filters and select metrics to view analysis.")
     
-    except Exception as e:
-        st.error(f"❌ Error processing file: {str(e)}")
-        st.info("Please ensure the file contains the expected 'Scan QR code' column.")
+    # Reset button
+    if st.button("🔄 Reset All Views", type="secondary"):
+        for key in ['show_district_summary', 'show_chiefdom_summary', 'show_detailed_analysis']:
+            if key in st.session_state:
+                del st.session_state[key]
+        st.rerun()
 
+# Show features when no file is uploaded
 else:
-    st.info("📁 Please upload an Excel file to begin analysis.")
+    st.subheader("✨ Features")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **🚀 Advanced Processing:**
+        - Optimized regex extraction
+        - Memory-efficient data handling
+        - Cached processing for speed
+        - Error handling and validation
+        
+        **📊 Smart Analytics:**
+        - Quick summary buttons
+        - Interactive Plotly charts
+        - Efficiency calculations
+        - Real-time filtering
+        """)
+    
+    with col2:
+        st.markdown("""
+        **🎯 Interactive Features:**
+        - Hierarchical filtering system
+        - Multiple chart types
+        - Dynamic metric selection
+        - Progressive data disclosure
+        
+        **💾 Export Options:**
+        - CSV downloads for all views
+        - Filtered data export
+        - Summary reports
+        - Timestamped filenames
+        """)
 
 # Footer
-st.markdown("""
-<div class="footer-container">
-    <h3>ITN Data Dashboard</h3>
-    <p>Powered by Streamlit • Interactive Data Visualization Platform</p>
-    <p style="font-size: 0.9rem; margin-top: 1rem;">
-        © 2025 • Built with ❤️ for data-driven insights
-    </p>
+st.markdown("---")
+current_memory = "N/A"
+if st.session_state.extracted_df is not None:
+    current_memory = get_memory_usage(st.session_state.extracted_df)
+
+st.markdown(f"""
+<div style="text-align: center; color: #666; padding: 1rem;">
+    <p>📊 Built with Streamlit | Text Data Extraction & Visualization Tool | Memory Usage: {current_memory}</p>
 </div>
 """, unsafe_allow_html=True)
