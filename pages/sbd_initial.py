@@ -5,9 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Set up the blue theme
+# Set up colorful theme
 plt.style.use('seaborn-v0_8')
-sns.set_palette("Blues_r")
+# Define beautiful color palettes
+bar_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
+pie_colors = ['#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#10AC84', '#EE5A24', '#0984E3']
 
 # Custom CSS for blue theme
 st.markdown("""
@@ -178,31 +180,76 @@ if uploaded_file:
         # Display summary table
         st.dataframe(district_summary)
         
-        # Create a bar chart for district summary with blue theme
-        fig, ax = plt.subplots(figsize=(12, 8))
-        fig.patch.set_facecolor('#f8f9fa')
-        ax.set_facecolor('#ffffff')
+        # Create two columns for charts
+        chart_col1, chart_col2 = st.columns(2)
         
-        # Use blue color scheme
-        colors = ['#2196f3', '#1976d2']
-        district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], 
-                            ax=ax, color=colors, width=0.8)
+        with chart_col1:
+            # Create a colorful bar chart for district summary
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor('#f8f9fa')
+            ax.set_facecolor('#ffffff')
+            
+            # Use colorful scheme
+            x = np.arange(len(district_summary))
+            width = 0.35
+            
+            bars1 = ax.bar(x - width/2, district_summary["ITN received"], width, 
+                          label='ITN Received', color=bar_colors[0], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            bars2 = ax.bar(x + width/2, district_summary["ITN given"], width,
+                          label='ITN Given', color=bar_colors[1], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            
+            # Add value labels on bars
+            for bar in bars1:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold')
+            for bar in bars2:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold')
+            
+            ax.set_title("📊 ITN by District (Bar Chart)", 
+                        fontsize=14, fontweight='bold', color='#2C3E50', pad=20)
+            ax.set_xlabel("District", fontweight='bold', color='#34495E')
+            ax.set_ylabel("Count", fontweight='bold', color='#34495E')
+            ax.set_xticks(x)
+            ax.set_xticklabels(district_summary["District"], rotation=45, ha='right')
+            ax.grid(True, alpha=0.3, color='#BDC3C7')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            
+            plt.legend(frameon=True, fancybox=True, shadow=True, 
+                      facecolor='#ECF0F1', edgecolor='#34495E')
+            plt.tight_layout()
+            st.pyplot(fig)
         
-        ax.set_title("📊 ITN Received vs. ITN Given by District", 
-                    fontsize=16, fontweight='bold', color='#1565c0', pad=20)
-        ax.set_xlabel("District", fontweight='bold', color='#1976d2')
-        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
-        ax.grid(True, alpha=0.3, color='#2196f3')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#2196f3')
-        ax.spines['bottom'].set_color('#2196f3')
-        
-        plt.xticks(rotation=45, ha='right')
-        plt.legend(frameon=True, fancybox=True, shadow=True, 
-                  facecolor='#e3f2fd', edgecolor='#2196f3')
-        plt.tight_layout()
-        st.pyplot(fig)
+        with chart_col2:
+            # Create colorful pie charts
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            fig.patch.set_facecolor('#f8f9fa')
+            
+            # Pie chart for ITN Received
+            wedges1, texts1, autotexts1 = ax1.pie(district_summary["ITN received"], 
+                                                  labels=district_summary["District"],
+                                                  autopct='%1.1f%%', startangle=90,
+                                                  colors=pie_colors[:len(district_summary)],
+                                                  explode=[0.05] * len(district_summary),
+                                                  shadow=True, textprops={'fontweight': 'bold'})
+            ax1.set_title("🥧 ITN Received Distribution", fontweight='bold', color='#2C3E50', pad=20)
+            
+            # Pie chart for ITN Given
+            wedges2, texts2, autotexts2 = ax2.pie(district_summary["ITN given"], 
+                                                  labels=district_summary["District"],
+                                                  autopct='%1.1f%%', startangle=90,
+                                                  colors=pie_colors[2:2+len(district_summary)],
+                                                  explode=[0.05] * len(district_summary),
+                                                  shadow=True, textprops={'fontweight': 'bold'})
+            ax2.set_title("🥧 ITN Given Distribution", fontweight='bold', color='#2C3E50', pad=20)
+            
+            plt.tight_layout()
+            st.pyplot(fig)
     
     # Display Chiefdom Summary when button is clicked
     if chiefdom_summary_button:
@@ -221,33 +268,78 @@ if uploaded_file:
         st.dataframe(chiefdom_summary)
         
         # Create a temporary label for the chart
-        chiefdom_summary['Label'] = chiefdom_summary['District'] + '\n' + chiefdom_summary['Chiefdom']
+        chiefdom_summary['Label'] = chiefdom_summary['District'] + ' - ' + chiefdom_summary['Chiefdom']
         
-        # Create a bar chart for chiefdom summary with blue theme
-        fig, ax = plt.subplots(figsize=(14, 10))
-        fig.patch.set_facecolor('#f8f9fa')
-        ax.set_facecolor('#ffffff')
+        # Create two columns for charts
+        chart_col1, chart_col2 = st.columns(2)
         
-        # Use blue color scheme
-        colors = ['#2196f3', '#1976d2']
-        chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], 
-                            ax=ax, color=colors, width=0.8)
+        with chart_col1:
+            # Create a colorful bar chart for chiefdom summary
+            fig, ax = plt.subplots(figsize=(12, 8))
+            fig.patch.set_facecolor('#f8f9fa')
+            ax.set_facecolor('#ffffff')
+            
+            # Use colorful scheme
+            x = np.arange(len(chiefdom_summary))
+            width = 0.35
+            
+            bars1 = ax.bar(x - width/2, chiefdom_summary["ITN received"], width, 
+                          label='ITN Received', color=bar_colors[2], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            bars2 = ax.bar(x + width/2, chiefdom_summary["ITN given"], width,
+                          label='ITN Given', color=bar_colors[3], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            
+            # Add value labels on bars
+            for bar in bars1:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+            for bar in bars2:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+            
+            ax.set_title("📊 ITN by District and Chiefdom", 
+                        fontsize=14, fontweight='bold', color='#2C3E50', pad=20)
+            ax.set_xlabel("District - Chiefdom", fontweight='bold', color='#34495E')
+            ax.set_ylabel("Count", fontweight='bold', color='#34495E')
+            ax.set_xticks(x)
+            ax.set_xticklabels(chiefdom_summary["Label"], rotation=45, ha='right')
+            ax.grid(True, alpha=0.3, color='#BDC3C7')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            
+            plt.legend(frameon=True, fancybox=True, shadow=True, 
+                      facecolor='#ECF0F1', edgecolor='#34495E')
+            plt.tight_layout()
+            st.pyplot(fig)
         
-        ax.set_title("📊 ITN Received vs. ITN Given by District and Chiefdom", 
-                    fontsize=16, fontweight='bold', color='#1565c0', pad=20)
-        ax.set_xlabel("District and Chiefdom", fontweight='bold', color='#1976d2')
-        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
-        ax.grid(True, alpha=0.3, color='#2196f3')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#2196f3')
-        ax.spines['bottom'].set_color('#2196f3')
-        
-        plt.xticks(rotation=45, ha='right')
-        plt.legend(frameon=True, fancybox=True, shadow=True, 
-                  facecolor='#e3f2fd', edgecolor='#2196f3')
-        plt.tight_layout()
-        st.pyplot(fig)
+        with chart_col2:
+            # Create colorful pie charts for chiefdom
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 12))
+            fig.patch.set_facecolor('#f8f9fa')
+            
+            # Pie chart for ITN Received
+            wedges1, texts1, autotexts1 = ax1.pie(chiefdom_summary["ITN received"], 
+                                                  labels=chiefdom_summary["Label"],
+                                                  autopct='%1.1f%%', startangle=90,
+                                                  colors=pie_colors[:len(chiefdom_summary)],
+                                                  explode=[0.02] * len(chiefdom_summary),
+                                                  shadow=True, textprops={'fontweight': 'bold', 'fontsize': 8})
+            ax1.set_title("🥧 ITN Received by Chiefdom", fontweight='bold', color='#2C3E50', pad=20)
+            
+            # Pie chart for ITN Given
+            wedges2, texts2, autotexts2 = ax2.pie(chiefdom_summary["ITN given"], 
+                                                  labels=chiefdom_summary["Label"],
+                                                  autopct='%1.1f%%', startangle=90,
+                                                  colors=pie_colors[3:3+len(chiefdom_summary)],
+                                                  explode=[0.02] * len(chiefdom_summary),
+                                                  shadow=True, textprops={'fontweight': 'bold', 'fontsize': 8})
+            ax2.set_title("🥧 ITN Given by Chiefdom", fontweight='bold', color='#2C3E50', pad=20)
+            
+            plt.tight_layout()
+            st.pyplot(fig)
     
     # Visualization and filtering section
     st.subheader("🔍 Detailed Data Filtering and Visualization")
