@@ -2,7 +2,9 @@ import streamlit as st
 import pandas as pd
 import re
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 from PIL import Image
 import base64
 from io import BytesIO
@@ -15,113 +17,274 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for styling
+# Custom CSS for styling with bright blue theme
 st.markdown("""
 <style>
-    /* Header styling */
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global styling */
+    .main {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    /* Header styling with bright sky blue */
     .header-container {
-        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-        padding: 20px;
+        background: linear-gradient(135deg, #00bfff 0%, #1e90ff 50%, #4169e1 100%);
+        padding: 25px;
         margin: -1rem -1rem 2rem -1rem;
-        border-radius: 0 0 10px 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 8px 32px rgba(0, 191, 255, 0.3);
     }
     
     .header-content {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
     }
     
     .logo-placeholder {
-        width: 80px;
-        height: 80px;
-        background: rgba(255,255,255,0.2);
-        border: 2px dashed rgba(255,255,255,0.5);
-        border-radius: 10px;
+        width: 90px;
+        height: 90px;
+        background: rgba(255,255,255,0.15);
+        border: 2px dashed rgba(255,255,255,0.6);
+        border-radius: 15px;
         display: flex;
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 12px;
+        font-size: 11px;
         text-align: center;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
     }
     
     .header-title {
         color: white;
         text-align: center;
         flex-grow: 1;
-        margin: 0 20px;
+        margin: 0 30px;
     }
     
     .header-title h1 {
         margin: 0;
-        font-size: 2.5em;
-        font-weight: bold;
+        font-size: 3em;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
     
     .header-title p {
-        margin: 5px 0 0 0;
+        margin: 8px 0 0 0;
+        font-size: 1.2em;
+        opacity: 0.95;
+        font-weight: 400;
+    }
+    
+    /* Card styling */
+    .metric-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fdff 100%);
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 32px rgba(0, 191, 255, 0.1);
+        border: 1px solid rgba(0, 191, 255, 0.1);
+        text-align: center;
+        transition: all 0.3s ease;
+        margin: 10px 0;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 40px rgba(0, 191, 255, 0.2);
+    }
+    
+    .metric-number {
+        font-size: 2.5em;
+        font-weight: 700;
+        color: #1e90ff;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .metric-label {
         font-size: 1.1em;
-        opacity: 0.9;
+        color: #4a5568;
+        margin: 8px 0 0 0;
+        font-weight: 500;
+    }
+    
+    .metric-icon {
+        font-size: 2em;
+        margin-bottom: 10px;
+        color: #00bfff;
+    }
+    
+    /* Overview cards */
+    .overview-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(0, 191, 255, 0.15);
+        border: 1px solid rgba(0, 191, 255, 0.2);
+        margin: 20px 0;
+        transition: all 0.3s ease;
+    }
+    
+    .overview-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 50px rgba(0, 191, 255, 0.25);
+    }
+    
+    .card-title {
+        font-size: 1.5em;
+        font-weight: 600;
+        color: #1e90ff;
+        margin: 0 0 15px 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     
     /* Footer styling */
     .footer-container {
-        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-        padding: 20px;
+        background: linear-gradient(135deg, #00bfff 0%, #1e90ff 50%, #4169e1 100%);
+        padding: 30px;
         margin: 3rem -1rem -1rem -1rem;
-        border-radius: 10px 10px 0 0;
+        border-radius: 20px 20px 0 0;
         color: white;
         text-align: center;
     }
     
     .footer-content {
-        max-width: 1200px;
+        max-width: 1400px;
         margin: 0 auto;
     }
     
     .footer-links {
-        margin: 10px 0;
+        margin: 15px 0;
     }
     
     .footer-links a {
-        color: rgba(255,255,255,0.8);
+        color: rgba(255,255,255,0.9);
         text-decoration: none;
-        margin: 0 15px;
-        transition: color 0.3s;
+        margin: 0 20px;
+        transition: all 0.3s;
+        font-weight: 500;
     }
     
     .footer-links a:hover {
         color: white;
+        text-shadow: 0 0 10px rgba(255,255,255,0.5);
     }
     
     /* Main content styling */
     .main-content {
-        min-height: 60vh;
+        min-height: 70vh;
         padding: 0 1rem;
     }
     
     /* Button styling */
     .stButton > button {
-        background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+        background: linear-gradient(135deg, #00bfff 0%, #1e90ff 100%);
         color: white;
         border: none;
-        border-radius: 5px;
-        padding: 10px 20px;
+        border-radius: 12px;
+        padding: 15px 30px;
         transition: all 0.3s;
+        font-weight: 600;
+        font-size: 1em;
+        box-shadow: 0 4px 15px rgba(0, 191, 255, 0.3);
     }
     
     .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0, 191, 255, 0.4);
+        background: linear-gradient(135deg, #1e90ff 0%, #4169e1 100%);
     }
     
     /* Sidebar styling */
     .css-1d391kg {
-        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        background: white !important;
+        border-right: 2px solid #e0f2fe;
+    }
+    
+    .css-1d391kg .css-1cpxqw2 {
+        background: white !important;
+    }
+    
+    .css-1d391kg .stSelectbox > div > div {
+        background: white;
+        border: 2px solid #e0f2fe;
+        border-radius: 10px;
+    }
+    
+    .css-1d391kg .stRadio > div {
+        background: white;
+        padding: 15px;
+        border-radius: 10px;
+        border: 1px solid #e0f2fe;
+    }
+    
+    .css-1d391kg .stRadio > div > label {
+        color: #1e90ff;
+        font-weight: 500;
+    }
+    
+    .css-1d391kg h3 {
+        color: #1e90ff;
+        font-weight: 600;
+        border-bottom: 2px solid #e0f2fe;
+        padding-bottom: 10px;
+    }
+    
+    /* Sidebar header styling */
+    .css-1d391kg .css-1avcm0n {
+        background: white !important;
+        border-bottom: 2px solid #e0f2fe;
+        padding: 20px 15px;
+    }
+    
+    /* Sidebar content area */
+    .css-1d391kg .css-1offfwp {
+        background: white !important;
+        padding: 20px 15px;
+    }
+    
+    /* Tab styling */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
+        border-radius: 10px;
+        color: #1e90ff;
+        font-weight: 600;
+        border: 1px solid rgba(0, 191, 255, 0.2);
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #00bfff 0%, #1e90ff 100%);
+        color: white;
+    }
+    
+    /* Data frame styling */
+    .dataframe {
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 191, 255, 0.1);
+    }
+    
+    /* Success/Info messages */
+    .stSuccess {
+        background: linear-gradient(135deg, #00ff9f 0%, #00bcd4 100%);
+        border-radius: 10px;
+    }
+    
+    .stInfo {
+        background: linear-gradient(135deg, #00bfff 0%, #87ceeb 100%);
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -131,14 +294,18 @@ st.markdown("""
 <div class="header-container">
     <div class="header-content">
         <div class="logo-placeholder">
-            LEFT<br>LOGO<br>HERE
+            <div>
+                LEFT<br>LOGO<br>HERE
+            </div>
         </div>
         <div class="header-title">
             <h1>📊 ITN Data Analysis Dashboard</h1>
-            <p>Text Data Extraction & Visualization System</p>
+            <p>Interactive Text Data Extraction & Visualization System</p>
         </div>
         <div class="logo-placeholder">
-            RIGHT<br>LOGO<br>HERE
+            <div>
+                RIGHT<br>LOGO<br>HERE
+            </div>
         </div>
     </div>
 </div>
@@ -148,13 +315,18 @@ st.markdown("""
 st.markdown('<div class="main-content">', unsafe_allow_html=True)
 
 # File upload section
-st.subheader("📁 Data Upload")
+st.markdown("""
+<div class="overview-card">
+    <div class="card-title">📁 Data Upload & Processing</div>
+</div>
+""", unsafe_allow_html=True)
+
 uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx', 'xls'])
 
 # If no file is uploaded, use the default file
 if not uploaded_file:
     uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
-    st.info("Using default file: GMB253374_sbd_1740943126553_submissions.xlsx")
+    st.info("🔄 Using default file: GMB253374_sbd_1740943126553_submissions.xlsx")
 
 if uploaded_file:
     try:
@@ -204,48 +376,110 @@ if uploaded_file:
         
         # Add all other columns from the original DataFrame
         for column in df_original.columns:
-            if column != "Scan QR code":  # Skip the QR code column since we've already processed it
+            if column != "Scan QR code":
                 extracted_df[column] = df_original[column]
         
         # Display success message
         st.success(f"✅ Successfully processed {len(extracted_df)} records!")
         
+        # Overview Cards Section
+        st.markdown("""
+        <div class="overview-card">
+            <div class="card-title">📊 Data Overview</div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Create metric cards
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">📄</div>
+                <div class="metric-number">{len(extracted_df)}</div>
+                <div class="metric-label">Total Records</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">🏛️</div>
+                <div class="metric-number">{extracted_df['District'].nunique()}</div>
+                <div class="metric-label">Districts</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col3:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">🏘️</div>
+                <div class="metric-number">{extracted_df['Chiefdom'].nunique()}</div>
+                <div class="metric-label">Chiefdoms</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col4:
+            total_received = extracted_df['ITN received'].sum()
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">📥</div>
+                <div class="metric-number">{total_received:,}</div>
+                <div class="metric-label">ITN Received</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col5:
+            total_given = extracted_df['ITN given'].sum()
+            st.markdown(f"""
+            <div class="metric-card">
+                <div class="metric-icon">📤</div>
+                <div class="metric-number">{total_given:,}</div>
+                <div class="metric-label">ITN Given</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
         # Create tabs for better organization
-        tab1, tab2, tab3, tab4 = st.tabs(["📄 Data Preview", "📊 Quick Summaries", "🔍 Detailed Analysis", "📈 Export Data"])
+        tab1, tab2, tab3, tab4 = st.tabs(["📄 Data Preview", "📊 Interactive Summaries", "🔍 Detailed Analysis", "📈 Export Data"])
         
         with tab1:
-            st.subheader("📄 Original Data Sample")
-            st.dataframe(df_original.head(), height=300)
+            st.markdown("""
+            <div class="overview-card">
+                <div class="card-title">📄 Original Data Sample</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.dataframe(df_original.head(), height=300, use_container_width=True)
             
-            st.subheader("📋 Extracted Data Preview")
-            st.dataframe(extracted_df.head(), height=300)
-            
-            # Display basic statistics
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Records", len(extracted_df))
-            with col2:
-                st.metric("Districts", extracted_df['District'].nunique())
-            with col3:
-                st.metric("Chiefdoms", extracted_df['Chiefdom'].nunique())
+            st.markdown("""
+            <div class="overview-card">
+                <div class="card-title">📋 Extracted Data Preview</div>
+            </div>
+            """, unsafe_allow_html=True)
+            st.dataframe(extracted_df.head(), height=300, use_container_width=True)
         
         with tab2:
-            st.subheader("📊 Quick Summary Reports")
+            st.markdown("""
+            <div class="overview-card">
+                <div class="card-title">📊 Interactive Summary Reports</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Create two columns for the summary buttons
             col1, col2 = st.columns(2)
             
-            # Button for District Summary
             with col1:
                 district_summary_button = st.button("🏛️ Show District Summary", key="district_btn")
             
-            # Button for Chiefdom Summary
             with col2:
                 chiefdom_summary_button = st.button("🏘️ Show Chiefdom Summary", key="chiefdom_btn")
             
             # Display District Summary when button is clicked
             if district_summary_button:
-                st.subheader("📈 Summary by District")
+                st.markdown("""
+                <div class="overview-card">
+                    <div class="card-title">📈 Summary by District</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Group by District and aggregate
                 district_summary = extracted_df.groupby("District").agg({
@@ -259,19 +493,70 @@ if uploaded_file:
                 # Display summary table
                 st.dataframe(district_summary, use_container_width=True)
                 
-                # Create a bar chart for district summary
-                fig, ax = plt.subplots(figsize=(12, 8))
-                district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#ff6b35"])
-                ax.set_title("📊 ITN Received vs. ITN Given by District", fontsize=16, fontweight='bold')
-                ax.set_xlabel("")
-                ax.set_ylabel("Count")
-                plt.xticks(rotation=45, ha='right')
-                plt.tight_layout()
-                st.pyplot(fig)
+                # Create interactive bar chart
+                fig = go.Figure()
+                
+                fig.add_trace(go.Bar(
+                    name='ITN Received',
+                    x=district_summary['District'],
+                    y=district_summary['ITN received'],
+                    marker_color='#00bfff',
+                    hovertemplate='<b>%{x}</b><br>ITN Received: %{y}<extra></extra>'
+                ))
+                
+                fig.add_trace(go.Bar(
+                    name='ITN Given',
+                    x=district_summary['District'],
+                    y=district_summary['ITN given'],
+                    marker_color='#ff6b35',
+                    hovertemplate='<b>%{x}</b><br>ITN Given: %{y}<extra></extra>'
+                ))
+                
+                fig.update_layout(
+                    title={
+                        'text': '📊 ITN Received vs. ITN Given by District',
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 20, 'color': '#1e90ff'}
+                    },
+                    xaxis_title="District",
+                    yaxis_title="Count",
+                    barmode='group',
+                    template='plotly_white',
+                    height=500,
+                    font=dict(family='Inter, sans-serif'),
+                    hovermode='x unified'
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add a pie chart for distribution
+                fig_pie = px.pie(
+                    district_summary, 
+                    values='ITN received', 
+                    names='District',
+                    title='🥧 Distribution of ITN Received by District',
+                    color_discrete_sequence=px.colors.qualitative.Set3
+                )
+                
+                fig_pie.update_layout(
+                    title={
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 18, 'color': '#1e90ff'}
+                    },
+                    font=dict(family='Inter, sans-serif')
+                )
+                
+                st.plotly_chart(fig_pie, use_container_width=True)
             
             # Display Chiefdom Summary when button is clicked
             if chiefdom_summary_button:
-                st.subheader("📈 Summary by Chiefdom")
+                st.markdown("""
+                <div class="overview-card">
+                    <div class="card-title">📈 Summary by Chiefdom</div>
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Group by District and Chiefdom and aggregate
                 chiefdom_summary = extracted_df.groupby(["District", "Chiefdom"]).agg({
@@ -285,30 +570,82 @@ if uploaded_file:
                 # Display summary table
                 st.dataframe(chiefdom_summary, use_container_width=True)
                 
-                # Create a temporary label for the chart
+                # Create a combined label for better visualization
                 chiefdom_summary['Label'] = chiefdom_summary['District'] + ' - ' + chiefdom_summary['Chiefdom']
                 
-                # Create a bar chart for chiefdom summary
-                fig, ax = plt.subplots(figsize=(14, 10))
-                chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#ff6b35"])
-                ax.set_title("📊 ITN Received vs. ITN Given by District and Chiefdom", fontsize=16, fontweight='bold')
-                ax.set_xlabel("")
-                ax.set_ylabel("Count")
-                plt.xticks(rotation=45, ha='right')
-                plt.tight_layout()
-                st.pyplot(fig)
+                # Create interactive grouped bar chart
+                fig = go.Figure()
+                
+                fig.add_trace(go.Bar(
+                    name='ITN Received',
+                    x=chiefdom_summary['Label'],
+                    y=chiefdom_summary['ITN received'],
+                    marker_color='#00bfff',
+                    hovertemplate='<b>%{x}</b><br>ITN Received: %{y}<extra></extra>'
+                ))
+                
+                fig.add_trace(go.Bar(
+                    name='ITN Given',
+                    x=chiefdom_summary['Label'],
+                    y=chiefdom_summary['ITN given'],
+                    marker_color='#ff6b35',
+                    hovertemplate='<b>%{x}</b><br>ITN Given: %{y}<extra></extra>'
+                ))
+                
+                fig.update_layout(
+                    title={
+                        'text': '📊 ITN Received vs. ITN Given by District and Chiefdom',
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 20, 'color': '#1e90ff'}
+                    },
+                    xaxis_title="District - Chiefdom",
+                    yaxis_title="Count",
+                    barmode='group',
+                    template='plotly_white',
+                    height=600,
+                    font=dict(family='Inter, sans-serif'),
+                    xaxis_tickangle=-45
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add a treemap for hierarchical view
+                fig_tree = px.treemap(
+                    chiefdom_summary,
+                    path=['District', 'Chiefdom'],
+                    values='ITN received',
+                    title='🌳 Hierarchical View of ITN Distribution',
+                    color='ITN received',
+                    color_continuous_scale='Blues'
+                )
+                
+                fig_tree.update_layout(
+                    title={
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 18, 'color': '#1e90ff'}
+                    },
+                    font=dict(family='Inter, sans-serif')
+                )
+                
+                st.plotly_chart(fig_tree, use_container_width=True)
         
         with tab3:
-            st.subheader("🔍 Detailed Data Filtering and Visualization")
+            st.markdown("""
+            <div class="overview-card">
+                <div class="card-title">🔍 Detailed Data Filtering and Visualization</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             # Create a sidebar for filtering options
-            st.sidebar.header("🎛️ Filter Options")
+            st.sidebar.markdown("### 🎛️ Filter Options")
             
             # Create radio buttons to select which level to group by
             grouping_selection = st.sidebar.radio(
                 "Select the level for grouping:",
                 ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-                index=0  # Default to 'District'
+                index=0
             )
             
             # Dictionary to define the hierarchy for each grouping level
@@ -365,18 +702,66 @@ if uploaded_file:
                 # Create a temporary group column for the chart
                 grouped_data['Group'] = grouped_data[group_columns].apply(lambda row: ' - '.join(row.astype(str)), axis=1)
                 
-                # Create a bar chart
-                fig, ax = plt.subplots(figsize=(12, 8))
-                grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#ff6b35"])
-                ax.set_title(f"📊 Analysis by {grouping_selection}", fontsize=16, fontweight='bold')
-                ax.set_xlabel("")
-                ax.set_ylabel("Count")
-                plt.xticks(rotation=45, ha='right')
-                plt.tight_layout()
-                st.pyplot(fig)
+                # Create interactive visualization
+                fig = px.bar(
+                    grouped_data,
+                    x='Group',
+                    y=['ITN received', 'ITN given'],
+                    title=f'📊 Interactive Analysis by {grouping_selection}',
+                    color_discrete_map={
+                        'ITN received': '#00bfff',
+                        'ITN given': '#ff6b35'
+                    },
+                    barmode='group'
+                )
+                
+                fig.update_layout(
+                    title={
+                        'x': 0.5,
+                        'xanchor': 'center',
+                        'font': {'size': 18, 'color': '#1e90ff'}
+                    },
+                    xaxis_title="",
+                    yaxis_title="Count",
+                    template='plotly_white',
+                    height=500,
+                    font=dict(family='Inter, sans-serif'),
+                    xaxis_tickangle=-45
+                )
+                
+                st.plotly_chart(fig, use_container_width=True)
+                
+                # Add scatter plot for correlation analysis
+                if len(grouped_data) > 1:
+                    fig_scatter = px.scatter(
+                        grouped_data,
+                        x='ITN received',
+                        y='ITN given',
+                        size='Difference',
+                        hover_name='Group',
+                        title='🔍 Correlation: ITN Received vs ITN Given',
+                        color='Difference',
+                        color_continuous_scale='RdYlBu'
+                    )
+                    
+                    fig_scatter.update_layout(
+                        title={
+                            'x': 0.5,
+                            'xanchor': 'center',
+                            'font': {'size': 18, 'color': '#1e90ff'}
+                        },
+                        template='plotly_white',
+                        font=dict(family='Inter, sans-serif')
+                    )
+                    
+                    st.plotly_chart(fig_scatter, use_container_width=True)
         
         with tab4:
-            st.subheader("📈 Export Data")
+            st.markdown("""
+            <div class="overview-card">
+                <div class="card-title">📈 Export Data</div>
+            </div>
+            """, unsafe_allow_html=True)
             
             col1, col2 = st.columns(2)
             
@@ -421,8 +806,8 @@ st.markdown("""
             <a href="#support">Support</a>
             <a href="#privacy">Privacy Policy</a>
         </div>
-        <p>© 2025 Your Organization Name. All rights reserved.</p>
-        <p>Powered by Streamlit | Data Analytics & Visualization Platform</p>
+        <p>© 2025 Informatics Consultancy Firm- Sierra Leone. All rights reserved.</p>
+        <p>Powered by Streamlit & Plotly | Interactive Data Analytics Platform</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
