@@ -3,601 +3,213 @@ import pandas as pd
 import re
 import numpy as np
 import matplotlib.pyplot as plt
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 
-# Configure page
-st.set_page_config(
-    page_title="ITN Distribution Dashboard",
-    page_icon="🏥",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Streamlit App
+st.title("📊 Text Data Extraction & Visualization")
 
-# Custom CSS for light blue theme and modern design
-st.markdown("""
-<style>
-    /* Main background */
-    .main {
-        background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #2196f3 0%, #1976d2 100%);
-    }
-    
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
-        padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        color: white;
-        text-align: center;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-    }
-    
-    /* Logo containers */
-    .logo-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-    
-    .logo-placeholder {
-        width: 80px;
-        height: 80px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        color: white;
-        border: 2px solid rgba(255,255,255,0.3);
-    }
-    
-    /* Feature cards */
-    .feature-card {
-        background: white;
-        padding: 1.5rem;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        margin: 1rem 0;
-        border-left: 5px solid #2196f3;
-        transition: transform 0.3s ease;
-        height: 280px;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
-    }
-    
-    .feature-card h3 {
-        margin-bottom: 1rem;
-        height: 60px;
-        display: flex;
-        align-items: center;
-    }
-    
-    .feature-card p {
-        height: 80px;
-        margin-bottom: 1rem;
-        overflow: hidden;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        -webkit-box-orient: vertical;
-    }
-    
-    .feature-card ul {
-        flex-grow: 1;
-        margin: 0;
-        padding-left: 1.2rem;
-    }
-    
-    /* Metric cards */
-    .metric-card {
-        background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-        padding: 1.5rem;
-        border-radius: 12px;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-        border: 1px solid #e3f2fd;
-        height: 120px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-    }
-    
-    /* Overview cards */
-    .overview-card {
-        text-align: center;
-        padding: 1.5rem;
-        border-radius: 10px;
-        height: 140px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .overview-card-icon {
-        font-size: 2rem;
-        margin-bottom: 0.8rem;
-    }
-    
-    .overview-card-title {
-        font-weight: bold;
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-        height: 20px;
-    }
-    
-    .overview-card-subtitle {
-        font-size: 0.9rem;
-        color: #666;
-        height: 18px;
-    }
-    
-    .metric-value {
-        font-size: 2.5rem;
-        font-weight: bold;
-        color: #1976d2;
-        margin-bottom: 0.5rem;
-    }
-    
-    .metric-label {
-        color: #666;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    
-    /* Overview section */
-    .overview-section {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        margin: 2rem 0;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-    }
-    
-    /* Button styling */
-    .stButton > button {
-        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-        color: white;
-        border: none;
-        padding: 0.5rem 2rem;
-        border-radius: 25px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton > button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
-    }
-    
-    /* Data table styling */
-    .stDataFrame {
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-    }
-    
-    /* Section headers */
-    .section-header {
-        color: #1976d2;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 2rem 0 1rem 0;
-        padding-bottom: 0.5rem;
-        border-bottom: 2px solid #e3f2fd;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Header with logos
-st.markdown("""
-<div class="main-header">
-    <div class="logo-container">
-        <div class="logo-placeholder">🏥</div>
-        <div>
-            <h1 style="margin: 0; font-size: 2.5rem;">School Based Distribution of ITNs</h1>
-            <p style="margin: 0; font-size: 1.1rem; opacity: 0.9;">Monitoring & Evaluation Dashboard</p>
-        </div>
-        <div class="logo-placeholder">🎓</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# Upload file section
+# Upload file
 uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
 
-# Overview Section
-st.markdown("""
-<div class="overview-section">
-    <h2 style="color: #1976d2; margin-bottom: 1rem;">📊 Program Overview</h2>
-    <p style="font-size: 1.1rem; line-height: 1.6; color: #555;">
-        The School-Based Distribution (SBD) of Insecticide-Treated Nets (ITNs) is a critical public health intervention 
-        designed to ensure universal coverage of malaria prevention tools. This dashboard provides comprehensive monitoring 
-        and evaluation capabilities for tracking ITN distribution across districts, chiefdoms, PHUs, communities, and schools.
-    </p>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
-        <div class="overview-card" style="background: #e3f2fd;">
-            <div class="overview-card-icon">🏫</div>
-            <div class="overview-card-title" style="color: #1976d2;">School-Based</div>
-            <div class="overview-card-subtitle">Distribution Model</div>
-        </div>
-        <div class="overview-card" style="background: #e8f5e8;">
-            <div class="overview-card-icon">🛡️</div>
-            <div class="overview-card-title" style="color: #2e7d32;">Malaria Prevention</div>
-            <div class="overview-card-subtitle">ITN Coverage</div>
-        </div>
-        <div class="overview-card" style="background: #fff3e0;">
-            <div class="overview-card-icon">📈</div>
-            <div class="overview-card-title" style="color: #f57c00;">Real-time Monitoring</div>
-            <div class="overview-card-subtitle">Data Analytics</div>
-        </div>
-        <div class="overview-card" style="background: #f3e5f5;">
-            <div class="overview-card-icon">🎯</div>
-            <div class="overview-card-title" style="color: #7b1fa2;">Universal Coverage</div>
-            <div class="overview-card-subtitle">Health Equity</div>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
 if uploaded_file:
-    # Read and process data
-    try:
-        df_original = pd.read_excel(uploaded_file)
-        
-        # Create empty lists to store extracted data
-        districts, chiefdoms, phu_names, community_names, school_names = [], [], [], [], []
-        
-        # Process each row in the "Scan QR code" column
-        for qr_text in df_original["Scan QR code"]:
-            if pd.isna(qr_text):
-                districts.append(None)
-                chiefdoms.append(None)
-                phu_names.append(None)
-                community_names.append(None)
-                school_names.append(None)
-                continue
-                
-            # Extract values using regex patterns
-            district_match = re.search(r"District:\s*([^\n]+)", str(qr_text))
-            districts.append(district_match.group(1).strip() if district_match else None)
-            
-            chiefdom_match = re.search(r"Chiefdom:\s*([^\n]+)", str(qr_text))
-            chiefdoms.append(chiefdom_match.group(1).strip() if chiefdom_match else None)
-            
-            phu_match = re.search(r"PHU name:\s*([^\n]+)", str(qr_text))
-            phu_names.append(phu_match.group(1).strip() if phu_match else None)
-            
-            community_match = re.search(r"Community name:\s*([^\n]+)", str(qr_text))
-            community_names.append(community_match.group(1).strip() if community_match else None)
-            
-            school_match = re.search(r"Name of school:\s*([^\n]+)", str(qr_text))
-            school_names.append(school_match.group(1).strip() if school_match else None)
-        
-        # Create a new DataFrame with extracted values
-        extracted_df = pd.DataFrame({
-            "District": districts,
-            "Chiefdom": chiefdoms,
-            "PHU Name": phu_names,
-            "Community Name": community_names,
-            "School Name": school_names
-        })
-        
-        # Add all other columns from the original DataFrame
-        for column in df_original.columns:
-            if column != "Scan QR code":
-                extracted_df[column] = df_original[column]
-        
-        # Calculate summary statistics
-        total_records = len(extracted_df)
-        total_received = extracted_df["ITN received"].sum() if "ITN received" in extracted_df.columns else 0
-        total_given = extracted_df["ITN given"].sum() if "ITN given" in extracted_df.columns else 0
-        total_districts = extracted_df["District"].nunique()
-        total_schools = extracted_df["School Name"].nunique()
-        distribution_rate = (total_given / total_received * 100) if total_received > 0 else 0
-        
-        # Summary Statistics Cards
-        st.markdown('<div class="section-header">📊 Key Performance Indicators</div>', unsafe_allow_html=True)
-        
-        col1, col2, col3, col4, col5, col6 = st.columns(6)
-        
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_records:,}</div>
-                <div class="metric-label">Total Records</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_received:,}</div>
-                <div class="metric-label">ITNs Received</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_given:,}</div>
-                <div class="metric-label">ITNs Distributed</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col4:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{distribution_rate:.1f}%</div>
-                <div class="metric-label">Distribution Rate</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col5:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_districts}</div>
-                <div class="metric-label">Districts</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col6:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-value">{total_schools}</div>
-                <div class="metric-label">Schools</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Feature Cards Section
-        st.markdown('<div class="section-header">🚀 Dashboard Features</div>', unsafe_allow_html=True)
-        
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown("""
-            <div class="feature-card">
-                <h3 style="color: #1976d2;">📊 Multi-Level Analysis</h3>
-                <p>Analyze distribution data across multiple administrative levels including districts, chiefdoms, PHUs, communities, and schools.</p>
-                <ul style="color: #666;">
-                    <li>Hierarchical filtering</li>
-                    <li>Drill-down capabilities</li>
-                    <li>Cross-level comparisons</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            st.markdown("""
-            <div class="feature-card">
-                <h3 style="color: #1976d2;">📈 Real-time Monitoring</h3>
-                <p>Track ITN distribution progress with live data updates and comprehensive performance metrics for better decision making.</p>
-                <ul style="color: #666;">
-                    <li>Distribution rates</li>
-                    <li>Coverage analysis</li>
-                    <li>Performance indicators</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown("""
-            <div class="feature-card">
-                <h3 style="color: #1976d2;">🎯 Data Visualization</h3>
-                <p>Interactive charts and graphs for better insights into distribution patterns and trends across all locations.</p>
-                <ul style="color: #666;">
-                    <li>Interactive charts</li>
-                    <li>Comparative analysis</li>
-                    <li>Trend visualization</li>
-                </ul>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        # Data Display Section
-        st.markdown('<div class="section-header">📋 Data Overview</div>', unsafe_allow_html=True)
-        
-        # Tabs for different views
-        tab1, tab2 = st.tabs(["📄 Original Data", "📊 Processed Data"])
-        
-        with tab1:
-            st.markdown("**Sample of original data from the Excel file:**")
-            st.dataframe(df_original.head(10), use_container_width=True)
-        
-        with tab2:
-            st.markdown("**Processed data with extracted information:**")
-            st.dataframe(extracted_df.head(10), use_container_width=True)
-        
-        # Analysis Section
-        st.markdown('<div class="section-header">📊 Distribution Analysis</div>', unsafe_allow_html=True)
-        
-        # Create analysis buttons
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            district_analysis = st.button("🏛️ District Analysis", use_container_width=True)
-        
-        with col2:
-            chiefdom_analysis = st.button("🏘️ Chiefdom Analysis", use_container_width=True)
-        
-        with col3:
-            school_analysis = st.button("🏫 School Analysis", use_container_width=True)
-        
-        # District Analysis
-        if district_analysis:
-            st.markdown("### 🏛️ District-Level Analysis")
-            
-            district_summary = extracted_df.groupby("District").agg({
-                "ITN received": "sum",
-                "ITN given": "sum"
-            }).reset_index()
-            district_summary["Difference"] = district_summary["ITN received"] - district_summary["ITN given"]
-            district_summary["Distribution Rate"] = (district_summary["ITN given"] / district_summary["ITN received"] * 100).round(1)
-            
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                fig = px.bar(district_summary, x="District", y=["ITN received", "ITN given"],
-                            title="ITN Distribution by District", barmode="group",
-                            color_discrete_map={"ITN received": "#2196f3", "ITN given": "#ff9800"})
-                fig.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                st.markdown("**District Summary:**")
-                st.dataframe(district_summary, use_container_width=True)
-        
-        # Chiefdom Analysis
-        if chiefdom_analysis:
-            st.markdown("### 🏘️ Chiefdom-Level Analysis")
-            
-            chiefdom_summary = extracted_df.groupby(["District", "Chiefdom"]).agg({
-                "ITN received": "sum",
-                "ITN given": "sum"
-            }).reset_index()
-            chiefdom_summary["Difference"] = chiefdom_summary["ITN received"] - chiefdom_summary["ITN given"]
-            chiefdom_summary["Distribution Rate"] = (chiefdom_summary["ITN given"] / chiefdom_summary["ITN received"] * 100).round(1)
-            
-            # Create a combined label for better visualization
-            chiefdom_summary['Location'] = chiefdom_summary['District'] + ' - ' + chiefdom_summary['Chiefdom']
-            
-            fig = px.bar(chiefdom_summary, x="Location", y=["ITN received", "ITN given"],
-                        title="ITN Distribution by District and Chiefdom", barmode="group",
-                        color_discrete_map={"ITN received": "#2196f3", "ITN given": "#ff9800"})
-            fig.update_layout(height=600, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            fig.update_xaxes(tickangle=45)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.dataframe(chiefdom_summary.drop('Location', axis=1), use_container_width=True)
-        
-        # School Analysis
-        if school_analysis:
-            st.markdown("### 🏫 School-Level Analysis")
-            
-            school_summary = extracted_df.groupby(["District", "School Name"]).agg({
-                "ITN received": "sum",
-                "ITN given": "sum"
-            }).reset_index()
-            school_summary["Difference"] = school_summary["ITN received"] - school_summary["ITN given"]
-            school_summary["Distribution Rate"] = (school_summary["ITN given"] / school_summary["ITN received"] * 100).round(1)
-            
-            # Top 10 schools by ITN received
-            top_schools = school_summary.nlargest(10, "ITN received")
-            
-            fig = px.bar(top_schools, x="School Name", y=["ITN received", "ITN given"],
-                        title="Top 10 Schools by ITN Distribution", barmode="group",
-                        color_discrete_map={"ITN received": "#2196f3", "ITN given": "#ff9800"})
-            fig.update_layout(height=500, plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-            fig.update_xaxes(tickangle=45)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            st.dataframe(school_summary, use_container_width=True)
-        
-        # Advanced Filtering Section
-        st.markdown('<div class="section-header">🔍 Advanced Data Filtering</div>', unsafe_allow_html=True)
-        
-        # Sidebar filters
-        st.sidebar.markdown("### 🎛️ Filter Controls")
-        
-        # Grouping selection
-        grouping_selection = st.sidebar.selectbox(
-            "📊 Select Analysis Level:",
-            ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-            index=0
-        )
-        
-        # Hierarchy definition
-        hierarchy = {
-            "District": ["District"],
-            "Chiefdom": ["District", "Chiefdom"],
-            "PHU Name": ["District", "Chiefdom", "PHU Name"],
-            "Community Name": ["District", "Chiefdom", "PHU Name", "Community Name"],
-            "School Name": ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"]
-        }
-        
-        # Apply hierarchical filters
-        filtered_df = extracted_df.copy()
-        selected_values = {}
-        
-        for level in hierarchy[grouping_selection]:
-            level_values = sorted(filtered_df[level].dropna().unique())
-            if level_values:
-                selected_value = st.sidebar.selectbox(f"🎯 Select {level}:", level_values)
-                selected_values[level] = selected_value
-                filtered_df = filtered_df[filtered_df[level] == selected_value]
-        
-        # Display filtered results
-        if not filtered_df.empty:
-            st.markdown(f"### 📊 Filtered Results ({len(filtered_df)} records)")
-            
-            col1, col2 = st.columns([3, 1])
-            
-            with col1:
-                st.dataframe(filtered_df, use_container_width=True)
-            
-            with col2:
-                # Quick stats for filtered data
-                filtered_received = filtered_df["ITN received"].sum()
-                filtered_given = filtered_df["ITN given"].sum()
-                filtered_rate = (filtered_given / filtered_received * 100) if filtered_received > 0 else 0
-                
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{filtered_received:,}</div>
-                    <div class="metric-label">ITNs Received</div>
-                </div>
-                <div class="metric-card" style="margin-top: 1rem;">
-                    <div class="metric-value">{filtered_given:,}</div>
-                    <div class="metric-label">ITNs Distributed</div>
-                </div>
-                <div class="metric-card" style="margin-top: 1rem;">
-                    <div class="metric-value">{filtered_rate:.1f}%</div>
-                    <div class="metric-label">Distribution Rate</div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.warning("⚠️ No data available for the selected filters.")
+    # Read the uploaded Excel file
+    df_original = pd.read_excel(uploaded_file)
     
-    except Exception as e:
-        st.error(f"❌ Error processing the data: {str(e)}")
-        st.info("Please ensure the Excel file contains the expected columns and data format.")
-
-else:
-    st.info("📁 Please upload an Excel file to begin the analysis.")
+    # Create empty lists to store extracted data
+    districts, chiefdoms, phu_names, community_names, school_names = [], [], [], [], []
     
-    # Show sample data structure
-    st.markdown("""
-    <div class="feature-card">
-        <h3 style="color: #1976d2; margin-bottom: 1rem;">📋 Expected Data Format</h3>
-        <p>The Excel file should contain the following columns:</p>
-        <ul style="color: #666;">
-            <li><strong>Scan QR code:</strong> Contains location and school information</li>
-            <li><strong>ITN received:</strong> Number of ITNs received</li>
-            <li><strong>ITN given:</strong> Number of ITNs distributed</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-# Footer
-st.markdown("""
-<div style="margin-top: 4rem; padding: 2rem; background: white; border-radius: 15px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-    <p style="color: #666; margin: 0;">
-        <strong>School Based Distribution of ITNs Dashboard</strong> | 
-        Monitoring & Evaluation System | 
-        Powered by Advanced Analytics
-    </p>
-</div>
-""", unsafe_allow_html=True)
+    # Process each row in the "Scan QR code" column
+    for qr_text in df_original["Scan QR code"]:
+        if pd.isna(qr_text):
+            districts.append(None)
+            chiefdoms.append(None)
+            phu_names.append(None)
+            community_names.append(None)
+            school_names.append(None)
+            continue
+            
+        # Extract values using regex patterns
+        district_match = re.search(r"District:\s*([^\n]+)", str(qr_text))
+        districts.append(district_match.group(1).strip() if district_match else None)
+        
+        chiefdom_match = re.search(r"Chiefdom:\s*([^\n]+)", str(qr_text))
+        chiefdoms.append(chiefdom_match.group(1).strip() if chiefdom_match else None)
+        
+        phu_match = re.search(r"PHU name:\s*([^\n]+)", str(qr_text))
+        phu_names.append(phu_match.group(1).strip() if phu_match else None)
+        
+        community_match = re.search(r"Community name:\s*([^\n]+)", str(qr_text))
+        community_names.append(community_match.group(1).strip() if community_match else None)
+        
+        school_match = re.search(r"Name of school:\s*([^\n]+)", str(qr_text))
+        school_names.append(school_match.group(1).strip() if school_match else None)
+    
+    # Create a new DataFrame with extracted values
+    extracted_df = pd.DataFrame({
+        "District": districts,
+        "Chiefdom": chiefdoms,
+        "PHU Name": phu_names,
+        "Community Name": community_names,
+        "School Name": school_names
+    })
+    
+    # Add all other columns from the original DataFrame
+    for column in df_original.columns:
+        if column != "Scan QR code":  # Skip the QR code column since we've already processed it
+            extracted_df[column] = df_original[column]
+    
+    # Display Original Data Sample
+    st.subheader("📄 Original Data Sample")
+    st.dataframe(df_original.head())
+    
+    # Display Extracted Data
+    st.subheader("📋 Extracted Data")
+    st.dataframe(extracted_df)
+    
+    # Summary buttons section
+    st.subheader("📊 Summary Reports")
+    
+    # Create two columns for the summary buttons
+    col1, col2 = st.columns(2)
+    
+    # Button for District Summary
+    with col1:
+        district_summary_button = st.button("Show District Summary")
+    
+    # Button for Chiefdom Summary
+    with col2:
+        chiefdom_summary_button = st.button("Show Chiefdom Summary")
+    
+    # Display District Summary when button is clicked
+    if district_summary_button:
+        st.subheader("📈 Summary by District")
+        
+        # Group by District and aggregate
+        district_summary = extracted_df.groupby("District").agg({
+            "ITN received": "sum",
+            "ITN given": "sum"
+        }).reset_index()
+        
+        # Calculate difference
+        district_summary["Difference"] = district_summary["ITN received"] - district_summary["ITN given"]
+        
+        # Display summary table
+        st.dataframe(district_summary)
+        
+        # Create a bar chart for district summary
+        fig, ax = plt.subplots(figsize=(12, 8))
+        district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
+        ax.set_title("📊 ITN Received vs. ITN Given by District")
+        ax.set_xlabel("")
+        ax.set_ylabel("Count")
+        plt.xticks(rotation=0, ha='right')
+        plt.tight_layout()
+        st.pyplot(fig)
+    
+    # Display Chiefdom Summary when button is clicked
+    if chiefdom_summary_button:
+        st.subheader("📈 Summary by Chiefdom")
+        
+        # Group by District and Chiefdom and aggregate
+        chiefdom_summary = extracted_df.groupby(["District", "Chiefdom"]).agg({
+            "ITN received": "sum",
+            "ITN given": "sum"
+        }).reset_index()
+        
+        # Calculate difference
+        chiefdom_summary["Difference"] = chiefdom_summary["ITN received"] - chiefdom_summary["ITN given"]
+        
+        # Display summary table
+        st.dataframe(chiefdom_summary)
+        
+        # Create a temporary label for the chart
+        chiefdom_summary['Label'] = chiefdom_summary['District'] + '\n' + chiefdom_summary['Chiefdom']
+        
+        # Create a bar chart for chiefdom summary
+        fig, ax = plt.subplots(figsize=(14, 10))
+        chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
+        ax.set_title("📊 ITN Received vs. ITN Given by District and Chiefdom")
+        ax.set_xlabel("")
+        ax.set_ylabel("Count")
+        plt.xticks(rotation=0, ha='right')
+        plt.tight_layout()
+        st.pyplot(fig)
+    
+    # Visualization and filtering section
+    st.subheader("🔍 Detailed Data Filtering and Visualization")
+    
+    # Create a sidebar for filtering options
+    st.sidebar.header("Filter Options")
+    
+    # Create radio buttons to select which level to group by
+    grouping_selection = st.sidebar.radio(
+        "Select the level for grouping:",
+        ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
+        index=0  # Default to 'District'
+    )
+    
+    # Dictionary to define the hierarchy for each grouping level
+    hierarchy = {
+        "District": ["District"],
+        "Chiefdom": ["District", "Chiefdom"],
+        "PHU Name": ["District", "Chiefdom", "PHU Name"],
+        "Community Name": ["District", "Chiefdom", "PHU Name", "Community Name"],
+        "School Name": ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"]
+    }
+    
+    # Initialize filtered dataframe with the full dataset
+    filtered_df = extracted_df.copy()
+    
+    # Dictionary to store selected values for each level
+    selected_values = {}
+    
+    # Apply filters based on the hierarchy for the selected grouping level
+    for level in hierarchy[grouping_selection]:
+        # Filter out None/NaN values and get sorted unique values
+        level_values = sorted(filtered_df[level].dropna().unique())
+        
+        if level_values:
+            # Create selectbox for this level
+            selected_value = st.sidebar.selectbox(f"Select {level}", level_values)
+            selected_values[level] = selected_value
+            
+            # Apply filter to the dataframe
+            filtered_df = filtered_df[filtered_df[level] == selected_value]
+    
+    # Check if data is available after filtering
+    if filtered_df.empty:
+        st.warning("No data available for the selected filters.")
+    else:
+        st.write(f"### Filtered Data - {len(filtered_df)} records")
+        st.dataframe(filtered_df)
+        
+        # Define the hierarchy levels to include in the summary
+        group_columns = hierarchy[grouping_selection]
+        
+        # Group by the selected hierarchical columns
+        grouped_data = filtered_df.groupby(group_columns).agg({
+            "ITN received": "sum",
+            "ITN given": "sum"
+        }).reset_index()
+        
+        # Add difference column
+        grouped_data["Difference"] = grouped_data["ITN received"] - grouped_data["ITN given"]
+        
+        # Summary Table with separate columns for each level
+        st.subheader("📊 Detailed Summary Table")
+        st.dataframe(grouped_data)
+        
+        # Create a temporary group column for the chart
+        grouped_data['Group'] = grouped_data[group_columns].apply(lambda row: ','.join(row.astype(str)), axis=1)
+        
+        # Create a bar chart
+        fig, ax = plt.subplots(figsize=(12, 8))
+        grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
+        ax.set_title(f"{grouped_data['Group'].unique()[0]}")  # If you want a unique value from the column
+        
+        # Remove x-label as requested
+        ax.set_xlabel("")
+        
+        ax.set_ylabel("Count")
+        plt.xticks(rotation=0, ha='right')
+        plt.tight_layout()
+        st.pyplot(fig)
