@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Streamlit App
-st.title("📊 Text Data Extraction & Visualization")
+st.title("School-Based Distribution of ITNs")
 
 # Upload file
 uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
