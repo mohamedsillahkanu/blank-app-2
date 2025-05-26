@@ -7,9 +7,10 @@ import seaborn as sns
 
 # Set up colorful theme
 plt.style.use('seaborn-v0_8')
-# Define beautiful color palettes
-bar_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD', '#98D8C8', '#F7DC6F']
-pie_colors = ['#FF9FF3', '#54A0FF', '#5F27CD', '#00D2D3', '#FF9F43', '#10AC84', '#EE5A24', '#0984E3']
+# Define beautiful color palettes for bars and pies
+bar_colors = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#34495E']
+pie_colors = ['#FF6B9D', '#4DABF7', '#51CF66', '#FFD43B', '#DA77F2', '#22B8CF', '#FF8787', '#74C0FC', 
+              '#8CE99A', '#FFE066', '#E599F7', '#3BC9DB', '#FFA8A8', '#91A7FF', '#B2F2BB', '#FFEC99']
 
 # Custom CSS for blue theme
 st.markdown("""
@@ -408,30 +409,92 @@ if uploaded_file:
         # Create a temporary group column for the chart
         grouped_data['Group'] = grouped_data[group_columns].apply(lambda row: ','.join(row.astype(str)), axis=1)
         
-        # Create a bar chart with blue theme
-        fig, ax = plt.subplots(figsize=(12, 8))
-        fig.patch.set_facecolor('#f8f9fa')
-        ax.set_facecolor('#ffffff')
+        # Create two columns for charts
+        chart_col1, chart_col2 = st.columns(2)
         
-        # Use blue color scheme
-        colors = ['#2196f3', '#1976d2']
-        grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], 
-                        ax=ax, color=colors, width=0.8)
+        with chart_col1:
+            # Create a colorful bar chart
+            fig, ax = plt.subplots(figsize=(10, 6))
+            fig.patch.set_facecolor('#f8f9fa')
+            ax.set_facecolor('#ffffff')
+            
+            # Use colorful scheme
+            x = np.arange(len(grouped_data))
+            width = 0.35
+            
+            bars1 = ax.bar(x - width/2, grouped_data["ITN received"], width, 
+                          label='ITN Received', color=bar_colors[4], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            bars2 = ax.bar(x + width/2, grouped_data["ITN given"], width,
+                          label='ITN Given', color=bar_colors[5], alpha=0.8,
+                          edgecolor='white', linewidth=2)
+            
+            # Add value labels on bars
+            for bar in bars1:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+            for bar in bars2:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
+                       f'{int(height)}', ha='center', va='bottom', fontweight='bold', fontsize=8)
+            
+            # Set title based on the grouping selection
+            chart_title = f"📊 ITN Data by {grouping_selection}"
+            ax.set_title(chart_title, fontsize=14, fontweight='bold', color='#2C3E50', pad=20)
+            
+            ax.set_xlabel("")
+            ax.set_ylabel("Count", fontweight='bold', color='#34495E')
+            ax.set_xticks(x)
+            ax.set_xticklabels(grouped_data["Group"], rotation=45, ha='right')
+            ax.grid(True, alpha=0.3, color='#BDC3C7')
+            ax.spines['top'].set_visible(False)
+            ax.spines['right'].set_visible(False)
+            
+            plt.legend(frameon=True, fancybox=True, shadow=True, 
+                      facecolor='#ECF0F1', edgecolor='#34495E')
+            plt.tight_layout()
+            st.pyplot(fig)
         
-        # Set title based on the grouping selection
-        chart_title = f"📊 ITN Data by {grouping_selection}"
-        ax.set_title(chart_title, fontsize=16, fontweight='bold', color='#1565c0', pad=20)
-        
-        ax.set_xlabel("")
-        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
-        ax.grid(True, alpha=0.3, color='#2196f3')
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.spines['left'].set_color('#2196f3')
-        ax.spines['bottom'].set_color('#2196f3')
-        
-        plt.xticks(rotation=45, ha='right')
-        plt.legend(frameon=True, fancybox=True, shadow=True, 
-                  facecolor='#e3f2fd', edgecolor='#2196f3')
-        plt.tight_layout()
-        st.pyplot(fig)
+        with chart_col2:
+            # Create colorful pie charts for filtered data
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+            fig.patch.set_facecolor('#f8f9fa')
+            
+            # Only create pie charts if we have multiple groups
+            if len(grouped_data) > 1:
+                # Pie chart for ITN Received
+                wedges1, texts1, autotexts1 = ax1.pie(grouped_data["ITN received"], 
+                                                      labels=grouped_data["Group"],
+                                                      autopct='%1.1f%%', startangle=90,
+                                                      colors=pie_colors[4:4+len(grouped_data)],
+                                                      explode=[0.05] * len(grouped_data),
+                                                      shadow=True, textprops={'fontweight': 'bold', 'fontsize': 8})
+                ax1.set_title(f"🥧 ITN Received by {grouping_selection}", 
+                             fontweight='bold', color='#2C3E50', pad=20)
+                
+                # Pie chart for ITN Given
+                wedges2, texts2, autotexts2 = ax2.pie(grouped_data["ITN given"], 
+                                                      labels=grouped_data["Group"],
+                                                      autopct='%1.1f%%', startangle=90,
+                                                      colors=pie_colors[6:6+len(grouped_data)],
+                                                      explode=[0.05] * len(grouped_data),
+                                                      shadow=True, textprops={'fontweight': 'bold', 'fontsize': 8})
+                ax2.set_title(f"🥧 ITN Given by {grouping_selection}", 
+                             fontweight='bold', color='#2C3E50', pad=20)
+            else:
+                # If only one group, show a simple info message
+                ax1.text(0.5, 0.5, f'Single {grouping_selection}\nSelected', 
+                        ha='center', va='center', fontsize=16, fontweight='bold', color='#2C3E50')
+                ax1.set_xlim(0, 1)
+                ax1.set_ylim(0, 1)
+                ax1.axis('off')
+                
+                ax2.text(0.5, 0.5, 'Use filters to\ncompare multiple\nentries', 
+                        ha='center', va='center', fontsize=14, color='#7F8C8D')
+                ax2.set_xlim(0, 1)
+                ax2.set_ylim(0, 1)
+                ax2.axis('off')
+            
+            plt.tight_layout()
+            st.pyplot(fig)
