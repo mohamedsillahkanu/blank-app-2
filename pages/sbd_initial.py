@@ -4,8 +4,165 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Streamlit App
-st.title("School-Based Distribution of ITNs")
+# Set page config
+st.set_page_config(
+    page_title="School-Based Distribution of ITNs",
+    page_icon="🏫",
+    layout="wide"
+)
+
+# Custom CSS for styling with blue header and footer
+st.markdown("""
+<style>
+    .main-header {
+        text-align: center;
+        padding: 2rem 0;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        margin: -1rem -1rem 2rem -1rem;
+        border-radius: 0 0 1rem 1rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    
+    .logo-placeholder {
+        width: 80px;
+        height: 80px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        border: 2px solid rgba(255,255,255,0.3);
+    }
+    
+    .header-title {
+        flex-grow: 1;
+        text-align: center;
+        margin: 0 2rem;
+    }
+    
+    .header-title h1 {
+        margin: 0;
+        font-size: 2.5rem;
+        font-weight: bold;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .header-title p {
+        margin: 0.5rem 0 0 0;
+        font-size: 1.2rem;
+        opacity: 0.9;
+    }
+    
+    .main-footer {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        margin: 3rem -1rem -1rem -1rem;
+        border-radius: 1rem 1rem 0 0;
+        box-shadow: 0 -4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+    
+    .footer-info {
+        flex-grow: 1;
+        text-align: center;
+        margin: 0 2rem;
+    }
+    
+    .footer-info h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.5rem;
+        color: #ffffff;
+    }
+    
+    .footer-info p {
+        margin: 0.25rem 0;
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+    
+    /* Hide Streamlit default header/footer */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    
+    /* Custom styling for the app content */
+    .stDataFrame {
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stButton > button {
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .stSelectbox > div > div {
+        border-radius: 8px;
+    }
+    
+    .stRadio > div {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #2a5298;
+    }
+    
+    /* Section headers */
+    h2, h3 {
+        color: #1e3c72;
+        border-bottom: 2px solid #e9ecef;
+        padding-bottom: 0.5rem;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header with logo placeholders
+st.markdown("""
+<div class="main-header">
+    <div class="header-content">
+        <div class="logo-placeholder">
+            🏢
+        </div>
+        <div class="header-title">
+            <h1>School-Based Distribution of ITNs</h1>
+            <p>Insecticide-Treated Nets Distribution Management System</p>
+        </div>
+        <div class="logo-placeholder">
+            🏫
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # Upload file
 uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
@@ -54,7 +211,7 @@ if uploaded_file:
     
     # Add all other columns from the original DataFrame
     for column in df_original.columns:
-        if column != "Scan QR code":  # Skip the QR code column since we've already processed it
+        if column != "Scan QR code":
             extracted_df[column] = df_original[column]
     
     # Display Original Data Sample
@@ -97,7 +254,7 @@ if uploaded_file:
         
         # Create a bar chart for district summary
         fig, ax = plt.subplots(figsize=(12, 8))
-        district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
+        district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#2a5298"])
         ax.set_title("📊 ITN Received vs. ITN Given by District")
         ax.set_xlabel("")
         ax.set_ylabel("Count")
@@ -126,7 +283,7 @@ if uploaded_file:
         
         # Create a bar chart for chiefdom summary
         fig, ax = plt.subplots(figsize=(14, 10))
-        chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
+        chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#2a5298"])
         ax.set_title("📊 ITN Received vs. ITN Given by District and Chiefdom")
         ax.set_xlabel("")
         ax.set_ylabel("Count")
@@ -144,7 +301,7 @@ if uploaded_file:
     grouping_selection = st.sidebar.radio(
         "Select the level for grouping:",
         ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-        index=0  # Default to 'District'
+        index=0
     )
     
     # Dictionary to define the hierarchy for each grouping level
@@ -203,13 +360,29 @@ if uploaded_file:
         
         # Create a bar chart
         fig, ax = plt.subplots(figsize=(12, 8))
-        grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], ax=ax, color=["blue", "orange"])
-        ax.set_title(f"{grouped_data['Group'].unique()[0]}")  # If you want a unique value from the column
-        
-        # Remove x-label as requested
+        grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], ax=ax, color=["#1e3c72", "#2a5298"])
+        ax.set_title(f"{grouped_data['Group'].unique()[0]}")
         ax.set_xlabel("")
-        
         ax.set_ylabel("Count")
         plt.xticks(rotation=0, ha='right')
         plt.tight_layout()
         st.pyplot(fig)
+
+# Footer with logo placeholders
+st.markdown("""
+<div class="main-footer">
+    <div class="footer-content">
+        <div class="logo-placeholder">
+            🌍
+        </div>
+        <div class="footer-info">
+            <h3>ITN Distribution System</h3>
+            <p>Powered by Advanced Analytics | Ministry of Health Partnership</p>
+            <p>© 2025 School-Based Distribution Platform</p>
+        </div>
+        <div class="logo-placeholder">
+            📊
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
