@@ -190,6 +190,9 @@ def fetch_live_data():
         
         # If no web source works, generate realistic data
         return generate_sample_data(), "🔄 Using generated sample data (live sources unavailable)"
+        
+    except Exception as e:
+        return generate_sample_data(), f"🔄 Using sample data due to error: {str(e)[:50]}..."
 
 def adapt_data_format(df):
     """Adapt external data to our expected format"""
