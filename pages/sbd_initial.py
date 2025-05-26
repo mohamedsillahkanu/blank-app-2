@@ -351,221 +351,417 @@ with col4:
     </div>
     """, unsafe_allow_html=True)
 
-# File upload section with Clappia integration
-st.markdown("---")
-st.markdown("### 📡 Data Source: Clappia SBD Platform")
-
-# Direct Clappia URL integration
-clappia_url = "https://icf.clappia.com/app/GMB253374/submissions"
-
-st.markdown(f"""
-<div class="info-card">
-    <h4>🌐 Live Data Source</h4>
-    <p><strong>Clappia URL:</strong> {clappia_url}</p>
-    <p>Attempting to fetch live SBD submission data...</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Add requests import at the top (if not already imported)
+# Enhanced data fetching with the specific filtered URL
 import requests
 import json
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse, unquote
+import time
+import base64
 
-# Attempt to fetch data from Clappia
-@st.cache_data(ttl=300)  # Cache for 5 minutes
-def fetch_clappia_data(url):
-    """Attempt to fetch data from Clappia URL"""
-    try:
-        # First, try a simple GET request
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept': 'application/json, text/html, */*',
-            'Accept-Language': 'en-US,en;q=0.9',
+# File upload section with robust Clappia integration
+st.markdown("---")
+st.markdown("### 📡 Live Data Source: Clappia SBD Platform (Filtered View)")
+
+# Use the specific filtered URL provided
+clappia_url = "https://icf.clappia.com/app/GMB253374/submissions/filters/eyJjb2x1bW5XaWR0aHMiOnt9LCJjb2x1bW5PcmRlcnMiOnt9LCJpbnRlcnZhbCI6ImRheSIsImZpbHRlcnMiOltdLCJibGFja2xpc3RlZEZpZWxkSWRzIjpbXSwic29ydEZpZWxkcyI6W3sic29ydEJ5IjoiJGxhc3RNb2RpZmllZEF0IiwiZGlyZWN0aW9uIjoiZGVzYyJ9XSwibmF2YmFyQ29sbGFwc2VkIjpmYWxzZX0"
+
+# Decode the filter parameters to show what filters are applied
+try:
+    filter_encoded = "eyJjb2x1bW5XaWR0aHMiOnt9LCJjb2x1bW5PcmRlcnMiOnt9LCJpbnRlcnZhbCI6ImRheSIsImZpbHRlcnMiOltdLCJibGFja2xpc3RlZEZpZWxkSWRzIjpbXSwic29ydEZpZWxkcyI6W3sic29ydEJ5IjoiJGxhc3RNb2RpZmllZEF0IiwiZGlyZWN0aW9uIjoiZGVzYyJ9XSwibmF2YmFyQ29sbGFwc2VkIjpmYWxzZX0"
+    filter_decoded = base64.b64decode(filter_encoded + '==').decode('utf-8')  # Adding padding
+    filter_params = json.loads(filter_decoded)
+    
+    st.markdown(f"""
+    <div class="info-card">
+        <h4>🔍 Filtered Data Source</h4>
+        <p><strong>URL:</strong> {clappia_url}</p>
+        <p><strong>Sort:</strong> Last Modified (Descending)</p>
+        <p><strong>Interval:</strong> Daily</p>
+        <p><strong>Active Filters:</strong> {len(filter_params.get('filters', []))} applied</p>
+    </div>
+    """, unsafe_allow_html=True)
+except:
+    st.markdown(f"""
+    <div class="info-card">
+        <h4>🔍 Filtered Data Source</h4>
+        <p><strong>URL:</strong> {clappia_url}</p>
+        <p>Using filtered view with specific parameters</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Add refresh button and auto-refresh option
+col1, col2, col3 = st.columns([2, 1, 1])
+
+with col2:
+    if st.button("🔄 Refresh Data", type="primary"):
+        if 'clappia_data_cache' in st.session_state:
+            del st.session_state.clappia_data_cache
+        st.rerun()
+
+with col3:
+    auto_refresh = st.checkbox("🔄 Auto-refresh (1min)")
+    if auto_refresh:
+        time.sleep(1)
+        st.rerun()
+
+# Enhanced data fetching function for filtered Clappia URL
+@st.cache_data(ttl=60)  # Cache for 1 minute for filtered live data
+def fetch_clappia_filtered_data(url):
+    """
+    Fetch data from Clappia filtered URL with enhanced methods
+    """
+    
+    # Extract the base URL and filter parameters
+    base_url = "https://icf.clappia.com/app/GMB253374"
+    app_id = "GMB253374"
+    
+    # Method configurations for Clappia-specific endpoints
+    methods_to_try = [
+        {
+            'name': 'Clappia API Direct',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'application/json, text/plain, */*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Referer': 'https://icf.clappia.com/',
+                'Origin': 'https://icf.clappia.com',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            }
+        },
+        {
+            'name': 'Clappia Web Interface',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'DNT': '1',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Sec-Fetch-Dest': 'document',
+                'Sec-Fetch-Mode': 'navigate',
+                'Sec-Fetch-Site': 'none',
+                'Cache-Control': 'max-age=0',
+            }
+        },
+        {
+            'name': 'Clappia Mobile API',
+            'headers': {
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+                'Accept': 'application/json, text/javascript, */*; q=0.01',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept-Language': 'en-us',
+            }
         }
+    ]
+    
+    # Try different URL variations specific to Clappia structure
+    url_variants = [
+        url,  # Original filtered URL
+        url.replace('/filters/', '/api/filters/'),
+        url.replace('/submissions', '/submissions.json'),
+        f"{base_url}/api/submissions/filters/{filter_encoded}",
+        f"{base_url}/export/submissions/filters/{filter_encoded}",
+        f"{base_url}/submissions/data?filters={filter_encoded}",
+        f"{base_url}/api/v1/submissions?filters={filter_encoded}",
+        f"{base_url}/submissions.json?filters={filter_encoded}",
+        f"{base_url}/submissions/export.json",
+        f"{base_url}/api/submissions",
+        f"{base_url}/submissions.csv",
+        f"https://icf.clappia.com/api/apps/{app_id}/submissions",
+        f"https://icf.clappia.com/api/v1/apps/{app_id}/submissions",
+        f"https://icf.clappia.com/export/{app_id}/submissions.json",
+    ]
+    
+    session = requests.Session()
+    
+    for method in methods_to_try:
+        st.info(f"🔍 Trying {method['name']}...")
         
-        response = requests.get(url, headers=headers, timeout=10)
-        
-        if response.status_code == 200:
-            # Try to parse as JSON first
+        for i, variant_url in enumerate(url_variants):
             try:
-                data = response.json()
-                return data, "json"
-            except:
-                # If not JSON, return text content
-                return response.text, "html"
-        else:
-            return None, f"HTTP {response.status_code}"
-            
-    except requests.exceptions.RequestException as e:
-        return None, str(e)
+                st.info(f"  📡 Testing endpoint {i+1}/{len(url_variants)}: {variant_url[:80]}...")
+                
+                # Try GET request
+                response = session.get(
+                    variant_url, 
+                    headers=method['headers'], 
+                    timeout=20,
+                    allow_redirects=True,
+                    verify=True
+                )
+                
+                st.info(f"  📊 Response: {response.status_code} - {len(response.content)} bytes")
+                
+                if response.status_code == 200:
+                    content_type = response.headers.get('content-type', '').lower()
+                    
+                    # Check for JSON data first
+                    if 'json' in content_type or variant_url.endswith('.json'):
+                        try:
+                            data = response.json()
+                            if data and (isinstance(data, list) or isinstance(data, dict)):
+                                return data, 'json', variant_url, method['name']
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    # Try to parse as JSON regardless of content-type
+                    try:
+                        data = response.json()
+                        if data:
+                            return data, 'json', variant_url, method['name']
+                    except:
+                        pass
+                    
+                    # Check for CSV data
+                    if 'csv' in content_type or 'text/plain' in content_type or variant_url.endswith('.csv'):
+                        return response.text, 'csv', variant_url, method['name']
+                    
+                    # Check for HTML (might contain data tables)
+                    if 'html' in content_type:
+                        return response.text, 'html', variant_url, method['name']
+                        
+                # Try POST request for some endpoints that might require it
+                elif variant_url.endswith('/submissions') or '/api/' in variant_url:
+                    try:
+                        post_data = {
+                            'filters': filter_encoded,
+                            'format': 'json'
+                        }
+                        
+                        post_response = session.post(
+                            variant_url,
+                            headers=method['headers'],
+                            json=post_data,
+                            timeout=20
+                        )
+                        
+                        if post_response.status_code == 200:
+                            try:
+                                data = post_response.json()
+                                if data:
+                                    return data, 'json', variant_url, f"{method['name']} (POST)"
+                            except:
+                                pass
+                    except:
+                        pass
+                        
+            except requests.exceptions.RequestException as e:
+                st.warning(f"  ⚠️ Request failed: {str(e)}")
+                continue
+            except Exception as e:
+                st.warning(f"  ⚠️ Unexpected error: {str(e)}")
+                continue
+    
+    return None, None, None, None
 
-# Try to fetch data
-with st.spinner("🔄 Fetching data from Clappia..."):
-    data_result, data_type = fetch_clappia_data(clappia_url)
+# Main data fetching with enhanced progress tracking
+st.markdown("#### 🔄 Fetching Filtered SBD Data...")
 
+progress_bar = st.progress(0)
+status_text = st.empty()
+
+# Extract filter parameter for alternative endpoint construction
+filter_encoded = clappia_url.split('/')[-1]
+
+# Attempt data fetching from filtered URL
+status_text.text("📡 Connecting to Clappia filtered endpoint...")
+progress_bar.progress(25)
+
+data_result = None
+data_type = None
+successful_url = None
+successful_method = None
+
+try:
+    data_result, data_type, successful_url, successful_method = fetch_clappia_filtered_data(clappia_url)
+    progress_bar.progress(75)
+except Exception as e:
+    st.error(f"❌ Error during data fetching: {e}")
+    progress_bar.progress(75)
+
+# Process the fetched data
 df_original = None
 
 if data_result is not None:
-    if data_type == "json":
-        try:
-            # If we got JSON data, try to convert to DataFrame
-            if isinstance(data_result, dict):
-                if 'submissions' in data_result:
-                    df_original = pd.DataFrame(data_result['submissions'])
-                elif 'data' in data_result:
-                    df_original = pd.DataFrame(data_result['data'])
-                else:
-                    # Flatten the JSON if it's nested
-                    df_original = pd.json_normalize(data_result)
-            elif isinstance(data_result, list):
-                df_original = pd.DataFrame(data_result)
-            
-            if df_original is not None and len(df_original) > 0:
-                st.success(f"✅ Successfully fetched {len(df_original)} records from Clappia!")
-            else:
-                st.warning("⚠️ No data found in the response")
-                
-        except Exception as e:
-            st.error(f"❌ Error processing JSON data: {str(e)}")
-            
-    elif data_type == "html":
-        st.warning("⚠️ Received HTML response - this might be a login page or require authentication")
-        
-        # Provide alternative options
-        st.markdown("""
-        <div class="warning-banner">
-            <strong>Authentication Required</strong><br>
-            The Clappia URL might require authentication. Please try one of these options:
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Show authentication options
-        auth_col1, auth_col2 = st.columns(2)
-        
-        with auth_col1:
-            st.markdown("""
-            <div class="info-card">
-                <h4>🔐 Option 1: API Authentication</h4>
-                <p>Provide your Clappia credentials below:</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            username = st.text_input("👤 Username/Email")
-            password = st.text_input("🔒 Password", type="password")
-            api_token = st.text_input("🎫 API Token (if available)", type="password")
-            
-            if st.button("🔐 Authenticate & Fetch Data"):
-                if username and password:
-                    # Attempt authenticated request
-                    with st.spinner("🔐 Authenticating..."):
-                        try:
-                            session = requests.Session()
-                            
-                            # Try different authentication methods
-                            auth_data = {
-                                'username': username,
-                                'password': password,
-                                'email': username
-                            }
-                            
-                            # Attempt login
-                            login_url = "https://icf.clappia.com/login"  # Assuming standard login endpoint
-                            login_response = session.post(login_url, data=auth_data, timeout=10)
-                            
-                            if login_response.status_code == 200:
-                                # Try to fetch data with authenticated session
-                                data_response = session.get(clappia_url, timeout=10)
-                                
-                                if data_response.status_code == 200:
-                                    try:
-                                        auth_data = data_response.json()
-                                        df_original = pd.DataFrame(auth_data)
-                                        st.success(f"✅ Authenticated successfully! Fetched {len(df_original)} records")
-                                    except:
-                                        st.error("❌ Could not parse authenticated response as JSON")
-                                else:
-                                    st.error(f"❌ Failed to fetch data after authentication: {data_response.status_code}")
-                            else:
-                                st.error("❌ Authentication failed - please check your credentials")
-                                
-                        except Exception as e:
-                            st.error(f"❌ Authentication error: {str(e)}")
-                else:
-                    st.error("❌ Please provide username and password")
-        
-        with auth_col2:
-            st.markdown("""
-            <div class="info-card">
-                <h4>📁 Option 2: Manual Export</h4>
-                <p>Export data from Clappia and upload here:</p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            uploaded_file = st.file_uploader(
-                "📁 Upload Clappia Export", 
-                type=['xlsx', 'xls', 'csv', 'json'],
-                help="Export your data from Clappia and upload it here"
-            )
-            
-            if uploaded_file:
-                try:
-                    if uploaded_file.name.endswith('.json'):
-                        json_data = json.load(uploaded_file)
-                        df_original = pd.json_normalize(json_data)
-                    elif uploaded_file.name.endswith('.csv'):
-                        df_original = pd.read_csv(uploaded_file)
-                    else:
-                        df_original = pd.read_excel(uploaded_file)
-                    
-                    st.success(f"✅ File uploaded successfully! {len(df_original)} records loaded")
-                except Exception as e:
-                    st.error(f"❌ Error reading file: {str(e)}")
-    else:
-        st.error(f"❌ Failed to fetch data: {data_type}")
-        
-        # Provide fallback options
-        st.markdown("""
-        <div class="warning-banner">
-            <strong>Connection Failed</strong><br>
-            Unable to connect to Clappia. This could be due to network restrictions, authentication requirements, or CORS policies.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        uploaded_file = st.file_uploader(
-            "📁 Upload Clappia Data File", 
-            type=['xlsx', 'xls', 'csv', 'json'],
-            help="Please export your data from Clappia and upload it here"
-        )
-        
-        if uploaded_file:
-            try:
-                if uploaded_file.name.endswith('.json'):
-                    json_data = json.load(uploaded_file)
-                    df_original = pd.json_normalize(json_data)
-                elif uploaded_file.name.endswith('.csv'):
-                    df_original = pd.read_csv(uploaded_file)
-                else:
-                    df_original = pd.read_excel(uploaded_file)
-                
-                st.success(f"✅ File uploaded successfully! {len(df_original)} records loaded")
-            except Exception as e:
-                st.error(f"❌ Error reading file: {str(e)}")
-
-else:
-    st.error("❌ Unable to fetch data from Clappia URL")
+    status_text.text("⚙️ Processing filtered data...")
     
-    # Provide manual upload option
+    try:
+        if data_type == 'json':
+            # Handle Clappia-specific JSON structures
+            if isinstance(data_result, list):
+                df_original = pd.DataFrame(data_result)
+            elif isinstance(data_result, dict):
+                # Try Clappia-specific data container keys
+                possible_keys = [
+                    'submissions', 'data', 'records', 'items', 'results', 
+                    'rows', 'entries', 'response', 'payload', 'content'
+                ]
+                
+                for key in possible_keys:
+                    if key in data_result:
+                        if isinstance(data_result[key], list):
+                            df_original = pd.DataFrame(data_result[key])
+                            break
+                        elif isinstance(data_result[key], dict) and 'data' in data_result[key]:
+                            df_original = pd.DataFrame(data_result[key]['data'])
+                            break
+                
+                if df_original is None:
+                    # Try flattening the entire JSON structure
+                    try:
+                        df_original = pd.json_normalize(data_result)
+                        if len(df_original) == 1 and df_original.shape[1] > 10:
+                            # Might be a single record with nested data
+                            nested_data = []
+                            for col in df_original.columns:
+                                if isinstance(df_original[col].iloc[0], list):
+                                    nested_data = df_original[col].iloc[0]
+                                    break
+                            if nested_data:
+                                df_original = pd.DataFrame(nested_data)
+                    except:
+                        pass
+            
+        elif data_type == 'csv':
+            from io import StringIO
+            df_original = pd.read_csv(StringIO(data_result))
+            
+        elif data_type == 'html':
+            # Try to extract data from HTML tables
+            try:
+                tables = pd.read_html(data_result)
+                if tables:
+                    # Find the largest table (likely the data table)
+                    df_original = max(tables, key=len)
+            except:
+                st.warning("⚠️ HTML received but no data tables found")
+        
+        if df_original is not None and len(df_original) > 0:
+            progress_bar.progress(100)
+            status_text.text("✅ Filtered data processed successfully!")
+            
+            st.success(f"""
+            ✅ **Filtered SBD Data Fetched Successfully!**
+            - **Records:** {len(df_original):,}
+            - **Columns:** {len(df_original.columns)}
+            - **Source:** {successful_url}
+            - **Method:** {successful_method}
+            - **Format:** {data_type.upper()}
+            - **Data Type:** Filtered submissions (sorted by last modified)
+            """)
+            
+            # Show column information
+            st.markdown("#### 📋 Available Data Columns")
+            cols_per_row = 4
+            col_chunks = [list(df_original.columns)[i:i + cols_per_row] for i in range(0, len(df_original.columns), cols_per_row)]
+            
+            for chunk in col_chunks:
+                cols = st.columns(len(chunk))
+                for i, col_name in enumerate(chunk):
+                    with cols[i]:
+                        non_null_count = df_original[col_name].notna().sum()
+                        st.metric(
+                            label=col_name[:20] + "..." if len(col_name) > 20 else col_name,
+                            value=f"{non_null_count}/{len(df_original)}",
+                            delta=f"{(non_null_count/len(df_original)*100):.1f}% complete"
+                        )
+            
+            # Show data preview
+            with st.expander("👁️ Preview Filtered Data (First 10 Records)"):
+                st.dataframe(df_original.head(10), use_container_width=True)
+                
+        else:
+            st.warning("⚠️ Data fetched but appears to be empty or in unexpected format")
+            st.info("The filtered URL might return data in a different structure than expected")
+            
+    except Exception as e:
+        st.error(f"❌ Error processing fetched data: {str(e)}")
+        
+        # Show raw data structure for debugging
+        if data_result:
+            with st.expander("🔍 Debug: Raw Data Structure"):
+                if isinstance(data_result, dict):
+                    st.json(data_result)
+                else:
+                    st.text(str(data_result)[:1000] + "..." if len(str(data_result)) > 1000 else str(data_result))
+        
+else:
+    progress_bar.progress(100)
+    status_text.text("❌ Could not fetch data from filtered endpoint")
+    
+    st.error("❌ Unable to fetch data from Clappia filtered URL")
+    st.markdown("""
+    <div class="warning-banner">
+        <strong>Filtered Endpoint Access Failed</strong><br>
+        The filtered URL might require:
+        <ul>
+            <li>🔐 User authentication and session cookies</li>
+            <li>🎫 API tokens or special permissions</li>
+            <li>🌐 Access from within Clappia's network</li>
+            <li>📱 Specific app permissions</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Alternative: Try to decode and understand the filter
+st.markdown("---")
+st.markdown("### 🔍 Filter Analysis")
+
+try:
+    filter_params = json.loads(base64.b64decode(filter_encoded + '==').decode('utf-8'))
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 📊 Applied Filters")
+        st.json(filter_params)
+    
+    with col2:
+        st.markdown("#### 🎯 Filter Summary")
+        st.write(f"**Sort Field:** {filter_params.get('sortFields', [{}])[0].get('sortBy', 'None')}")
+        st.write(f"**Sort Direction:** {filter_params.get('sortFields', [{}])[0].get('direction', 'None')}")
+        st.write(f"**Active Filters:** {len(filter_params.get('filters', []))}")
+        st.write(f"**Interval:** {filter_params.get('interval', 'None')}")
+        st.write(f"**Blacklisted Fields:** {len(filter_params.get('blacklistedFieldIds', []))}")
+
+except Exception as e:
+    st.warning(f"Could not decode filter parameters: {e}")
+
+# Fallback: Manual file upload
+if df_original is None:
+    st.markdown("---")
+    st.markdown("### 📁 Alternative: Manual Data Upload")
+    
+    st.markdown("""
+    <div class="info-card">
+        <h4>💡 How to Export from Clappia</h4>
+        <ol>
+            <li>Go to your Clappia submissions page</li>
+            <li>Apply the same filters as in the URL</li>
+            <li>Look for Export or Download options</li>
+            <li>Export as Excel, CSV, or JSON</li>
+            <li>Upload the file below</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+    
     uploaded_file = st.file_uploader(
-        "📁 Upload Clappia Data File", 
+        "📁 Upload Filtered Clappia Export", 
         type=['xlsx', 'xls', 'csv', 'json'],
-        help="Please export your data from Clappia and upload it here"
+        help="Export your filtered SBD data from Clappia and upload it here"
     )
     
     if uploaded_file:
         try:
             if uploaded_file.name.endswith('.json'):
                 json_data = json.load(uploaded_file)
-                df_original = pd.json_normalize(json_data)
+                if isinstance(json_data, list):
+                    df_original = pd.DataFrame(json_data)
+                else:
+                    df_original = pd.json_normalize(json_data)
             elif uploaded_file.name.endswith('.csv'):
                 df_original = pd.read_csv(uploaded_file)
             else:
@@ -575,7 +771,85 @@ else:
         except Exception as e:
             st.error(f"❌ Error reading file: {str(e)}")
 
-# Continue with the rest of the analysis if we have data
+# Continue with analysis if we have data
+if df_original is not None and len(df_original) > 0: from HTML tables (like some web services do)
+            try:
+                tables = pd.read_html(data_result)
+                if tables:
+                    df_original = tables[0]  # Take the first table found
+            except:
+                st.warning("⚠️ HTML received but no data tables found - might need authentication")
+        
+        if df_original is not None and len(df_original) > 0:
+            progress_bar.progress(100)
+            status_text.text("✅ Data fetched successfully!")
+            
+            st.success(f"""
+            ✅ **Data Fetched Successfully!**
+            - **Records:** {len(df_original):,}
+            - **Columns:** {len(df_original.columns)}
+            - **Source:** {successful_url}
+            - **Method:** {successful_method}
+            - **Format:** {data_type.upper()}
+            """)
+            
+            # Show data preview
+            with st.expander("👁️ Preview Fetched Data"):
+                st.dataframe(df_original.head(10))
+                
+        else:
+            st.warning("⚠️ Data fetched but appears to be empty or invalid format")
+            
+    except Exception as e:
+        st.error(f"❌ Error processing fetched data: {str(e)}")
+        
+else:
+    progress_bar.progress(100)
+    status_text.text("❌ Could not fetch data from any endpoint")
+    
+    st.error("❌ Unable to fetch data from Clappia")
+    st.markdown("""
+    <div class="warning-banner">
+        <strong>Direct Access Failed</strong><br>
+        Could not access live data. This might be due to:
+        <ul>
+            <li>🔐 Authentication requirements</li>
+            <li>🌐 Network restrictions or CORS policies</li>
+            <li>🔒 Private API that requires special access</li>
+            <li>📡 API endpoint changes</li>
+        </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# Fallback: Manual file upload
+if df_original is None:
+    st.markdown("---")
+    st.markdown("### 📁 Alternative: Manual Data Upload")
+    
+    uploaded_file = st.file_uploader(
+        "📁 Upload Clappia Export File", 
+        type=['xlsx', 'xls', 'csv', 'json'],
+        help="Export your SBD data from Clappia and upload it here"
+    )
+    
+    if uploaded_file:
+        try:
+            if uploaded_file.name.endswith('.json'):
+                json_data = json.load(uploaded_file)
+                if isinstance(json_data, list):
+                    df_original = pd.DataFrame(json_data)
+                else:
+                    df_original = pd.json_normalize(json_data)
+            elif uploaded_file.name.endswith('.csv'):
+                df_original = pd.read_csv(uploaded_file)
+            else:
+                df_original = pd.read_excel(uploaded_file)
+            
+            st.success(f"✅ File uploaded successfully! {len(df_original)} records loaded")
+        except Exception as e:
+            st.error(f"❌ Error reading file: {str(e)}")
+
+# Continue with analysis if we have data
 if df_original is not None and len(df_original) > 0:
     try:
         # Read the uploaded file
