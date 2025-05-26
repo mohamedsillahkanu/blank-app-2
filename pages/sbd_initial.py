@@ -4,118 +4,91 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.colors import LinearSegmentedColormap
 
-# Configure Streamlit page
-st.set_page_config(
-    page_title="ITN Data Analytics Dashboard",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Set up the blue theme
+plt.style.use('seaborn-v0_8')
+sns.set_palette("Blues_r")
 
-# Custom CSS for enhanced styling
+# Custom CSS for blue theme
 st.markdown("""
 <style>
-    /* Main theme colors */
     .main {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        background-attachment: fixed;
+        background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
     }
     
-    /* Header styling */
-    .main-header {
-        background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-        padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-    
-    .main-header h1 {
-        color: white;
+    .stTitle {
+        color: #1565c0 !important;
+        font-weight: 700 !important;
         text-align: center;
-        font-size: 3rem;
-        font-weight: bold;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-        margin-bottom: 0.5rem;
+        padding: 20px 0;
+        background: linear-gradient(90deg, #1976d2, #2196f3);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
     
-    .main-header p {
-        color: rgba(255, 255, 255, 0.9);
-        text-align: center;
-        font-size: 1.2rem;
-        margin: 0;
+    .stSubheader {
+        color: #1976d2 !important;
+        font-weight: 600 !important;
+        border-bottom: 2px solid #2196f3;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
     }
     
-    /* Card styling */
-    .metric-card {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 15px;
-        padding: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-        margin-bottom: 1rem;
-    }
-    
-    /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    /* Button styling */
     .stButton > button {
-        background: linear-gradient(45deg, #667eea, #764ba2);
+        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
         color: white;
         border: none;
-        border-radius: 25px;
-        padding: 0.75rem 2rem;
-        font-weight: bold;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
         transition: all 0.3s ease;
     }
     
     .stButton > button:hover {
+        background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+        box-shadow: 0 6px 12px rgba(33, 150, 243, 0.4);
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
     }
     
-    /* Data frame styling */
-    .dataframe {
-        border-radius: 10px;
+    .stSelectbox > div > div {
+        background-color: #e3f2fd;
+        border: 2px solid #2196f3;
+        border-radius: 8px;
+    }
+    
+    .stRadio > div {
+        background-color: #f3e5f5;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #2196f3;
+    }
+    
+    .stDataFrame {
+        border: 2px solid #2196f3;
+        border-radius: 8px;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     
-    /* Section headers */
-    .section-header {
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        font-size: 2rem;
-        font-weight: bold;
-        margin: 2rem 0 1rem 0;
+    .stWarning {
+        background-color: #fff3e0;
+        border: 1px solid #ff9800;
+        color: #e65100;
+    }
+    
+    .sidebar .sidebar-content {
+        background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
+    }
+    
+    .stSidebar > div {
+        background: linear-gradient(180deg, #e3f2fd 0%, #bbdefb 100%);
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Set matplotlib and seaborn style
-plt.style.use('dark_background')
-sns.set_palette("husl")
-
-# Custom color palette
-colors = ['#667eea', '#764ba2', '#4facfe', '#00f2fe', '#43e97b', '#38f9d7']
-
-# Header
-st.markdown("""
-<div class="main-header">
-    <h1>📊 ITN Data Analytics Dashboard</h1>
-    <p>Advanced Text Data Extraction & Visualization Platform</p>
-</div>
-""", unsafe_allow_html=True)
+# Streamlit App
+st.title("📊 Text Data Extraction & Visualization")
 
 # Upload file
 uploaded_file = "GMB253374_sbd_1740943126553_submissions.xlsx"
@@ -167,202 +140,127 @@ if uploaded_file:
         if column != "Scan QR code":  # Skip the QR code column since we've already processed it
             extracted_df[column] = df_original[column]
     
-    # Key Metrics Dashboard
-    st.markdown('<p class="section-header">📈 Key Metrics Overview</p>', unsafe_allow_html=True)
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        total_received = extracted_df["ITN received"].sum()
-        st.metric("Total ITN Received", f"{total_received:,}", delta=None)
-    
-    with col2:
-        total_given = extracted_df["ITN given"].sum()
-        st.metric("Total ITN Given", f"{total_given:,}", delta=None)
-    
-    with col3:
-        difference = total_received - total_given
-        st.metric("Difference", f"{difference:,}", delta=f"{difference}")
-    
-    with col4:
-        efficiency = (total_given / total_received * 100) if total_received > 0 else 0
-        st.metric("Distribution Efficiency", f"{efficiency:.1f}%", delta=None)
-    
     # Display Original Data Sample
-    st.markdown('<p class="section-header">📄 Original Data Sample</p>', unsafe_allow_html=True)
-    st.dataframe(df_original.head(), use_container_width=True)
+    st.subheader("📄 Original Data Sample")
+    st.dataframe(df_original.head())
     
     # Display Extracted Data
-    st.markdown('<p class="section-header">📋 Extracted Data</p>', unsafe_allow_html=True)
-    st.dataframe(extracted_df, use_container_width=True)
+    st.subheader("📋 Extracted Data")
+    st.dataframe(extracted_df)
     
-    # Summary Reports Section
-    st.markdown('<p class="section-header">📊 Summary Reports</p>', unsafe_allow_html=True)
+    # Summary buttons section
+    st.subheader("📊 Summary Reports")
     
-    # Create tabs for different summary views
-    tab1, tab2 = st.tabs(["📍 District Analysis", "🏘️ Chiefdom Analysis"])
+    # Create two columns for the summary buttons
+    col1, col2 = st.columns(2)
     
-    with tab1:
-        col1, col2 = st.columns(2)
+    # Button for District Summary
+    with col1:
+        district_summary_button = st.button("Show District Summary")
+    
+    # Button for Chiefdom Summary
+    with col2:
+        chiefdom_summary_button = st.button("Show Chiefdom Summary")
+    
+    # Display District Summary when button is clicked
+    if district_summary_button:
+        st.subheader("📈 Summary by District")
         
-        # District Summary
+        # Group by District and aggregate
         district_summary = extracted_df.groupby("District").agg({
             "ITN received": "sum",
             "ITN given": "sum"
         }).reset_index()
+        
+        # Calculate difference
         district_summary["Difference"] = district_summary["ITN received"] - district_summary["ITN given"]
         
-        with col1:
-            st.subheader("📈 District Summary Table")
-            st.dataframe(district_summary, use_container_width=True)
+        # Display summary table
+        st.dataframe(district_summary)
         
-        with col2:
-            st.subheader("🥧 District Distribution")
-            # Pie chart for ITN received by district
-            fig, ax = plt.subplots(figsize=(8, 8), facecolor='none')
-            ax.set_facecolor('none')
-            wedges, texts, autotexts = ax.pie(district_summary["ITN received"], 
-                                              labels=district_summary["District"],
-                                              autopct='%1.1f%%',
-                                              colors=colors[:len(district_summary)])
-            
-            # Style the pie chart
-            for autotext in autotexts:
-                autotext.set_color('white')
-                autotext.set_fontweight('bold')
-            for text in texts:
-                text.set_color('white')
-                text.set_fontweight('bold')
-            
-            ax.set_title("ITN Received Distribution by District", color='white', fontsize=14, fontweight='bold', pad=20)
-            st.pyplot(fig, transparent=True)
+        # Create a bar chart for district summary with blue theme
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.patch.set_facecolor('#f8f9fa')
+        ax.set_facecolor('#ffffff')
         
-        # Bar chart for district comparison
-        st.subheader("📊 District Comparison Chart")
-        fig, ax = plt.subplots(figsize=(14, 8), facecolor='none')
-        ax.set_facecolor('none')
+        # Use blue color scheme
+        colors = ['#2196f3', '#1976d2']
+        district_summary.plot(kind="bar", x="District", y=["ITN received", "ITN given"], 
+                            ax=ax, color=colors, width=0.8)
         
-        x = np.arange(len(district_summary))
-        width = 0.35
+        ax.set_title("📊 ITN Received vs. ITN Given by District", 
+                    fontsize=16, fontweight='bold', color='#1565c0', pad=20)
+        ax.set_xlabel("District", fontweight='bold', color='#1976d2')
+        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
+        ax.grid(True, alpha=0.3, color='#2196f3')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#2196f3')
+        ax.spines['bottom'].set_color('#2196f3')
         
-        bars1 = ax.bar(x - width/2, district_summary["ITN received"], width, 
-                       label='ITN Received', color=colors[0], alpha=0.8)
-        bars2 = ax.bar(x + width/2, district_summary["ITN given"], width, 
-                       label='ITN Given', color=colors[1], alpha=0.8)
-        
-        ax.set_xlabel('District', color='white', fontweight='bold')
-        ax.set_ylabel('Count', color='white', fontweight='bold')
-        ax.set_title('ITN Received vs. ITN Given by District', color='white', fontsize=16, fontweight='bold')
-        ax.set_xticks(x)
-        ax.set_xticklabels(district_summary["District"], rotation=45, ha='right', color='white')
-        ax.legend()
-        ax.tick_params(colors='white')
-        
-        # Add value labels on bars
-        for bar in bars1:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                   f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold')
-        
-        for bar in bars2:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                   f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold')
-        
+        plt.xticks(rotation=45, ha='right')
+        plt.legend(frameon=True, fancybox=True, shadow=True, 
+                  facecolor='#e3f2fd', edgecolor='#2196f3')
         plt.tight_layout()
-        st.pyplot(fig, transparent=True)
+        st.pyplot(fig)
     
-    with tab2:
-        col1, col2 = st.columns(2)
+    # Display Chiefdom Summary when button is clicked
+    if chiefdom_summary_button:
+        st.subheader("📈 Summary by Chiefdom")
         
-        # Chiefdom Summary
+        # Group by District and Chiefdom and aggregate
         chiefdom_summary = extracted_df.groupby(["District", "Chiefdom"]).agg({
             "ITN received": "sum",
             "ITN given": "sum"
         }).reset_index()
+        
+        # Calculate difference
         chiefdom_summary["Difference"] = chiefdom_summary["ITN received"] - chiefdom_summary["ITN given"]
         
-        with col1:
-            st.subheader("📈 Chiefdom Summary Table")
-            st.dataframe(chiefdom_summary, use_container_width=True)
+        # Display summary table
+        st.dataframe(chiefdom_summary)
         
-        with col2:
-            st.subheader("🥧 Chiefdom Distribution")
-            # Pie chart for ITN received by chiefdom
-            fig, ax = plt.subplots(figsize=(8, 8), facecolor='none')
-            ax.set_facecolor('none')
-            
-            # Create labels with district and chiefdom
-            labels = [f"{row['District']}\n{row['Chiefdom']}" for _, row in chiefdom_summary.iterrows()]
-            
-            wedges, texts, autotexts = ax.pie(chiefdom_summary["ITN received"], 
-                                              labels=labels,
-                                              autopct='%1.1f%%',
-                                              colors=colors[:len(chiefdom_summary)])
-            
-            # Style the pie chart
-            for autotext in autotexts:
-                autotext.set_color('white')
-                autotext.set_fontweight('bold')
-                autotext.set_fontsize(8)
-            for text in texts:
-                text.set_color('white')
-                text.set_fontweight('bold')
-                text.set_fontsize(8)
-            
-            ax.set_title("ITN Received Distribution by Chiefdom", color='white', fontsize=14, fontweight='bold', pad=20)
-            st.pyplot(fig, transparent=True)
+        # Create a temporary label for the chart
+        chiefdom_summary['Label'] = chiefdom_summary['District'] + '\n' + chiefdom_summary['Chiefdom']
         
-        # Bar chart for chiefdom comparison
-        st.subheader("📊 Chiefdom Comparison Chart")
-        chiefdom_summary['Label'] = chiefdom_summary['District'] + ' - ' + chiefdom_summary['Chiefdom']
+        # Create a bar chart for chiefdom summary with blue theme
+        fig, ax = plt.subplots(figsize=(14, 10))
+        fig.patch.set_facecolor('#f8f9fa')
+        ax.set_facecolor('#ffffff')
         
-        fig, ax = plt.subplots(figsize=(16, 8), facecolor='none')
-        ax.set_facecolor('none')
+        # Use blue color scheme
+        colors = ['#2196f3', '#1976d2']
+        chiefdom_summary.plot(kind="bar", x="Label", y=["ITN received", "ITN given"], 
+                            ax=ax, color=colors, width=0.8)
         
-        x = np.arange(len(chiefdom_summary))
-        width = 0.35
+        ax.set_title("📊 ITN Received vs. ITN Given by District and Chiefdom", 
+                    fontsize=16, fontweight='bold', color='#1565c0', pad=20)
+        ax.set_xlabel("District and Chiefdom", fontweight='bold', color='#1976d2')
+        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
+        ax.grid(True, alpha=0.3, color='#2196f3')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#2196f3')
+        ax.spines['bottom'].set_color('#2196f3')
         
-        bars1 = ax.bar(x - width/2, chiefdom_summary["ITN received"], width, 
-                       label='ITN Received', color=colors[2], alpha=0.8)
-        bars2 = ax.bar(x + width/2, chiefdom_summary["ITN given"], width, 
-                       label='ITN Given', color=colors[3], alpha=0.8)
-        
-        ax.set_xlabel('Chiefdom', color='white', fontweight='bold')
-        ax.set_ylabel('Count', color='white', fontweight='bold')
-        ax.set_title('ITN Received vs. ITN Given by Chiefdom', color='white', fontsize=16, fontweight='bold')
-        ax.set_xticks(x)
-        ax.set_xticklabels(chiefdom_summary["Label"], rotation=45, ha='right', color='white')
-        ax.legend()
-        ax.tick_params(colors='white')
-        
-        # Add value labels on bars
-        for bar in bars1:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                   f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold', fontsize=8)
-        
-        for bar in bars2:
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                   f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold', fontsize=8)
-        
+        plt.xticks(rotation=45, ha='right')
+        plt.legend(frameon=True, fancybox=True, shadow=True, 
+                  facecolor='#e3f2fd', edgecolor='#2196f3')
         plt.tight_layout()
-        st.pyplot(fig, transparent=True)
+        st.pyplot(fig)
     
-    # Interactive Filtering Section
-    st.markdown('<p class="section-header">🔍 Interactive Data Explorer</p>', unsafe_allow_html=True)
+    # Visualization and filtering section
+    st.subheader("🔍 Detailed Data Filtering and Visualization")
     
-    # Create sidebar for filtering options
-    with st.sidebar:
-        st.markdown("### 🎛️ Filter Controls")
-        
-        # Create radio buttons to select which level to group by
-        grouping_selection = st.radio(
-            "Select the level for grouping:",
-            ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-            index=0
-        )
+    # Create a sidebar for filtering options
+    st.sidebar.header("Filter Options")
+    
+    # Create radio buttons to select which level to group by
+    grouping_selection = st.sidebar.radio(
+        "Select the level for grouping:",
+        ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
+        index=0  # Default to 'District'
+    )
     
     # Dictionary to define the hierarchy for each grouping level
     hierarchy = {
@@ -380,39 +278,24 @@ if uploaded_file:
     selected_values = {}
     
     # Apply filters based on the hierarchy for the selected grouping level
-    with st.sidebar:
-        for level in hierarchy[grouping_selection]:
-            # Filter out None/NaN values and get sorted unique values
-            level_values = sorted(filtered_df[level].dropna().unique())
+    for level in hierarchy[grouping_selection]:
+        # Filter out None/NaN values and get sorted unique values
+        level_values = sorted(filtered_df[level].dropna().unique())
+        
+        if level_values:
+            # Create selectbox for this level
+            selected_value = st.sidebar.selectbox(f"Select {level}", level_values)
+            selected_values[level] = selected_value
             
-            if level_values:
-                # Create selectbox for this level
-                selected_value = st.selectbox(f"Select {level}", level_values)
-                selected_values[level] = selected_value
-                
-                # Apply filter to the dataframe
-                filtered_df = filtered_df[filtered_df[level] == selected_value]
+            # Apply filter to the dataframe
+            filtered_df = filtered_df[filtered_df[level] == selected_value]
     
     # Check if data is available after filtering
     if filtered_df.empty:
-        st.warning("⚠️ No data available for the selected filters.")
+        st.warning("No data available for the selected filters.")
     else:
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.write(f"### 📋 Filtered Data - {len(filtered_df)} records")
-            st.dataframe(filtered_df, use_container_width=True)
-        
-        with col2:
-            # Quick stats for filtered data
-            st.write("### 📊 Quick Stats")
-            filtered_received = filtered_df["ITN received"].sum()
-            filtered_given = filtered_df["ITN given"].sum()
-            filtered_diff = filtered_received - filtered_given
-            
-            st.metric("Filtered ITN Received", f"{filtered_received:,}")
-            st.metric("Filtered ITN Given", f"{filtered_given:,}")
-            st.metric("Filtered Difference", f"{filtered_diff:,}")
+        st.write(f"### Filtered Data - {len(filtered_df)} records")
+        st.dataframe(filtered_df)
         
         # Define the hierarchy levels to include in the summary
         group_columns = hierarchy[grouping_selection]
@@ -426,87 +309,37 @@ if uploaded_file:
         # Add difference column
         grouped_data["Difference"] = grouped_data["ITN received"] - grouped_data["ITN given"]
         
-        # Summary visualization
-        col1, col2 = st.columns(2)
+        # Summary Table with separate columns for each level
+        st.subheader("📊 Detailed Summary Table")
+        st.dataframe(grouped_data)
         
-        with col1:
-            st.subheader("📊 Detailed Summary Table")
-            st.dataframe(grouped_data, use_container_width=True)
+        # Create a temporary group column for the chart
+        grouped_data['Group'] = grouped_data[group_columns].apply(lambda row: ','.join(row.astype(str)), axis=1)
         
-        with col2:
-            if len(grouped_data) > 1:
-                st.subheader("🥧 Distribution Pie Chart")
-                fig, ax = plt.subplots(figsize=(8, 8), facecolor='none')
-                ax.set_facecolor('none')
-                
-                # Create labels for pie chart
-                grouped_data['Group'] = grouped_data[group_columns].apply(
-                    lambda row: '\n'.join(row.astype(str)), axis=1
-                )
-                
-                wedges, texts, autotexts = ax.pie(grouped_data["ITN received"], 
-                                                  labels=grouped_data['Group'],
-                                                  autopct='%1.1f%%',
-                                                  colors=colors[:len(grouped_data)])
-                
-                # Style the pie chart
-                for autotext in autotexts:
-                    autotext.set_color('white')
-                    autotext.set_fontweight('bold')
-                for text in texts:
-                    text.set_color('white')
-                    text.set_fontweight('bold')
-                    text.set_fontsize(9)
-                
-                ax.set_title(f"ITN Distribution by {grouping_selection}", 
-                           color='white', fontsize=14, fontweight='bold', pad=20)
-                st.pyplot(fig, transparent=True)
+        # Create a bar chart with blue theme
+        fig, ax = plt.subplots(figsize=(12, 8))
+        fig.patch.set_facecolor('#f8f9fa')
+        ax.set_facecolor('#ffffff')
         
-        # Detailed comparison chart
-        if len(grouped_data) > 1:
-            st.subheader("📊 Detailed Comparison Chart")
-            grouped_data['Group'] = grouped_data[group_columns].apply(
-                lambda row: ' - '.join(row.astype(str)), axis=1
-            )
-            
-            fig, ax = plt.subplots(figsize=(14, 8), facecolor='none')
-            ax.set_facecolor('none')
-            
-            x = np.arange(len(grouped_data))
-            width = 0.35
-            
-            bars1 = ax.bar(x - width/2, grouped_data["ITN received"], width, 
-                           label='ITN Received', color=colors[4], alpha=0.8)
-            bars2 = ax.bar(x + width/2, grouped_data["ITN given"], width, 
-                           label='ITN Given', color=colors[5], alpha=0.8)
-            
-            ax.set_xlabel(grouping_selection, color='white', fontweight='bold')
-            ax.set_ylabel('Count', color='white', fontweight='bold')
-            ax.set_title(f'ITN Comparison by {grouping_selection}', 
-                        color='white', fontsize=16, fontweight='bold')
-            ax.set_xticks(x)
-            ax.set_xticklabels(grouped_data["Group"], rotation=45, ha='right', color='white')
-            ax.legend()
-            ax.tick_params(colors='white')
-            
-            # Add value labels on bars
-            for bar in bars1:
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                       f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold')
-            
-            for bar in bars2:
-                height = bar.get_height()
-                ax.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
-                       f'{int(height)}', ha='center', va='bottom', color='white', fontweight='bold')
-            
-            plt.tight_layout()
-            st.pyplot(fig, transparent=True)
-
-# Footer
-st.markdown("""
----
-<div style="text-align: center; color: rgba(255, 255, 255, 0.7); padding: 2rem;">
-    <p>📊 ITN Data Analytics Dashboard | Built with Streamlit & Python</p>
-</div>
-""", unsafe_allow_html=True)
+        # Use blue color scheme
+        colors = ['#2196f3', '#1976d2']
+        grouped_data.plot(kind="bar", x="Group", y=["ITN received", "ITN given"], 
+                        ax=ax, color=colors, width=0.8)
+        
+        # Set title based on the grouping selection
+        chart_title = f"📊 ITN Data by {grouping_selection}"
+        ax.set_title(chart_title, fontsize=16, fontweight='bold', color='#1565c0', pad=20)
+        
+        ax.set_xlabel("")
+        ax.set_ylabel("Count", fontweight='bold', color='#1976d2')
+        ax.grid(True, alpha=0.3, color='#2196f3')
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_color('#2196f3')
+        ax.spines['bottom'].set_color('#2196f3')
+        
+        plt.xticks(rotation=45, ha='right')
+        plt.legend(frameon=True, fancybox=True, shadow=True, 
+                  facecolor='#e3f2fd', edgecolor='#2196f3')
+        plt.tight_layout()
+        st.pyplot(fig)
