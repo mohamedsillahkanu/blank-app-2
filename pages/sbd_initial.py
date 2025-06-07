@@ -173,7 +173,37 @@ with action_col4:
                 ]
                 
                 for rec in recommendations:
-                    st.markdown(f"- {rec}")import streamlit as st
+                    st.markdown(f"- {rec}")
+    
+    except Exception as e:
+        st.error(f"❌ Error processing file: {str(e)}")
+        st.markdown("""
+        ### 💡 Troubleshooting Tips:
+        1. **File Format**: Ensure your file is in Excel format (.xlsx or .xls)
+        2. **Required Columns**: Your file must contain a 'Scan QR code' column
+        3. **Data Format**: QR code data should contain patterns like 'District:', 'Chiefdom:', etc.
+        4. **File Size**: Large files may take longer to process
+        
+        ### 📋 Expected Data Format:
+        The QR code column should contain text with patterns like:
+        ```
+        District: [District Name]
+        Chiefdom: [Chiefdom Name]
+        PHU name: [PHU Name]
+        Community name: [Community Name]
+        Name of school: [School Name]
+        ```
+        """)
+
+# Enhanced Footer
+st.markdown("---")
+st.markdown("""
+<div style="text-align: center; padding: 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white; margin-top: 30px;">
+    <h3 style="margin: 0; font-size: 1.5rem;">📊 ITN Data Analytics Dashboard</h3>
+    <p style="margin: 10px 0; opacity: 0.9;">Advanced Text Data Extraction & Visualization Platform</p>
+    <p style="margin: 0; font-size: 0.9rem; opacity: 0.8;">Built with Streamlit • Enhanced Data Processing • Interactive Visualizations</p>
+</div>
+""")
 import pandas as pd
 import re
 import numpy as np
