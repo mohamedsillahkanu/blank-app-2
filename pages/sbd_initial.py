@@ -1,3 +1,4 @@
+import streamlit as st
 import pandas as pd
 import re
 import numpy as np
@@ -713,7 +714,7 @@ if uploaded_file:
             else:
                 st.info("📚 No educational enrollment data found in the current dataset.")
         
-        with tab5:
+        with tab3:
             st.markdown("### 📊 Statistical Analysis Dashboard")
             
             if numeric_columns:
@@ -809,7 +810,7 @@ if uploaded_file:
                 )
                 st.plotly_chart(fig_quality, use_container_width=True)
         
-        with tab3:
+        with tab4:
             st.markdown("### 🔍 Advanced Data Filtering & Analysis")
             
             # Create a sidebar for filtering options
@@ -927,7 +928,7 @@ if uploaded_file:
                         st.error(f"❌ Error in grouping analysis: {str(e)}")
                         st.info("💡 This might be due to missing or incompatible data types in the selected columns.")
         
-        with tab4:
+        with tab5:
             st.markdown("### 📋 Data Tables & Export Options")
             
             # Data table options
@@ -1072,8 +1073,7 @@ if uploaded_file:
                     )
                     st.plotly_chart(fig_geo, use_container_width=True)
         
-        with action_col3:
-            if st.button("📊 Statistical Summary", use_container_width=True) and numeric_columns:
+        with action_col2:
             if st.button("📚 Educational Overview", use_container_width=True):
                 st.markdown("### 🎓 Comprehensive Educational Analysis")
                 
@@ -1191,79 +1191,7 @@ if uploaded_file:
                     st.info("📚 No educational enrollment data available for analysis.")
         
         with action_col3:
-            if st.button("📊 Data Quality Check", use_container_width=True):
-                st.markdown("### 🔍 Data Quality Assessment")
-                
-                # Comprehensive data quality analysis
-                quality_report = {
-                    "Metric": [],
-                    "Value": [],
-                    "Percentage": [],
-                    "Status": []
-                }
-                
-                total_records = len(extracted_df)
-                
-                # Check completeness for each column
-                for col in extracted_df.columns:
-                    missing_count = extracted_df[col].isnull().sum()
-                    missing_pct = (missing_count / total_records) * 100
-                    
-                    quality_report["Metric"].append(f"Missing {col}")
-                    quality_report["Value"].append(missing_count)
-                    quality_report["Percentage"].append(f"{missing_pct:.1f}%")
-                    
-                    if missing_pct < 5:
-                        status = "✅ Excellent"
-                    elif missing_pct < 15:
-                        status = "⚠️ Good"
-                    elif missing_pct < 30:
-                        status = "🔶 Fair"
-                    else:
-                        status = "❌ Poor"
-                    quality_report["Status"].append(status)
-                
-                # Add overall statistics
-                quality_report["Metric"].extend([
-                    "Total Records",
-                    "Complete Records",
-                    "Duplicate Records",
-                    "Unique Districts",
-                    "Unique Chiefdoms"
-                ])
-                
-                complete_records = len(extracted_df.dropna())
-                duplicate_records = extracted_df.duplicated().sum()
-                
-                quality_report["Value"].extend([
-                    total_records,
-                    complete_records,
-                    duplicate_records,
-                    extracted_df["District"].nunique(),
-                    extracted_df["Chiefdom"].nunique()
-                ])
-                
-                quality_report["Percentage"].extend([
-                    "100%",
-                    f"{(complete_records/total_records)*100:.1f}%",
-                    f"{(duplicate_records/total_records)*100:.1f}%",
-                    "-",
-                    "-"
-                ])
-                
-                quality_report["Status"].extend([
-                    "ℹ️ Info",
-                    "✅ Excellent" if complete_records/total_records > 0.8 else "⚠️ Review",
-                    "✅ Good" if duplicate_records == 0 else "⚠️ Check",
-                    "ℹ️ Info",
-                    "ℹ️ Info"
-                ])
-                
-                quality_df = pd.DataFrame(quality_report)
-                st.dataframe(quality_df, use_container_width=True)
-        
-        with action_col3:
-            if st.button("📈 Statistical Summary", use_container_width=True) and numeric_columns:
+            if st.button("📊 Statistical Summary", use_container_width=True) and numeric_columns:
                 st.markdown("### 📊 Comprehensive Statistical Analysis")
                 
                 # Enhanced statistical overview
@@ -1311,9 +1239,135 @@ if uploaded_file:
                         """)
         
         with action_col4:
-            if st.button("🎯 Smart Insights", use_container_width=True):
-                st.markdown("### 🧠 AI-Powered Data Insights")
+            if st.button("🎯 Educational Insights", use_container_width=True):
+                st.markdown("### 🧠 AI-Powered Educational Data Insights")
                 
+                insights = []
+                
+                # Educational-specific insights
+                if enrollment_columns and boys_columns and girls_columns:
+                    # Gender parity analysis
+                    total_boys = sum([extracted_df[col].sum() for col in boys_columns if col in extracted_df.columns])
+                    total_girls = sum([extracted_df[col].sum() for col in girls_columns if col in extracted_df.columns])
+                    
+                    if total_boys > 0 and total_girls > 0:
+                        gpi = total_girls / total_boys
+                        if gpi < 0.9:
+                            insights.append("🚨 **Gender Equity Concern**: Girls are underrepresented. Consider targeted interventions for female enrollment.")
+                        elif gpi > 1.1:
+                            insights.append("📈 **Female Enrollment Success**: Girls slightly outnumber boys, indicating positive trends.")
+                        else:
+                            insights.append("⚖️ **Gender Parity Achieved**: Excellent balance between male and female enrollment.")
+                    
+                    # Class size analysis
+                    class_sizes = []
+                    for class_num in range(1, 6):
+                        enrollment_col = f'Number of enrollments in class {class_num}'
+                        if enrollment_col in extracted_df.columns:
+                            total = extracted_df[enrollment_col].sum()
+                            if total > 0:
+                                class_sizes.append((class_num, total))
+                    
+                    if len(class_sizes) > 1:
+                        # Find progression patterns
+                        largest_class = max(class_sizes, key=lambda x: x[1])
+                        smallest_class = min(class_sizes, key=lambda x: x[1])
+                        
+                        insights.append(f"📊 **Enrollment Distribution**: Class {largest_class[0]} has the highest enrollment ({largest_class[1]:,} students)")
+                        
+                        # Check for concerning dropout patterns
+                        for i in range(len(class_sizes) - 1):
+                            current_class, current_enrollment = class_sizes[i]
+                            next_class, next_enrollment = class_sizes[i + 1]
+                            
+                            if current_enrollment > 0:
+                                retention_rate = (next_enrollment / current_enrollment) * 100
+                                if retention_rate < 80:
+                                    insights.append(f"⚠️ **Retention Alert**: Significant drop from Class {current_class} to Class {next_class} ({100-retention_rate:.1f}% dropout rate)")
+                                elif retention_rate > 120:
+                                    insights.append(f"📈 **Enrollment Growth**: Unusual increase from Class {current_class} to Class {next_class} - may indicate grade repetition or transfers")
+                    
+                    # School performance analysis
+                    if not extracted_df["School Name"].isna().all():
+                        school_totals = {}
+                        for school in extracted_df["School Name"].dropna().unique():
+                            school_data = extracted_df[extracted_df["School Name"] == school]
+                            total_enrollment = sum([school_data[col].sum() for col in enrollment_columns if col in school_data.columns])
+                            school_totals[school] = total_enrollment
+                        
+                        if len(school_totals) > 1:
+                            best_school = max(school_totals, key=school_totals.get)
+                            worst_school = min(school_totals, key=school_totals.get)
+                            avg_enrollment = sum(school_totals.values()) / len(school_totals)
+                            
+                            insights.append(f"🏆 **Top Performing School**: {best_school} ({school_totals[best_school]:,} students)")
+                            insights.append(f"📈 **Average School Size**: {avg_enrollment:.0f} students per school")
+                            
+                            # Identify schools needing support
+                            underperforming = [school for school, enrollment in school_totals.items() if enrollment < avg_enrollment * 0.5]
+                            if underperforming:
+                                insights.append(f"🎯 **Schools Needing Support**: {len(underperforming)} schools have significantly below-average enrollment")
+                
+                # Geographic insights
+                if not extracted_df["District"].isna().all():
+                    district_enrollments = {}
+                    for district in extracted_df["District"].dropna().unique():
+                        district_data = extracted_df[extracted_df["District"] == district]
+                        if enrollment_columns:
+                            total = sum([district_data[col].sum() for col in enrollment_columns if col in district_data.columns])
+                            district_enrollments[district] = total
+                    
+                    if district_enrollments:
+                        top_district = max(district_enrollments, key=district_enrollments.get)
+                        insights.append(f"🌍 **Leading District**: {top_district} has the highest total enrollment ({district_enrollments[top_district]:,} students)")
+                
+                # Data completeness insights
+                completeness = (extracted_df.notna().sum() / len(extracted_df)) * 100
+                education_cols = enrollment_columns + boys_columns + girls_columns
+                
+                if education_cols:
+                    edu_completeness = [completeness[col] for col in education_cols if col in completeness]
+                    if edu_completeness:
+                        avg_completeness = sum(edu_completeness) / len(edu_completeness)
+                        if avg_completeness > 95:
+                            insights.append(f"✅ **Excellent Data Quality**: {avg_completeness:.1f}% completeness in educational data")
+                        elif avg_completeness > 80:
+                            insights.append(f"⚠️ **Good Data Quality**: {avg_completeness:.1f}% completeness - some data gaps exist")
+                        else:
+                            insights.append(f"🔴 **Data Quality Concern**: Only {avg_completeness:.1f}% completeness in educational data")
+                
+                # Display insights
+                if insights:
+                    for i, insight in enumerate(insights, 1):
+                        st.markdown(f"{i}. {insight}")
+                else:
+                    st.info("📊 No specific educational patterns detected in current dataset.")
+                
+                # Enhanced recommendations for educational data
+                st.markdown("#### 💡 Educational Recommendations")
+                recommendations = []
+                
+                if enrollment_columns:
+                    recommendations.extend([
+                        "📊 **Monitor Class Progression**: Track student movement between grades to identify dropout points",
+                        "⚖️ **Gender Parity Tracking**: Regular monitoring of male/female enrollment ratios",
+                        "🏫 **School Capacity Planning**: Use enrollment data for resource allocation and infrastructure planning",
+                        "🎯 **Targeted Interventions**: Focus support on schools/districts with low enrollment or high dropout rates"
+                    ])
+                
+                if not extracted_df["District"].isna().all():
+                    recommendations.append("🌍 **Regional Analysis**: Compare educational outcomes across different districts for policy insights")
+                
+                recommendations.extend([
+                    "📈 **Trend Analysis**: Collect similar data over multiple periods to identify enrollment trends",
+                    "🔍 **Data Quality Improvement**: Implement validation checks for enrollment data collection",
+                    "📋 **Standardized Reporting**: Ensure consistent data formats across all schools and districts"
+                ])
+                
+                for rec in recommendations:
+                    st.markdown(f"- {rec}")
+            else:
+                # Fallback for non-educational data
                 insights = []
                 
                 # Geographic insights
@@ -1349,10 +1403,10 @@ if uploaded_file:
                 for i, insight in enumerate(insights, 1):
                     st.markdown(f"{i}. {insight}")
                 
-                # Recommendations
+                # General recommendations
                 st.markdown("#### 💡 Recommendations")
                 recommendations = [
-                    "🔍 Focus data collection efforts on districts with fewer records",
+                    "🔍 Focus data collection efforts on areas with fewer records",
                     "📊 Improve data entry processes for fields with high missing rates",
                     "🎯 Consider standardizing data formats across all collection points",
                     "📈 Regular monitoring of data quality metrics is recommended"
