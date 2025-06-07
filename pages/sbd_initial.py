@@ -3,6 +3,10 @@ import pandas as pd
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import geopandas as gpd
+import folium
+from streamlit_folium import st_folium
+import plotly.express as px
 
 # Streamlit App
 st.title("📊 Text Data Extraction & Visualization")
@@ -12,6 +16,14 @@ uploaded_file = "Report_GMB253374_SBD_1749318384635_submissions.xlsx"
 if uploaded_file:
     # Read the uploaded Excel file
     df_original = pd.read_excel(uploaded_file)
+    
+    # Load shapefile
+    try:
+        gdf = gpd.read_file("Chiefdom2021.shp")
+        st.success("✅ Shapefile loaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Could not load shapefile: {e}")
+        gdf = None
     
     # Create empty lists to store extracted data
     districts, chiefdoms, phu_names, community_names, school_names = [], [], [], [], []
@@ -67,8 +79,8 @@ if uploaded_file:
     # Summary buttons section
     st.subheader("📊 Summary Reports")
     
-    # Create two columns for the summary buttons
-    col1, col2 = st.columns(2)
+    # Create three columns for the summary buttons
+    col1, col2, col3 = st.columns(3)
     
     # Button for District Summary
     with col1:
@@ -77,6 +89,10 @@ if uploaded_file:
     # Button for Chiefdom Summary
     with col2:
         chiefdom_summary_button = st.button("Show Chiefdom Summary")
+    
+    # Button for Map View
+    with col3:
+        map_button = st.button("Show Map")
     
     # Display District Summary when button is clicked
     if district_summary_button:
@@ -120,6 +136,131 @@ if uploaded_file:
         plt.xticks(rotation=45, ha='right')
         plt.tight_layout()
         st.pyplot(fig)
+    
+    # Display Map when button is clicked
+    if map_button:
+        st.subheader("🗺️ Geographic Distribution Map")
+        
+        if gdf is not None:
+            # Check for GPS columns
+            gps_columns = []
+            possible_gps_names = ['GPS', 'gps', 'Latitude', 'Longitude', 'lat', 'lon', 'LAT', 'LON', 'latitude', 'longitude']
+            
+            for col in extracted_df.columns:
+                if any(gps_name in col for gps_name in possible_gps_names):
+                    gps_columns.append(col)
+            
+            if gps_columns:
+                st.write(f"Found GPS columns: {gps_columns}")
+                
+                # Let user select GPS columns
+                col1, col2 = st.columns(2)
+                with col1:
+                    lat_col = st.selectbox("Select Latitude column:", gps_columns)
+                with col2:
+                    lon_col = st.selectbox("Select Longitude column:", gps_columns)
+                
+                # Clean GPS data
+                map_data = extracted_df.copy()
+                
+                # Try to extract coordinates if they're in a combined format
+                for col in [lat_col, lon_col]:
+                    if col in map_data.columns:
+                        # Handle various GPS formats
+                        map_data[col] = map_data[col].astype(str).str.extract(r'(-?\d+\.?\d*)')[0]
+                        map_data[col] = pd.to_numeric(map_data[col], errors='coerce')
+                
+                # Filter out rows with missing GPS data
+                map_data = map_data.dropna(subset=[lat_col, lon_col])
+                
+                if len(map_data) > 0:
+                    # Calculate total enrollment for each point
+                    map_data["Total Enrollment"] = 0
+                    for class_num in range(1, 6):
+                        total_col = f"Number of enrollments in class {class_num}"
+                        if total_col in map_data.columns:
+                            map_data["Total Enrollment"] += map_data[total_col].fillna(0)
+                    
+                    # Create Folium map
+                    center_lat = map_data[lat_col].mean()
+                    center_lon = map_data[lon_col].mean()
+                    
+                    m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
+                    
+                    # Add shapefile as base layer
+                    folium.GeoJson(
+                        gdf.to_json(),
+                        style_function=lambda feature: {
+                            'fillColor': 'lightblue',
+                            'color': 'black',
+                            'weight': 2,
+                            'fillOpacity': 0.3,
+                        }
+                    ).add_to(m)
+                    
+                    # Add points for schools
+                    for idx, row in map_data.iterrows():
+                        # Create popup text
+                        popup_text = f"""
+                        <b>School:</b> {row.get('School Name', 'Unknown')}<br>
+                        <b>District:</b> {row.get('District', 'Unknown')}<br>
+                        <b>Chiefdom:</b> {row.get('Chiefdom', 'Unknown')}<br>
+                        <b>Total Enrollment:</b> {row['Total Enrollment']}<br>
+                        """
+                        
+                        # Color code by enrollment size
+                        if row['Total Enrollment'] > 500:
+                            color = 'red'
+                            size = 8
+                        elif row['Total Enrollment'] > 200:
+                            color = 'orange'
+                            size = 6
+                        else:
+                            color = 'green'
+                            size = 4
+                        
+                        folium.CircleMarker(
+                            location=[row[lat_col], row[lon_col]],
+                            radius=size,
+                            popup=folium.Popup(popup_text, max_width=300),
+                            color=color,
+                            fill=True,
+                            fillColor=color,
+                            fillOpacity=0.7
+                        ).add_to(m)
+                    
+                    # Add legend
+                    legend_html = '''
+                    <div style="position: fixed; 
+                                bottom: 50px; left: 50px; width: 150px; height: 90px; 
+                                background-color: white; border:2px solid grey; z-index:9999; 
+                                font-size:14px; padding: 10px">
+                    <p><b>School Size</b></p>
+                    <p><i class="fa fa-circle" style="color:red"></i> > 500 students</p>
+                    <p><i class="fa fa-circle" style="color:orange"></i> 200-500 students</p>
+                    <p><i class="fa fa-circle" style="color:green"></i> < 200 students</p>
+                    </div>
+                    '''
+                    m.get_root().html.add_child(folium.Element(legend_html))
+                    
+                    # Display map
+                    st_folium(m, width=700, height=500)
+                    
+                    # Display summary statistics
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Schools Mapped", len(map_data))
+                    with col2:
+                        st.metric("Total Students", int(map_data['Total Enrollment'].sum()))
+                    with col3:
+                        st.metric("Avg Students/School", int(map_data['Total Enrollment'].mean()))
+                    
+                else:
+                    st.warning("No valid GPS coordinates found in the data.")
+            else:
+                st.warning("No GPS columns found. Please ensure your data contains latitude and longitude columns.")
+        else:
+            st.error("Shapefile not loaded. Cannot display map.")
     
     # Display Chiefdom Summary when button is clicked
     if chiefdom_summary_button:
