@@ -234,7 +234,7 @@ if uploaded_file:
                     if selected_district:
                         # Map district name to shapefile format
                         shapefile_district = district_mapping.get(selected_district, selected_district.upper())
-                        gdf_filtered = gdf[gdf['FIRST_DIST'].str.upper() == shapefile_district.upper()]
+                        gdf_filtered = gdf[gdf['FIRST_DNAM'].str.upper() == shapefile_district.upper()]
                     
                     # Create the plot
                     fig, ax = plt.subplots(figsize=(12, 10))
