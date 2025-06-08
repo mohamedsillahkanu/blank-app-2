@@ -104,8 +104,8 @@ if uploaded_file:
             filtered_df = filtered_df[filtered_df[level] == selected_value]
     
     # Display Original Data Sample
-    st.subheader("📄 Original Data Sample")
-    st.dataframe(df_original.head())
+    #st.subheader("📄 Original Data Sample")
+    #st.dataframe(df_original.head())
     
     # Display Extracted Data
     #st.subheader("📋 Extracted Data")
