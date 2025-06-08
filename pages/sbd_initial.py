@@ -16,7 +16,7 @@ if uploaded_file:
     
     # Load shapefile
     try:
-        gdf = gpd.read_file("Chiefdom 2021.shp")
+        gdf = gpd.read_file("Chiefdom2021.shp")
         st.success("✅ Shapefile loaded successfully!")
     except Exception as e:
         st.error(f"❌ Could not load shapefile: {e}")
@@ -65,6 +65,44 @@ if uploaded_file:
         if column != "Scan QR code":  # Skip the QR code column since we've already processed it
             extracted_df[column] = df_original[column]
     
+    # Create sidebar filters early so they're available for all sections
+    st.sidebar.header("Filter Options")
+    
+    # Create radio buttons to select which level to group by
+    grouping_selection = st.sidebar.radio(
+        "Select the level for grouping:",
+        ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
+        index=0  # Default to 'District'
+    )
+    
+    # Dictionary to define the hierarchy for each grouping level
+    hierarchy = {
+        "District": ["District"],
+        "Chiefdom": ["District", "Chiefdom"],
+        "PHU Name": ["District", "Chiefdom", "PHU Name"],
+        "Community Name": ["District", "Chiefdom", "PHU Name", "Community Name"],
+        "School Name": ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"]
+    }
+    
+    # Initialize filtered dataframe with the full dataset
+    filtered_df = extracted_df.copy()
+    
+    # Dictionary to store selected values for each level
+    selected_values = {}
+    
+    # Apply filters based on the hierarchy for the selected grouping level
+    for level in hierarchy[grouping_selection]:
+        # Filter out None/NaN values and get sorted unique values
+        level_values = sorted(filtered_df[level].dropna().unique())
+        
+        if level_values:
+            # Create selectbox for this level
+            selected_value = st.sidebar.selectbox(f"Select {level}", level_values)
+            selected_values[level] = selected_value
+            
+            # Apply filter to the dataframe
+            filtered_df = filtered_df[filtered_df[level] == selected_value]
+    
     # Display Original Data Sample
     st.subheader("📄 Original Data Sample")
     st.dataframe(df_original.head())
@@ -73,11 +111,107 @@ if uploaded_file:
     st.subheader("📋 Extracted Data")
     st.dataframe(extracted_df)
     
+    # Display Map at the top
+    st.subheader("🗺️ Geographic Distribution Map")
+    
+    if gdf is not None:
+        # District name mapping (your data -> shapefile)
+        district_mapping = {
+            'Bo': 'BO',
+            'Bombali': 'BOMBALI',
+            # Add more mappings as needed
+        }
+        
+        # Look for the specific "GPS Location" column
+        if "GPS Location" in extracted_df.columns:
+            gps_data = extracted_df["GPS Location"].dropna()
+            if len(gps_data) > 0:
+                st.write(f"Found {len(gps_data)} GPS coordinates")
+                
+                # Extract coordinates from GPS Location
+                coords_extracted = []
+                for gps_val in gps_data:
+                    coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
+                    if len(coords) >= 2:
+                        coords_extracted.append([float(coords[0]), float(coords[1])])
+                    else:
+                        coords_extracted.append([None, None])
+                
+                # Create map data with all coordinates
+                map_data = extracted_df.copy()
+                map_data['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
+                                       for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data) - len(coords_extracted)))]
+                map_data['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
+                                       for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data) - len(coords_extracted)))]
+                
+                # Remove rows with missing GPS data
+                map_data = map_data.dropna(subset=['temp_lat', 'temp_lon'])
+                
+                if len(map_data) > 0:
+                    # Calculate total enrollment
+                    map_data["Total Enrollment"] = 0
+                    for class_num in range(1, 6):
+                        total_col = f"Number of enrollments in class {class_num}"
+                        if total_col in map_data.columns:
+                            map_data["Total Enrollment"] += map_data[total_col].fillna(0)
+                    
+                    # Create the plot
+                    fig, ax = plt.subplots(figsize=(14, 10))
+                    
+                    # Plot shapefile boundaries
+                    gdf.plot(ax=ax, color='lightblue', edgecolor='black', alpha=0.5)
+                    
+                    # Plot school points
+                    scatter = ax.scatter(
+                        map_data['temp_lon'], 
+                        map_data['temp_lat'],
+                        c=map_data['Total Enrollment'],
+                        s=map_data['Total Enrollment']/5,  # Size based on enrollment
+                        cmap='viridis',
+                        alpha=0.7,
+                        edgecolors='black',
+                        linewidth=0.5
+                    )
+                    
+                    # Add colorbar
+                    cbar = plt.colorbar(scatter, ax=ax)
+                    cbar.set_label('Total Enrollment', rotation=270, labelpad=15)
+                    
+                    # Customize plot
+                    ax.set_title('School Distribution Map - All Districts')
+                    ax.set_xlabel('Longitude')
+                    ax.set_ylabel('Latitude')
+                    
+                    # Remove axis ticks for cleaner look
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    
+                    # Display summary
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Schools Plotted", len(map_data))
+                    with col2:
+                        st.metric("Total Students", int(map_data['Total Enrollment'].sum()))
+                    with col3:
+                        st.metric("Avg Students/School", int(map_data['Total Enrollment'].mean()))
+                    
+                else:
+                    st.warning("No valid GPS coordinates found in the data.")
+            else:
+                st.warning("No GPS data found in GPS Location column.")
+        else:
+            st.warning("GPS Location column not found in the dataset.")
+    else:
+        st.error("Shapefile not loaded. Cannot display map.")
+    
     # Summary buttons section
     st.subheader("📊 Summary Reports")
     
-    # Create three columns for the summary buttons
-    col1, col2, col3 = st.columns(3)
+    # Create two columns for the summary buttons
+    col1, col2 = st.columns(2)
     
     # Button for District Summary
     with col1:
@@ -86,10 +220,6 @@ if uploaded_file:
     # Button for Chiefdom Summary
     with col2:
         chiefdom_summary_button = st.button("Show Chiefdom Summary")
-    
-    # Button for Map View
-    with col3:
-        map_button = st.button("Show Map")
     
     # Display District Summary when button is clicked
     if district_summary_button:
@@ -234,7 +364,7 @@ if uploaded_file:
                     if selected_district:
                         # Map district name to shapefile format
                         shapefile_district = district_mapping.get(selected_district, selected_district.upper())
-                        gdf_filtered = gdf[gdf['FIRST_DNAM'].str.upper() == shapefile_district.upper()]
+                        gdf_filtered = gdf[gdf['FIRST_DIST'].str.upper() == shapefile_district.upper()]
                     
                     # Create the plot
                     fig, ax = plt.subplots(figsize=(12, 10))
@@ -394,44 +524,6 @@ if uploaded_file:
     
     # Visualization and filtering section
     st.subheader("🔍 Detailed Data Filtering and Visualization")
-    
-    # Create a sidebar for filtering options
-    st.sidebar.header("Filter Options")
-    
-    # Create radio buttons to select which level to group by
-    grouping_selection = st.sidebar.radio(
-        "Select the level for grouping:",
-        ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"],
-        index=0  # Default to 'District'
-    )
-    
-    # Dictionary to define the hierarchy for each grouping level
-    hierarchy = {
-        "District": ["District"],
-        "Chiefdom": ["District", "Chiefdom"],
-        "PHU Name": ["District", "Chiefdom", "PHU Name"],
-        "Community Name": ["District", "Chiefdom", "PHU Name", "Community Name"],
-        "School Name": ["District", "Chiefdom", "PHU Name", "Community Name", "School Name"]
-    }
-    
-    # Initialize filtered dataframe with the full dataset
-    filtered_df = extracted_df.copy()
-    
-    # Dictionary to store selected values for each level
-    selected_values = {}
-    
-    # Apply filters based on the hierarchy for the selected grouping level
-    for level in hierarchy[grouping_selection]:
-        # Filter out None/NaN values and get sorted unique values
-        level_values = sorted(filtered_df[level].dropna().unique())
-        
-        if level_values:
-            # Create selectbox for this level
-            selected_value = st.sidebar.selectbox(f"Select {level}", level_values)
-            selected_values[level] = selected_value
-            
-            # Apply filter to the dataframe
-            filtered_df = filtered_df[filtered_df[level] == selected_value]
     
     # Check if data is available after filtering
     if filtered_df.empty:
