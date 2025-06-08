@@ -4,9 +4,6 @@ import re
 import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
-import folium
-from streamlit_folium import st_folium
-import plotly.express as px
 
 # Streamlit App
 st.title("📊 Text Data Extraction & Visualization")
@@ -19,7 +16,7 @@ if uploaded_file:
     
     # Load shapefile
     try:
-        gdf = gpd.read_file("Chiefdom 2021.shp")
+        gdf = gpd.read_file("Chiefdom2021.shp")
         st.success("✅ Shapefile loaded successfully!")
     except Exception as e:
         st.error(f"❌ Could not load shapefile: {e}")
@@ -142,123 +139,129 @@ if uploaded_file:
         st.subheader("🗺️ Geographic Distribution Map")
         
         if gdf is not None:
-            # Check for GPS columns
-            gps_columns = []
-            possible_gps_names = ['GPS', 'gps', 'Latitude', 'Longitude', 'lat', 'lon', 'LAT', 'LON', 'latitude', 'longitude']
+            # District name mapping (your data -> shapefile)
+            district_mapping = {
+                'Bo': 'BO',
+                'Bombali': 'BOMBALI',
+                # Add more mappings as needed
+            }
             
+            # Auto-detect GPS columns
+            gps_columns = []
             for col in extracted_df.columns:
-                if any(gps_name in col for gps_name in possible_gps_names):
+                col_lower = col.lower()
+                if any(gps_name in col_lower for gps_name in ['gps', 'latitude', 'longitude', 'lat', 'lon']):
                     gps_columns.append(col)
             
-            if gps_columns:
-                st.write(f"Found GPS columns: {gps_columns}")
+            if len(gps_columns) >= 2:
+                # Automatically assign lat/lon columns
+                lat_col = None
+                lon_col = None
                 
-                # Let user select GPS columns
-                col1, col2 = st.columns(2)
-                with col1:
-                    lat_col = st.selectbox("Select Latitude column:", gps_columns)
-                with col2:
-                    lon_col = st.selectbox("Select Longitude column:", gps_columns)
+                for col in gps_columns:
+                    col_lower = col.lower()
+                    if 'lat' in col_lower and lat_col is None:
+                        lat_col = col
+                    elif 'lon' in col_lower and lon_col is None:
+                        lon_col = col
                 
-                # Clean GPS data
+                # If still not found, use first two GPS columns
+                if lat_col is None or lon_col is None:
+                    lat_col = gps_columns[0]
+                    lon_col = gps_columns[1]
+                
+                st.write(f"Using GPS columns: {lat_col} (latitude), {lon_col} (longitude)")
+                
+                # Get selected district from sidebar filter if available
+                selected_district = None
+                if 'District' in selected_values:
+                    selected_district = selected_values['District']
+                
+                # Prepare map data
                 map_data = extracted_df.copy()
                 
-                # Try to extract coordinates if they're in a combined format
+                # Filter by district if selected
+                if selected_district:
+                    map_data = map_data[map_data['District'] == selected_district]
+                    st.write(f"Showing data for: {selected_district}")
+                
+                # Clean GPS data
                 for col in [lat_col, lon_col]:
                     if col in map_data.columns:
-                        # Handle various GPS formats
                         map_data[col] = map_data[col].astype(str).str.extract(r'(-?\d+\.?\d*)')[0]
                         map_data[col] = pd.to_numeric(map_data[col], errors='coerce')
                 
-                # Filter out rows with missing GPS data
+                # Remove rows with missing GPS data
                 map_data = map_data.dropna(subset=[lat_col, lon_col])
                 
                 if len(map_data) > 0:
-                    # Calculate total enrollment for each point
+                    # Calculate total enrollment
                     map_data["Total Enrollment"] = 0
                     for class_num in range(1, 6):
                         total_col = f"Number of enrollments in class {class_num}"
                         if total_col in map_data.columns:
                             map_data["Total Enrollment"] += map_data[total_col].fillna(0)
                     
-                    # Create Folium map
-                    center_lat = map_data[lat_col].mean()
-                    center_lon = map_data[lon_col].mean()
+                    # Filter shapefile by selected district
+                    gdf_filtered = gdf.copy()
+                    if selected_district:
+                        # Map district name to shapefile format
+                        shapefile_district = district_mapping.get(selected_district, selected_district.upper())
+                        gdf_filtered = gdf[gdf['FIRST_DIST'].str.upper() == shapefile_district.upper()]
                     
-                    m = folium.Map(location=[center_lat, center_lon], zoom_start=10)
+                    # Create the plot
+                    fig, ax = plt.subplots(figsize=(12, 10))
                     
-                    # Add shapefile as base layer
-                    folium.GeoJson(
-                        gdf.to_json(),
-                        style_function=lambda feature: {
-                            'fillColor': 'lightblue',
-                            'color': 'black',
-                            'weight': 2,
-                            'fillOpacity': 0.3,
-                        }
-                    ).add_to(m)
+                    # Plot shapefile boundaries
+                    gdf_filtered.plot(ax=ax, color='lightblue', edgecolor='black', alpha=0.5)
                     
-                    # Add points for schools
-                    for idx, row in map_data.iterrows():
-                        # Create popup text
-                        popup_text = f"""
-                        <b>School:</b> {row.get('School Name', 'Unknown')}<br>
-                        <b>District:</b> {row.get('District', 'Unknown')}<br>
-                        <b>Chiefdom:</b> {row.get('Chiefdom', 'Unknown')}<br>
-                        <b>Total Enrollment:</b> {row['Total Enrollment']}<br>
-                        """
-                        
-                        # Color code by enrollment size
-                        if row['Total Enrollment'] > 500:
-                            color = 'red'
-                            size = 8
-                        elif row['Total Enrollment'] > 200:
-                            color = 'orange'
-                            size = 6
-                        else:
-                            color = 'green'
-                            size = 4
-                        
-                        folium.CircleMarker(
-                            location=[row[lat_col], row[lon_col]],
-                            radius=size,
-                            popup=folium.Popup(popup_text, max_width=300),
-                            color=color,
-                            fill=True,
-                            fillColor=color,
-                            fillOpacity=0.7
-                        ).add_to(m)
+                    # Plot school points
+                    scatter = ax.scatter(
+                        map_data[lon_col], 
+                        map_data[lat_col],
+                        c=map_data['Total Enrollment'],
+                        s=map_data['Total Enrollment']/10,  # Size based on enrollment
+                        cmap='viridis',
+                        alpha=0.7,
+                        edgecolors='black',
+                        linewidth=0.5
+                    )
                     
-                    # Add legend
-                    legend_html = '''
-                    <div style="position: fixed; 
-                                bottom: 50px; left: 50px; width: 150px; height: 90px; 
-                                background-color: white; border:2px solid grey; z-index:9999; 
-                                font-size:14px; padding: 10px">
-                    <p><b>School Size</b></p>
-                    <p><i class="fa fa-circle" style="color:red"></i> > 500 students</p>
-                    <p><i class="fa fa-circle" style="color:orange"></i> 200-500 students</p>
-                    <p><i class="fa fa-circle" style="color:green"></i> < 200 students</p>
-                    </div>
-                    '''
-                    m.get_root().html.add_child(folium.Element(legend_html))
+                    # Add colorbar
+                    cbar = plt.colorbar(scatter, ax=ax)
+                    cbar.set_label('Total Enrollment', rotation=270, labelpad=15)
                     
-                    # Display map
-                    st_folium(m, width=700, height=500)
+                    # Customize plot
+                    ax.set_title(f'School Distribution Map{" - " + selected_district if selected_district else ""}')
+                    ax.set_xlabel('Longitude')
+                    ax.set_ylabel('Latitude')
                     
-                    # Display summary statistics
+                    # Remove axis ticks for cleaner look
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    
+                    plt.tight_layout()
+                    st.pyplot(fig)
+                    
+                    # Display summary
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        st.metric("Schools Mapped", len(map_data))
+                        st.metric("Schools Plotted", len(map_data))
                     with col2:
                         st.metric("Total Students", int(map_data['Total Enrollment'].sum()))
                     with col3:
                         st.metric("Avg Students/School", int(map_data['Total Enrollment'].mean()))
                     
+                    # Show schools data table
+                    if st.checkbox("Show school details"):
+                        display_cols = ['School Name', 'District', 'Chiefdom', 'Total Enrollment']
+                        if all(col in map_data.columns for col in display_cols):
+                            st.dataframe(map_data[display_cols].sort_values('Total Enrollment', ascending=False))
+                    
                 else:
-                    st.warning("No valid GPS coordinates found in the data.")
+                    st.warning("No valid GPS coordinates found in the filtered data.")
             else:
-                st.warning("No GPS columns found. Please ensure your data contains latitude and longitude columns.")
+                st.warning("Not enough GPS columns detected. Need at least 2 columns containing GPS coordinates.")
         else:
             st.error("Shapefile not loaded. Cannot display map.")
     
