@@ -16,7 +16,7 @@ if uploaded_file:
     
     # Load shapefile
     try:
-        gdf = gpd.read_file("Chiefdom 2021.shp")
+        gdf = gpd.read_file("Chiefdom2021.shp")
         st.success("✅ Shapefile loaded successfully!")
     except Exception as e:
         st.error(f"❌ Could not load shapefile: {e}")
@@ -104,14 +104,21 @@ if uploaded_file:
             filtered_df = filtered_df[filtered_df[level] == selected_value]
     
     # Display Original Data Sample
-    #st.subheader("📄 Original Data Sample")
-    #st.dataframe(df_original.head())
+    st.subheader("📄 Original Data Sample")
+    st.dataframe(df_original.head())
     
     # Display Extracted Data
-    #st.subheader("📋 Extracted Data")
-    #st.dataframe(extracted_df)
+    st.subheader("📋 Extracted Data")
+    st.dataframe(extracted_df)
     
-
+    # Add download button for CSV
+    csv = extracted_df.to_csv(index=False)
+    st.download_button(
+        label="📥 Download Extracted Data as CSV",
+        data=csv,
+        file_name="extracted_school_data.csv",
+        mime="text/csv"
+    )
     
     # Display Map at the top
     st.subheader("🗺️ Geographic Distribution Map")
@@ -315,11 +322,10 @@ if uploaded_file:
         
         # Create a bar chart for chiefdom summary
         fig, ax = plt.subplots(figsize=(14, 10))
-        chiefdom_summary.plot(kind="bar", x="Label", y="Total Enrollment", ax=ax, color="blue")
+        chiefdom_summary.plot(kind="barh", x="Label", y="Total Enrollment", ax=ax, color="blue")
         ax.set_title("📊 Total Enrollment by District and Chiefdom")
-        ax.set_xlabel("")
-        ax.set_ylabel("Number of Students")
-        plt.xticks(rotation=45, ha='right')
+        ax.set_ylabel("")
+        ax.set_xlabel("Number of Students")
         plt.tight_layout()
         st.pyplot(fig)
     
@@ -339,8 +345,6 @@ if uploaded_file:
             file_name="filtered_data.csv",
             mime="text/csv"
         )
-
-       
         
         # Define the hierarchy levels to include in the summary
         group_columns = hierarchy[grouping_selection]
