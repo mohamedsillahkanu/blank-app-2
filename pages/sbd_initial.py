@@ -108,17 +108,10 @@ if uploaded_file:
     st.dataframe(df_original.head())
     
     # Display Extracted Data
-    st.subheader("📋 Extracted Data")
-    st.dataframe(extracted_df)
+    #st.subheader("📋 Extracted Data")
+    #st.dataframe(extracted_df)
     
-    # Add download button for CSV
-    csv = extracted_df.to_csv(index=False)
-    st.download_button(
-        label="📥 Download Extracted Data as CSV",
-        data=csv,
-        file_name="extracted_school_data.csv",
-        mime="text/csv"
-    )
+
     
     # Display Map at the top
     st.subheader("🗺️ Geographic Distribution Map")
@@ -346,6 +339,8 @@ if uploaded_file:
             file_name="filtered_data.csv",
             mime="text/csv"
         )
+
+       
         
         # Define the hierarchy levels to include in the summary
         group_columns = hierarchy[grouping_selection]
