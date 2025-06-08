@@ -16,7 +16,7 @@ if uploaded_file:
     
     # Load shapefile
     try:
-        gdf = gpd.read_file("Chiefdom 2021.shp")
+        gdf = gpd.read_file("Chiefdom2021.shp")
         st.success("✅ Shapefile loaded successfully!")
     except Exception as e:
         st.error(f"❌ Could not load shapefile: {e}")
@@ -148,48 +148,75 @@ if uploaded_file:
             
             # Auto-detect GPS columns
             gps_columns = []
-            for col in extracted_df.columns:
-                col_lower = col.lower()
-                if any(gps_name in col_lower for gps_name in ['gps', 'latitude', 'longitude', 'lat', 'lon']):
-                    gps_columns.append(col)
+            lat_col = None
+            lon_col = None
             
-            if len(gps_columns) >= 2:
-                # Automatically assign lat/lon columns
-                lat_col = None
-                lon_col = None
-                
-                for col in gps_columns:
+            # Look for the specific "GPS Location" column
+            if "GPS Location" in extracted_df.columns:
+                gps_data = extracted_df["GPS Location"].dropna()
+                if len(gps_data) > 0:
+                    # Try to parse GPS Location column (assuming it contains lat,lon or similar format)
+                    sample = str(gps_data.iloc[0])
+                    st.write(f"GPS Location format detected: {sample}")
+                    
+                    # Extract coordinates from GPS Location
+                    coords_extracted = []
+                    for gps_val in gps_data:
+                        coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
+                        if len(coords) >= 2:
+                            coords_extracted.append([float(coords[0]), float(coords[1])])
+                        else:
+                            coords_extracted.append([None, None])
+                    
+                    # Create temporary lat/lon columns
+                    map_data = extracted_df.copy()
+                    map_data['temp_lat'] = [coord[0] if coord[0] is not None else np.nan for coord in coords_extracted + [[None, None]] * (len(map_data) - len(coords_extracted))]
+                    map_data['temp_lon'] = [coord[1] if coord[1] is not None else np.nan for coord in coords_extracted + [[None, None]] * (len(map_data) - len(coords_extracted))]
+                    
+                    lat_col = 'temp_lat'
+                    lon_col = 'temp_lon'
+                    
+            else:
+                # Fallback to original GPS detection method
+                for col in extracted_df.columns:
                     col_lower = col.lower()
-                    if 'lat' in col_lower and lat_col is None:
-                        lat_col = col
-                    elif 'lon' in col_lower and lon_col is None:
-                        lon_col = col
+                    if any(gps_name in col_lower for gps_name in ['gps', 'latitude', 'longitude', 'lat', 'lon']):
+                        gps_columns.append(col)
                 
-                # If still not found, use first two GPS columns
-                if lat_col is None or lon_col is None:
-                    lat_col = gps_columns[0]
-                    lon_col = gps_columns[1]
+                if len(gps_columns) >= 2:
+                    for col in gps_columns:
+                        col_lower = col.lower()
+                        if 'lat' in col_lower and lat_col is None:
+                            lat_col = col
+                        elif 'lon' in col_lower and lon_col is None:
+                            lon_col = col
+                    
+                    if lat_col is None or lon_col is None:
+                        lat_col = gps_columns[0]
+                        lon_col = gps_columns[1]
+                    
+                    map_data = extracted_df.copy()
+            
+            if lat_col and lon_col:
                 
-                st.write(f"Using GPS columns: {lat_col} (latitude), {lon_col} (longitude)")
+                st.write(f"Using GPS column: GPS Location")
                 
                 # Get selected district from sidebar filter if available
                 selected_district = None
                 if 'District' in selected_values:
                     selected_district = selected_values['District']
                 
-                # Prepare map data
-                map_data = extracted_df.copy()
-                
                 # Filter by district if selected
                 if selected_district:
                     map_data = map_data[map_data['District'] == selected_district]
                     st.write(f"Showing data for: {selected_district}")
                 
-                # Clean GPS data
-                for col in [lat_col, lon_col]:
-                    if col in map_data.columns:
-                        map_data[col] = map_data[col].astype(str).str.extract(r'(-?\d+\.?\d*)')[0]
-                        map_data[col] = pd.to_numeric(map_data[col], errors='coerce')
+                # Clean GPS data for non-GPS Location columns
+                if lat_col not in ['temp_lat', 'temp_lon']:
+                    for col in [lat_col, lon_col]:
+                        if col in map_data.columns:
+                            map_data[col] = map_data[col].astype(str).str.extract(r'(-?\d+\.?\d*)')[0]
+                            map_data[col] = pd.to_numeric(map_data[col], errors='coerce')
                 
                 # Remove rows with missing GPS data
                 map_data = map_data.dropna(subset=[lat_col, lon_col])
@@ -261,7 +288,7 @@ if uploaded_file:
                 else:
                     st.warning("No valid GPS coordinates found in the filtered data.")
             else:
-                st.warning("Not enough GPS columns detected. Need at least 2 columns containing GPS coordinates.")
+                st.warning("GPS Location column not found and no other GPS columns detected.")
         else:
             st.error("Shapefile not loaded. Cannot display map.")
     
