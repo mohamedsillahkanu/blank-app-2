@@ -16,7 +16,7 @@ if uploaded_file:
     
     # Load shapefile
     try:
-        gdf = gpd.read_file("Chiefdom 2021.shp")
+        gdf = gpd.read_file("Chiefdom2021.shp")
         st.success("✅ Shapefile loaded successfully!")
     except Exception as e:
         st.error(f"❌ Could not load shapefile: {e}")
@@ -291,6 +291,60 @@ if uploaded_file:
                 st.warning("GPS Location column not found and no other GPS columns detected.")
         else:
             st.error("Shapefile not loaded. Cannot display map.")
+    
+    # Check if data is available after filtering
+    if not filtered_df.empty:
+        st.write(f"### Filtered Data - {len(filtered_df)} records")
+        st.dataframe(filtered_df)
+        
+        # Define the hierarchy levels to include in the summary
+        group_columns = hierarchy[grouping_selection]
+        
+        # Create aggregation dictionary for enrollment data
+        agg_dict = {}
+        for class_num in range(1, 6):
+            total_col = f"Number of enrollments in class {class_num}"
+            boys_col = f"Number of boys in class {class_num}"
+            girls_col = f"Number of girls in class {class_num}"
+            
+            if total_col in filtered_df.columns:
+                agg_dict[total_col] = "sum"
+            if boys_col in filtered_df.columns:
+                agg_dict[boys_col] = "sum"
+            if girls_col in filtered_df.columns:
+                agg_dict[girls_col] = "sum"
+        
+        # Group by the selected hierarchical columns
+        grouped_data = filtered_df.groupby(group_columns).agg(agg_dict).reset_index()
+        
+        # Calculate total enrollment
+        grouped_data["Total Enrollment"] = 0
+        for class_num in range(1, 6):
+            total_col = f"Number of enrollments in class {class_num}"
+            if total_col in grouped_data.columns:
+                grouped_data["Total Enrollment"] += grouped_data[total_col]
+        
+        # Summary Table with separate columns for each level
+        st.subheader("📊 Detailed Summary Table")
+        st.dataframe(grouped_data)
+        
+        # Create a temporary group column for the chart
+        grouped_data['Group'] = grouped_data[group_columns].apply(lambda row: ','.join(row.astype(str)), axis=1)
+        
+        # Create a bar chart
+        fig, ax = plt.subplots(figsize=(12, 8))
+        grouped_data.plot(kind="bar", x="Group", y="Total Enrollment", ax=ax, color="blue")
+        ax.set_title(f"Total Enrollment by {grouping_selection}")
+        
+        # Remove x-label as requested
+        ax.set_xlabel("")
+        
+        ax.set_ylabel("Number of Students")
+        plt.xticks(rotation=45, ha='right')
+        plt.tight_layout()
+        st.pyplot(fig)
+    else:
+        st.warning("No data available for the selected filters.")
     
     # Display Chiefdom Summary when button is clicked
     if chiefdom_summary_button:
