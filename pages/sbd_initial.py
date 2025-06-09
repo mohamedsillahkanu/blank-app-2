@@ -347,29 +347,45 @@ if uploaded_file:
     
     with col1:
         # Enrollment pie chart
-        fig_pie1, ax_pie1 = plt.subplots(figsize=(8, 8))
-        colors_enrollment = ['#87CEEB', '#4682B4', '#1E90FF', '#0000CD', '#000080']
-        wedges, texts, autotexts = ax_pie1.pie(district_df['Total_Enrollment'], 
-                                              labels=district_df['District'],
-                                              autopct='%1.1f%%',
-                                              colors=colors_enrollment[:len(district_df)],
-                                              startangle=90)
-        ax_pie1.set_title('Total Enrollment Distribution\nby District', fontsize=14, fontweight='bold')
-        plt.setp(autotexts, size=10, weight="bold")
-        st.pyplot(fig_pie1)
+        if district_df['Total_Enrollment'].sum() > 0:
+            fig_pie1, ax_pie1 = plt.subplots(figsize=(8, 8))
+            colors_enrollment = ['#87CEEB', '#4682B4', '#1E90FF', '#0000CD', '#000080']
+            # Filter out zero values for pie chart
+            enrollment_data = district_df[district_df['Total_Enrollment'] > 0]
+            if len(enrollment_data) > 0:
+                wedges, texts, autotexts = ax_pie1.pie(enrollment_data['Total_Enrollment'], 
+                                                      labels=enrollment_data['District'],
+                                                      autopct='%1.1f%%',
+                                                      colors=colors_enrollment[:len(enrollment_data)],
+                                                      startangle=90)
+                ax_pie1.set_title('Total Enrollment Distribution\nby District', fontsize=14, fontweight='bold')
+                plt.setp(autotexts, size=10, weight="bold")
+                st.pyplot(fig_pie1)
+            else:
+                st.warning("No enrollment data available for pie chart")
+        else:
+            st.warning("No enrollment data available for pie chart")
     
     with col2:
         # ITN distribution pie chart
-        fig_pie2, ax_pie2 = plt.subplots(figsize=(8, 8))
-        colors_itn = ['#90EE90', '#32CD32', '#228B22', '#006400', '#004000']
-        wedges, texts, autotexts = ax_pie2.pie(district_df['Total_ITN'], 
-                                              labels=district_df['District'],
-                                              autopct='%1.1f%%',
-                                              colors=colors_itn[:len(district_df)],
-                                              startangle=90)
-        ax_pie2.set_title('Total ITN Distribution\nby District', fontsize=14, fontweight='bold')
-        plt.setp(autotexts, size=10, weight="bold")
-        st.pyplot(fig_pie2)
+        if district_df['Total_ITN'].sum() > 0:
+            fig_pie2, ax_pie2 = plt.subplots(figsize=(8, 8))
+            colors_itn = ['#90EE90', '#32CD32', '#228B22', '#006400', '#004000']
+            # Filter out zero values for pie chart
+            itn_data = district_df[district_df['Total_ITN'] > 0]
+            if len(itn_data) > 0:
+                wedges, texts, autotexts = ax_pie2.pie(itn_data['Total_ITN'], 
+                                                      labels=itn_data['District'],
+                                                      autopct='%1.1f%%',
+                                                      colors=colors_itn[:len(itn_data)],
+                                                      startangle=90)
+                ax_pie2.set_title('Total ITN Distribution\nby District', fontsize=14, fontweight='bold')
+                plt.setp(autotexts, size=10, weight="bold")
+                st.pyplot(fig_pie2)
+            else:
+                st.warning("No ITN distribution data available for pie chart")
+        else:
+            st.warning("No ITN distribution data available for pie chart")
     
     # All Chiefdoms Analysis
     st.subheader("📊 All Chiefdoms Analysis")
@@ -459,44 +475,67 @@ if uploaded_file:
             
             with col1:
                 # Enrollment pie chart by chiefdom
-                fig_pie_chief1, ax_pie_chief1 = plt.subplots(figsize=(10, 10))
-                colors_blue = plt.cm.Blues(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                wedges, texts, autotexts = ax_pie_chief1.pie(chiefdom_df['Total_Enrollment'], 
-                                                            labels=chiefdom_df['Chiefdom'],
-                                                            autopct='%1.1f%%',
-                                                            colors=colors_blue,
-                                                            startangle=90)
-                ax_pie_chief1.set_title('Enrollment Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                plt.setp(autotexts, size=8, weight="bold")
-                st.pyplot(fig_pie_chief1)
+                if chiefdom_df['Total_Enrollment'].sum() > 0:
+                    fig_pie_chief1, ax_pie_chief1 = plt.subplots(figsize=(10, 10))
+                    colors_blue = plt.cm.Blues(np.linspace(0.3, 0.9, len(chiefdom_df)))
+                    # Filter out zero values
+                    enrollment_chief_data = chiefdom_df[chiefdom_df['Total_Enrollment'] > 0]
+                    if len(enrollment_chief_data) > 0:
+                        wedges, texts, autotexts = ax_pie_chief1.pie(enrollment_chief_data['Total_Enrollment'], 
+                                                                    labels=enrollment_chief_data['Chiefdom'],
+                                                                    autopct='%1.1f%%',
+                                                                    colors=colors_blue[:len(enrollment_chief_data)],
+                                                                    startangle=90)
+                        ax_pie_chief1.set_title('Enrollment Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
+                        plt.setp(autotexts, size=8, weight="bold")
+                        st.pyplot(fig_pie_chief1)
+                    else:
+                        st.warning("No enrollment data for chiefdom pie chart")
+                else:
+                    st.warning("No enrollment data for chiefdom pie chart")
             
             with col2:
                 # ITN distribution pie chart by chiefdom
-                fig_pie_chief2, ax_pie_chief2 = plt.subplots(figsize=(10, 10))
-                colors_green = plt.cm.Greens(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                wedges, texts, autotexts = ax_pie_chief2.pie(chiefdom_df['Total_ITN'], 
-                                                            labels=chiefdom_df['Chiefdom'],
-                                                            autopct='%1.1f%%',
-                                                            colors=colors_green,
-                                                            startangle=90)
-                ax_pie_chief2.set_title('ITN Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                plt.setp(autotexts, size=8, weight="bold")
-                st.pyplot(fig_pie_chief2)
+                if chiefdom_df['Total_ITN'].sum() > 0:
+                    fig_pie_chief2, ax_pie_chief2 = plt.subplots(figsize=(10, 10))
+                    colors_green = plt.cm.Greens(np.linspace(0.3, 0.9, len(chiefdom_df)))
+                    # Filter out zero values
+                    itn_chief_data = chiefdom_df[chiefdom_df['Total_ITN'] > 0]
+                    if len(itn_chief_data) > 0:
+                        wedges, texts, autotexts = ax_pie_chief2.pie(itn_chief_data['Total_ITN'], 
+                                                                    labels=itn_chief_data['Chiefdom'],
+                                                                    autopct='%1.1f%%',
+                                                                    colors=colors_green[:len(itn_chief_data)],
+                                                                    startangle=90)
+                        ax_pie_chief2.set_title('ITN Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
+                        plt.setp(autotexts, size=8, weight="bold")
+                        st.pyplot(fig_pie_chief2)
+                    else:
+                        st.warning("No ITN data for chiefdom pie chart")
+                else:
+                    st.warning("No ITN data for chiefdom pie chart")
             
             with col3:
                 # Coverage pie chart by chiefdom (showing relative coverage levels)
-                fig_pie_chief3, ax_pie_chief3 = plt.subplots(figsize=(10, 10))
-                colors_yellow = plt.cm.YlOrRd(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                # Use coverage values for pie chart
-                coverage_values = chiefdom_df['Coverage'].values
-                wedges, texts, autotexts = ax_pie_chief3.pie(coverage_values, 
-                                                            labels=chiefdom_df['Chiefdom'],
-                                                            autopct='%1.1f%%',
-                                                            colors=colors_yellow,
-                                                            startangle=90)
-                ax_pie_chief3.set_title('Coverage Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                plt.setp(autotexts, size=8, weight="bold")
-                st.pyplot(fig_pie_chief3)
+                if chiefdom_df['Coverage'].sum() > 0:
+                    fig_pie_chief3, ax_pie_chief3 = plt.subplots(figsize=(10, 10))
+                    colors_yellow = plt.cm.YlOrRd(np.linspace(0.3, 0.9, len(chiefdom_df)))
+                    # Filter out zero values and use coverage values for pie chart
+                    coverage_chief_data = chiefdom_df[chiefdom_df['Coverage'] > 0]
+                    if len(coverage_chief_data) > 0:
+                        coverage_values = coverage_chief_data['Coverage'].values
+                        wedges, texts, autotexts = ax_pie_chief3.pie(coverage_values, 
+                                                                    labels=coverage_chief_data['Chiefdom'],
+                                                                    autopct='%1.1f%%',
+                                                                    colors=colors_yellow[:len(coverage_chief_data)],
+                                                                    startangle=90)
+                        ax_pie_chief3.set_title('Coverage Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
+                        plt.setp(autotexts, size=8, weight="bold")
+                        st.pyplot(fig_pie_chief3)
+                    else:
+                        st.warning("No coverage data for chiefdom pie chart")
+                else:
+                    st.warning("No coverage data for chiefdom pie chart")
             
         else:
             st.warning("No chiefdom data available for analysis")
