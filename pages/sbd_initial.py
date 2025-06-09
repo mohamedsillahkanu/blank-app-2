@@ -8,9 +8,9 @@ import geopandas as gpd
 # Custom CSS to align main content to left with proper spacing
 st.markdown("""
 <style>
-    /* Reduce sidebar width and adjust main content positioning */
+    /* Increase sidebar width */
     section[data-testid="stSidebar"] {
-        width: 280px !important;
+        width: 320px !important;
     }
     
     /* Align main content to left with adequate spacing */
@@ -49,7 +49,52 @@ st.markdown("""
         padding-left: 1rem !important;
         margin-left: 0 !important;
     }
+    
+    /* Logo container styling */
+    .logo-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+    
+    .logo-placeholder {
+        width: 120px;
+        height: 80px;
+        border: 2px dashed #cccccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #666666;
+        text-align: center;
+    }
 </style>
+""", unsafe_allow_html=True)
+
+# Logo Section
+st.markdown("""
+<div class="logo-container">
+    <div class="logo-placeholder">
+        Logo 1<br>
+        (Left)<br>
+        .png
+    </div>
+    <div class="logo-placeholder">
+        Logo 2<br>
+        (Center)<br>
+        .png
+    </div>
+    <div class="logo-placeholder">
+        Logo 3<br>
+        (Right)<br>
+        .png
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # Streamlit App
