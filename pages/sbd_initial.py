@@ -5,9 +5,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
 
-# Custom CSS with blue and white theme
+# Custom CSS with blue and white theme and zoom functionality
 st.markdown("""
 <style>
+    /* Allow zoom functionality */
+    .stApp {
+        zoom: 1 !important;
+        transform: scale(1) !important;
+        transform-origin: 0 0 !important;
+    }
+    
     /* Increase sidebar width */
     section[data-testid="stSidebar"] {
         width: 320px !important;
@@ -15,10 +22,6 @@ st.markdown("""
     }
     
     /* Main app styling with blue theme */
-    .stApp {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-    }
-    
     .main .block-container {
         padding-left: 1rem !important;
         padding-right: 1rem !important;
@@ -130,19 +133,49 @@ st.markdown("""
         border-radius: 10px !important;
     }
     
-    /* Logo placeholder styling */
+    /* Logo container styling for consistent alignment */
+    .logo-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 1rem 0 !important;
+        margin-bottom: 1rem !important;
+        border-bottom: 2px solid #f0f0f0 !important;
+    }
+    
+    .logo-item {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 300px !important;
+        height: 200px !important;
+        border: 2px solid #3498db !important;
+        border-radius: 15px !important;
+        background: linear-gradient(135deg, #f8f9fd, #e3f2fd) !important;
+        overflow: hidden !important;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+    }
+    
+    .logo-item img {
+        max-width: 280px !important;
+        max-height: 180px !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain !important;
+    }
+    
     .logo-placeholder {
-        width: 240px !important;
-        height: 160px !important;
+        width: 280px !important;
+        height: 180px !important;
         border: 2px dashed #3498db !important;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
         background: linear-gradient(135deg, #f8f9fd, #e3f2fd) !important;
         border-radius: 15px !important;
         font-size: 14px !important;
         color: #2c3e50 !important;
-        text-align: center;
+        text-align: center !important;
         font-weight: 600 !important;
     }
     
@@ -887,7 +920,7 @@ st.subheader("📥 Export Complete Dataset")
 st.write("Download the complete extracted dataset in your preferred format:")
 
 # Create download buttons in columns
-download_col1, download_col2 = st.columns(2)
+download_col1, download_col2, download_col3 = st.columns(3)
 
 with download_col1:
     # CSV Download
@@ -915,6 +948,76 @@ with download_col2:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         help="Download all extracted data in Excel format"
     )
+
+with download_col3:
+    # Word Report Download
+    if st.button("📋 Generate Word Report", help="Generate and download comprehensive report in Word format"):
+        # Generate Word report content
+        from docx import Document
+        from docx.shared import Inches
+        
+        doc = Document()
+        doc.add_heading('School-Based Distribution (SBD) Report', 0)
+        
+        # Add executive summary
+        doc.add_heading('Executive Summary', level=1)
+        total_records = len(extracted_df)
+        total_districts = len(extracted_df['District'].dropna().unique())
+        total_chiefdoms = len(extracted_df['Chiefdom'].dropna().unique())
+        
+        summary_text = f"""
+        This report presents the analysis of School-Based Distribution data covering {total_districts} districts 
+        and {total_chiefdoms} chiefdoms with {total_records} total records.
+        
+        Key Findings:
+        - Total Schools Surveyed: {total_records}
+        - Districts Covered: {total_districts}
+        - Chiefdoms Covered: {total_chiefdoms}
+        """
+        doc.add_paragraph(summary_text)
+        
+        # Add district summary
+        doc.add_heading('District Summary', level=1)
+        for district in extracted_df['District'].dropna().unique():
+            district_data = extracted_df[extracted_df['District'] == district]
+            total_enrollment = 0
+            total_itn = 0
+            
+            for class_num in range(1, 6):
+                boys_col = f"Number of boys in class {class_num}"
+                girls_col = f"Number of girls in class {class_num}"
+                itn_col = f"Number of ITN distributed to class {class_num}"
+                
+                if boys_col in district_data.columns:
+                    total_enrollment += district_data[boys_col].fillna(0).sum()
+                if girls_col in district_data.columns:
+                    total_enrollment += district_data[girls_col].fillna(0).sum()
+                if itn_col in district_data.columns:
+                    total_itn += district_data[itn_col].fillna(0).sum()
+            
+            coverage = (total_itn / total_enrollment * 100) if total_enrollment > 0 else 0
+            
+            doc.add_heading(f'{district} District', level=2)
+            district_text = f"""
+            Schools: {len(district_data)}
+            Total Enrollment: {int(total_enrollment)}
+            Total ITNs Distributed: {int(total_itn)}
+            Coverage: {coverage:.1f}%
+            """
+            doc.add_paragraph(district_text)
+        
+        # Save to BytesIO
+        word_buffer = BytesIO()
+        doc.save(word_buffer)
+        word_data = word_buffer.getvalue()
+        
+        st.download_button(
+            label="💾 Download Word Report",
+            data=word_data,
+            file_name="SBD_Report.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            help="Download comprehensive report in Word format"
+        )
 
 # Display final summary
 st.info(f"📋 **Dataset Summary**: {len(extracted_df)} total records extracted and processed")
