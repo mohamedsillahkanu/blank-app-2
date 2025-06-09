@@ -219,7 +219,7 @@ with col2:
 
 with col3:
     # Placeholder for third logo
-    st.markdown('<div class="logo-placeholder">Logo 3<br>(Right)<br>.png</div>', unsafe_allow_html=True)
+    st.markdown('<div class="logo-placeholder">image003.png</div>', unsafe_allow_html=True)
 
 st.markdown("---")  # Add a horizontal line separator
 
