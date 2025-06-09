@@ -5,23 +5,47 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
 
-# Custom CSS to reduce sidebar distance
+# Custom CSS to minimize sidebar distance
 st.markdown("""
 <style>
+    /* Reduce main content left padding to minimum */
     .css-1d391kg {
-        padding-left: 1rem !important;
+        padding-left: 0.2rem !important;
     }
     .css-1y4p8pa {
-        padding-left: 1rem !important;
-    }
-    .stApp > div:first-child {
-        margin-left: -2rem;
-    }
-    section[data-testid="stSidebar"] {
-        width: 280px !important;
+        padding-left: 0.2rem !important;
     }
     .css-1lcbmhc {
-        padding-left: 1rem !important;
+        padding-left: 0.2rem !important;
+    }
+    .css-k1vhr4 {
+        padding-left: 0.2rem !important;
+    }
+    
+    /* Move main app content closer to sidebar */
+    .stApp > div:first-child {
+        margin-left: -3rem !important;
+    }
+    
+    /* Make sidebar narrower */
+    section[data-testid="stSidebar"] {
+        width: 250px !important;
+    }
+    
+    /* Remove extra spacing from main container */
+    .main .block-container {
+        padding-left: 0.5rem !important;
+        margin-left: 0 !important;
+    }
+    
+    /* Target the main content area specifically */
+    div[data-testid="stAppViewContainer"] {
+        padding-left: 0.3rem !important;
+    }
+    
+    /* Additional container adjustments */
+    .css-18e3th9 {
+        padding-left: 0.2rem !important;
     }
 </style>
 """, unsafe_allow_html=True)
