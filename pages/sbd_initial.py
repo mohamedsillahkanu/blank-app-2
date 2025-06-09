@@ -61,8 +61,8 @@ st.markdown("""
     }
     
     .logo-placeholder {
-        width: 120px;
-        height: 80px;
+        width: 200px;
+        height: 200px;
         border: 2px dashed #cccccc;
         display: flex;
         align-items: center;
