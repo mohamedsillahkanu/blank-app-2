@@ -106,37 +106,10 @@ if uploaded_file:
     # Display Dual Maps at the top
     st.subheader("🗺️ Geographic Distribution Maps")
     
-    # Debug information
-    st.write("**Debug Information:**")
     if gdf is not None:
-        st.write(f"✅ Shapefile loaded with {len(gdf)} features")
-        st.write(f"Shapefile columns: {list(gdf.columns)}")
-        if 'FIRST_DNAM' in gdf.columns:
-            st.write(f"Available districts in shapefile: {sorted(gdf['FIRST_DNAM'].unique())}")
-    else:
-        st.write("❌ Shapefile not loaded")
-    
-    st.write(f"Extracted data columns: {list(extracted_df.columns)}")
-    if "GPS Location" in extracted_df.columns:
-        st.write(f"✅ GPS Location column found")
-        st.write(f"GPS data sample: {extracted_df['GPS Location'].dropna().head(3).tolist()}")
-    else:
-        st.write("❌ GPS Location column not found")
-    
-    if "District" in extracted_df.columns:
-        st.write(f"Available districts in data: {sorted(extracted_df['District'].dropna().unique())}")
-    
-    if gdf is not None and "GPS Location" in extracted_df.columns:
         # Define specific districts for left and right maps
         left_district = "BO"
         right_district = "BOMBALI"
-        
-        # Check if these districts exist in the data
-        bo_data = extracted_df[extracted_df["District"] == left_district]
-        bombali_data = extracted_df[extracted_df["District"] == right_district]
-        
-        st.write(f"BO district records: {len(bo_data)}")
-        st.write(f"BOMBALI district records: {len(bombali_data)}")
         
         # Create two columns for side-by-side maps
         col1, col2 = st.columns(2)
@@ -145,163 +118,137 @@ if uploaded_file:
         with col1:
             st.write(f"**{left_district} District - All Chiefdoms**")
             
-            # Filter data for BO district
-            district_data = extracted_df[extracted_df["District"] == left_district].copy()
-                
-                if len(district_data) > 0:
-                    # Extract GPS coordinates for this district
-                    gps_data = district_data["GPS Location"].dropna()
-                    coords_extracted = []
-                    
-                    for gps_val in gps_data:
-                        coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
-                        if len(coords) >= 2:
-                            coords_extracted.append([float(coords[0]), float(coords[1])])
-                        else:
-                            coords_extracted.append([None, None])
-                    
-                    # Create map data
-                    map_data_left = district_data.copy()
-                    map_data_left['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
-                                               for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_left) - len(coords_extracted)))]
-                    map_data_left['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
-                                               for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_left) - len(coords_extracted)))]
-                    
-                    # Remove rows with missing GPS data
-                    map_data_left = map_data_left.dropna(subset=['temp_lat', 'temp_lon'])
-                    
-                    if len(map_data_left) > 0:
-                        # Calculate total enrollment
-                        map_data_left["Total Enrollment"] = 0
-                        for class_num in range(1, 6):
-                            total_col = f"Number of enrollments in class {class_num}"
-                            if total_col in map_data_left.columns:
-                                map_data_left["Total Enrollment"] += map_data_left[total_col].fillna(0)
-                        
-                        # Create the left plot
-                        fig_left, ax_left = plt.subplots(figsize=(8, 8))
-                        
-                        # Filter shapefile to show only chiefdoms of BO district
-                        district_gdf = gdf[gdf['FIRST_DNAM'] == left_district] if 'FIRST_DNAM' in gdf.columns else gdf
-                        
-                        # Plot shapefile boundaries in white with black edges
-                        district_gdf.plot(ax=ax_left, color='white', edgecolor='black', alpha=0.8, linewidth=1)
-                        
-                        # Plot school points in blue
-                        ax_left.scatter(
-                            map_data_left['temp_lon'], 
-                            map_data_left['temp_lat'],
-                            c='blue',
-                            s=60,  # Fixed size for better visibility
-                            alpha=0.8,
-                            edgecolors='darkblue',
-                            linewidth=1
-                        )
-                        
-                        # Customize plot
-                        ax_left.set_title(f'{left_district} District\nSchools: {len(map_data_left)}', fontsize=12, fontweight='bold')
-                        ax_left.set_xlabel('Longitude')
-                        ax_left.set_ylabel('Latitude')
-                        
-                        # Remove axis ticks for cleaner look
-                        ax_left.set_xticks([])
-                        ax_left.set_yticks([])
-                        
-                        plt.tight_layout()
-                        st.pyplot(fig_left)
-                        
-                        # Display chiefdoms in this district
-                        unique_chiefdoms = map_data_left['Chiefdom'].dropna().unique()
-                        st.write(f"**Chiefdoms ({len(unique_chiefdoms)}):** {', '.join(unique_chiefdoms)}")
-                        
-                        # Summary metrics
-                        st.metric("Total Students", int(map_data_left['Total Enrollment'].sum()))
-                    else:
-                        st.warning("No valid GPS coordinates found for this district.")
-                else:
-                    st.warning(f"No data found for {left_district} district.")
+            # Filter shapefile for BO district
+            bo_gdf = gdf[gdf['FIRST_DNAM'] == left_district].copy()
             
-            # RIGHT MAP - BOMBALI District
-            with col2:
-                st.write(f"**{right_district} District - All Chiefdoms**")
+            if len(bo_gdf) > 0:
+                # Create the left plot
+                fig_left, ax_left = plt.subplots(figsize=(8, 8))
                 
-                # Filter data for BOMBALI district
-                bombali_data = extracted_df[extracted_df["District"] == right_district].copy()
+                # Plot chiefdom boundaries in white with black edges
+                bo_gdf.plot(ax=ax_left, color='white', edgecolor='black', alpha=0.8, linewidth=1)
                 
-                if len(bombali_data) > 0:
-                    # Extract GPS coordinates for BOMBALI district
-                    gps_data = bombali_data["GPS Location"].dropna()
-                    coords_extracted = []
-                    
-                    for gps_val in gps_data:
-                        coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
-                        if len(coords) >= 2:
-                            coords_extracted.append([float(coords[0]), float(coords[1])])
-                        else:
-                            coords_extracted.append([None, None])
-                    
-                    # Create map data
-                    map_data_right = bombali_data.copy()
-                    map_data_right['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
-                                                for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_right) - len(coords_extracted)))]
-                    map_data_right['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
-                                                for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_right) - len(coords_extracted)))]
-                    
-                    # Remove rows with missing GPS data
-                    map_data_right = map_data_right.dropna(subset=['temp_lat', 'temp_lon'])
-                    
-                    if len(map_data_right) > 0:
-                        # Calculate total enrollment
-                        map_data_right["Total Enrollment"] = 0
-                        for class_num in range(1, 6):
-                            total_col = f"Number of enrollments in class {class_num}"
-                            if total_col in map_data_right.columns:
-                                map_data_right["Total Enrollment"] += map_data_right[total_col].fillna(0)
-                        
-                        # Create the right plot
-                        fig_right, ax_right = plt.subplots(figsize=(8, 8))
-                        
-                        # Filter shapefile to show only chiefdoms of BOMBALI district
-                        bombali_gdf = gdf[gdf['FIRST_DNAM'] == right_district] if 'FIRST_DNAM' in gdf.columns else gdf
-                        
-                        # Plot shapefile boundaries in white with black edges
-                        bombali_gdf.plot(ax=ax_right, color='white', edgecolor='black', alpha=0.8, linewidth=1)
-                        
-                        # Plot school points in blue
-                        ax_right.scatter(
-                            map_data_right['temp_lon'], 
-                            map_data_right['temp_lat'],
-                            c='blue',
-                            s=60,  # Fixed size for better visibility
-                            alpha=0.8,
-                            edgecolors='darkblue',
-                            linewidth=1
+                # Get chiefdom centroids for point plotting
+                bo_gdf['centroid'] = bo_gdf.geometry.centroid
+                bo_gdf['centroid_x'] = bo_gdf.centroid.x
+                bo_gdf['centroid_y'] = bo_gdf.centroid.y
+                
+                # Plot chiefdom centroids as blue points
+                ax_left.scatter(
+                    bo_gdf['centroid_x'], 
+                    bo_gdf['centroid_y'],
+                    c='blue',
+                    s=80,  # Point size
+                    alpha=0.8,
+                    edgecolors='darkblue',
+                    linewidth=1,
+                    zorder=5  # Ensure points appear on top
+                )
+                
+                # Add chiefdom labels
+                for idx, row in bo_gdf.iterrows():
+                    if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
+                        ax_left.annotate(
+                            row['FIRST_CHIE'], 
+                            (row['centroid_x'], row['centroid_y']),
+                            xytext=(5, 5), 
+                            textcoords='offset points',
+                            fontsize=8,
+                            ha='left',
+                            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7)
                         )
-                        
-                        # Customize plot
-                        ax_right.set_title(f'{right_district} District\nSchools: {len(map_data_right)}', fontsize=12, fontweight='bold')
-                        ax_right.set_xlabel('Longitude')
-                        ax_right.set_ylabel('Latitude')
-                        
-                        # Remove axis ticks for cleaner look
-                        ax_right.set_xticks([])
-                        ax_right.set_yticks([])
-                        
-                        plt.tight_layout()
-                        st.pyplot(fig_right)
-                        
-                        # Display chiefdoms in BOMBALI district
-                        unique_chiefdoms = map_data_right['Chiefdom'].dropna().unique()
-                        st.write(f"**Chiefdoms ({len(unique_chiefdoms)}):** {', '.join(unique_chiefdoms)}")
-                        
-                        # Summary metrics
-                        st.metric("Total Students", int(map_data_right['Total Enrollment'].sum()))
-                    else:
-                        st.warning("No valid GPS coordinates found for BOMBALI district.")
+                
+                # Customize plot
+                ax_left.set_title(f'{left_district} District\nChiefdoms: {len(bo_gdf)}', fontsize=12, fontweight='bold')
+                ax_left.set_xlabel('Longitude')
+                ax_left.set_ylabel('Latitude')
+                
+                # Remove axis ticks for cleaner look
+                ax_left.set_xticks([])
+                ax_left.set_yticks([])
+                
+                plt.tight_layout()
+                st.pyplot(fig_left)
+                
+                # Display chiefdoms list
+                if 'FIRST_CHIE' in bo_gdf.columns:
+                    chiefdoms = bo_gdf['FIRST_CHIE'].dropna().tolist()
+                    st.write(f"**Chiefdoms ({len(chiefdoms)}):**")
+                    for i, chiefdom in enumerate(chiefdoms, 1):
+                        st.write(f"{i}. {chiefdom}")
                 else:
-                    st.warning(f"No data found for {right_district} district.")
+                    st.warning("FIRST_CHIE column not found in shapefile")
+            else:
+                st.warning(f"No chiefdoms found for {left_district} district in shapefile")
+        
+        # RIGHT MAP - BOMBALI District with its Chiefdoms
+        with col2:
+            st.write(f"**{right_district} District - All Chiefdoms**")
+            
+            # Filter shapefile for BOMBALI district
+            bombali_gdf = gdf[gdf['FIRST_DNAM'] == right_district].copy()
+            
+            if len(bombali_gdf) > 0:
+                # Create the right plot
+                fig_right, ax_right = plt.subplots(figsize=(8, 8))
+                
+                # Plot chiefdom boundaries in white with black edges
+                bombali_gdf.plot(ax=ax_right, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+                
+                # Get chiefdom centroids for point plotting
+                bombali_gdf['centroid'] = bombali_gdf.geometry.centroid
+                bombali_gdf['centroid_x'] = bombali_gdf.centroid.x
+                bombali_gdf['centroid_y'] = bombali_gdf.centroid.y
+                
+                # Plot chiefdom centroids as blue points
+                ax_right.scatter(
+                    bombali_gdf['centroid_x'], 
+                    bombali_gdf['centroid_y'],
+                    c='blue',
+                    s=80,  # Point size
+                    alpha=0.8,
+                    edgecolors='darkblue',
+                    linewidth=1,
+                    zorder=5  # Ensure points appear on top
+                )
+                
+                # Add chiefdom labels
+                for idx, row in bombali_gdf.iterrows():
+                    if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
+                        ax_right.annotate(
+                            row['FIRST_CHIE'], 
+                            (row['centroid_x'], row['centroid_y']),
+                            xytext=(5, 5), 
+                            textcoords='offset points',
+                            fontsize=8,
+                            ha='left',
+                            bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.7)
+                        )
+                
+                # Customize plot
+                ax_right.set_title(f'{right_district} District\nChiefdoms: {len(bombali_gdf)}', fontsize=12, fontweight='bold')
+                ax_right.set_xlabel('Longitude')
+                ax_right.set_ylabel('Latitude')
+                
+                # Remove axis ticks for cleaner look
+                ax_right.set_xticks([])
+                ax_right.set_yticks([])
+                
+                plt.tight_layout()
+                st.pyplot(fig_right)
+                
+                # Display chiefdoms list
+                if 'FIRST_CHIE' in bombali_gdf.columns:
+                    chiefdoms = bombali_gdf['FIRST_CHIE'].dropna().tolist()
+                    st.write(f"**Chiefdoms ({len(chiefdoms)}):**")
+                    for i, chiefdom in enumerate(chiefdoms, 1):
+                        st.write(f"{i}. {chiefdom}")
+                else:
+                    st.warning("FIRST_CHIE column not found in shapefile")
+            else:
+                st.warning(f"No chiefdoms found for {right_district} district in shapefile")
     else:
-        st.error("Shapefile not loaded or GPS Location column not found.")
+        st.error("Shapefile not loaded. Cannot display map.")
     
     # Display Original Data Sample
     st.subheader("📄 Original Data Sample")
