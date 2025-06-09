@@ -5,73 +5,167 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
 
-# Custom CSS to align main content to left with proper spacing
+# Custom CSS with blue and white theme
 st.markdown("""
 <style>
     /* Increase sidebar width */
     section[data-testid="stSidebar"] {
         width: 320px !important;
+        background-color: #f8f9fd !important;
     }
     
-    /* Align main content to left with adequate spacing */
+    /* Main app styling with blue theme */
+    .stApp {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    
     .main .block-container {
         padding-left: 1rem !important;
         padding-right: 1rem !important;
         margin-left: 0 !important;
         max-width: none !important;
+        background-color: white !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
     }
     
-    /* Remove centering and align left */
-    div[data-testid="stAppViewContainer"] {
-        padding-left: 1rem !important;
-        margin-left: 0 !important;
+    /* Title styling */
+    h1 {
+        color: #2c3e50 !important;
+        text-align: center !important;
+        font-weight: 700 !important;
+        margin-bottom: 2rem !important;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.1) !important;
     }
     
-    /* Ensure content starts from left after sidebar */
+    /* Subheader styling */
+    h2, h3 {
+        color: #34495e !important;
+        border-bottom: 2px solid #3498db !important;
+        padding-bottom: 0.5rem !important;
+    }
+    
+    /* Sidebar styling */
     .css-1d391kg {
         padding-left: 1rem !important;
         margin-left: 0 !important;
     }
     
-    /* Remove default centering behavior */
-    .stApp > div:first-child {
-        margin-left: 0 !important;
+    /* Button styling */
+    .stButton > button {
+        background: linear-gradient(45deg, #3498db, #2980b9) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 0.5rem 2rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3) !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* Make content fill available width properly */
-    .css-k1vhr4 {
-        padding-left: 1rem !important;
-        padding-right: 1rem !important;
+    .stButton > button:hover {
+        background: linear-gradient(45deg, #2980b9, #1f5f8b) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4) !important;
     }
     
-    /* Ensure proper content alignment */
-    .css-18e3th9 {
-        padding-left: 1rem !important;
-        margin-left: 0 !important;
+    /* Download button styling */
+    .stDownloadButton > button {
+        background: linear-gradient(45deg, #27ae60, #229954) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 0.5rem 2rem !important;
+        font-weight: 600 !important;
+        box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3) !important;
+        transition: all 0.3s ease !important;
     }
     
-    /* Logo container styling */
-    .logo-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 0;
-        margin-bottom: 1rem;
-        border-bottom: 2px solid #f0f0f0;
+    .stDownloadButton > button:hover {
+        background: linear-gradient(45deg, #229954, #1e7e34) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4) !important;
     }
     
+    /* Metric styling */
+    [data-testid="metric-container"] {
+        background: linear-gradient(135deg, #74b9ff, #0984e3) !important;
+        border: 1px solid #ddd !important;
+        padding: 1rem !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    
+    [data-testid="metric-container"] > div {
+        color: white !important;
+    }
+    
+    /* Dataframe styling */
+    .stDataFrame {
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* Info box styling */
+    .stInfo {
+        background: linear-gradient(135deg, #74b9ff, #0984e3) !important;
+        color: white !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Warning box styling */
+    .stWarning {
+        background: linear-gradient(135deg, #fdcb6e, #e17055) !important;
+        color: white !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Success box styling */
+    .stSuccess {
+        background: linear-gradient(135deg, #00b894, #00a085) !important;
+        color: white !important;
+        border-radius: 10px !important;
+    }
+    
+    /* Logo placeholder styling */
     .logo-placeholder {
-        width: 120px;
-        height: 80px;
-        border: 2px dashed #cccccc;
+        width: 240px !important;
+        height: 160px !important;
+        border: 2px dashed #3498db !important;
         display: flex;
         align-items: center;
         justify-content: center;
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        font-size: 12px;
-        color: #666666;
+        background: linear-gradient(135deg, #f8f9fd, #e3f2fd) !important;
+        border-radius: 15px !important;
+        font-size: 14px !important;
+        color: #2c3e50 !important;
         text-align: center;
+        font-weight: 600 !important;
+    }
+    
+    /* Report export button styling */
+    .report-button {
+        background: linear-gradient(45deg, #e74c3c, #c0392b) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 25px !important;
+        padding: 0.75rem 2rem !important;
+        font-weight: 700 !important;
+        font-size: 16px !important;
+        box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3) !important;
+        transition: all 0.3s ease !important;
+        cursor: pointer !important;
+        width: 100% !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .report-button:hover {
+        background: linear-gradient(45deg, #c0392b, #a93226) !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4) !important;
     }
 </style>
 """, unsafe_allow_html=True)
