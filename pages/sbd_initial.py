@@ -5,6 +5,27 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
 
+# Custom CSS to reduce sidebar distance
+st.markdown("""
+<style>
+    .css-1d391kg {
+        padding-left: 1rem !important;
+    }
+    .css-1y4p8pa {
+        padding-left: 1rem !important;
+    }
+    .stApp > div:first-child {
+        margin-left: -2rem;
+    }
+    section[data-testid="stSidebar"] {
+        width: 280px !important;
+    }
+    .css-1lcbmhc {
+        padding-left: 1rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Streamlit App
 st.title("📊 Text Data Extraction & Visualization")
 
