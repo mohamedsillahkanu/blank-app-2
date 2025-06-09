@@ -77,28 +77,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Logo Section
-st.markdown("""
-<div class="logo-container">
-    <div class="logo-placeholder">
-        Logo 1<br>
-        (Left)<br>
-        .png
-    </div>
-    <div class="logo-placeholder">
-        Logo 2<br>
-        (Center)<br>
-        .png
-    </div>
-    <div class="logo-placeholder">
-        Logo 3<br>
-        (Right)<br>
-        .png
-    </div>
-</div>
-""", unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+with col1:
+    try:
+        st.image("NMCP.png", width=120)
+    except:
+        st.markdown('<div class="logo-placeholder">NMCP.png<br>Not Found</div>', unsafe_allow_html=True)
+
+with col2:
+    try:
+        st.image("icf_sl (2).jpg", width=120)
+    except:
+        st.markdown('<div class="logo-placeholder">icf_sl (2).jpg<br>Not Found</div>', unsafe_allow_html=True)
+
+with col3:
+    # Placeholder for third logo
+    st.markdown('<div class="logo-placeholder">Logo 3<br>(Right)<br>.png</div>', unsafe_allow_html=True)
+
+st.markdown("---")  # Add a horizontal line separator
 
 # Streamlit App
-st.title("📊 Text Data Extraction & Visualization")
+st.title("School-Based Distribution of ITNs in Sierra Leone")
 
 # Upload file
 uploaded_file = "Report_GMB253374_SBD_1749318384635_submissions.xlsx"
@@ -788,3 +787,40 @@ if uploaded_file:
         st.pyplot(fig)
     else:
         st.warning("No data available for the selected filters.")
+
+# Final Data Export Section
+st.subheader("📥 Export Complete Dataset")
+st.write("Download the complete extracted dataset in your preferred format:")
+
+# Create download buttons in columns
+download_col1, download_col2 = st.columns(2)
+
+with download_col1:
+    # CSV Download
+    csv_data = extracted_df.to_csv(index=False)
+    st.download_button(
+        label="📄 Download Complete Data as CSV",
+        data=csv_data,
+        file_name="complete_extracted_data.csv",
+        mime="text/csv",
+        help="Download all extracted data in CSV format"
+    )
+
+with download_col2:
+    # Excel Download
+    from io import BytesIO
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+        extracted_df.to_excel(writer, sheet_name='Extracted Data', index=False)
+    excel_data = excel_buffer.getvalue()
+    
+    st.download_button(
+        label="📊 Download Complete Data as Excel",
+        data=excel_data,
+        file_name="complete_extracted_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Download all extracted data in Excel format"
+    )
+
+# Display final summary
+st.info(f"📋 **Dataset Summary**: {len(extracted_df)} total records extracted and processed")
