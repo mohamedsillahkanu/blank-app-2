@@ -387,160 +387,112 @@ if uploaded_file:
         else:
             st.warning("No ITN distribution data available for pie chart")
     
-    # All Chiefdoms Analysis
-    st.subheader("📊 All Chiefdoms Analysis")
+    # All Chiefdoms Analysis by District
+    st.subheader("📊 Chiefdoms Analysis by District")
     
-    # Get all unique chiefdoms
-    all_chiefdoms = extracted_df['Chiefdom'].dropna().unique()
+    # Get all unique districts that have chiefdom data
+    districts_with_chiefdoms = extracted_df[extracted_df['Chiefdom'].notna()]['District'].unique()
     
-    if len(all_chiefdoms) > 0:
-        # Calculate by chiefdom
-        chiefdom_analysis = []
+    for district in districts_with_chiefdoms:
+        st.write(f"### {district} District - Chiefdoms Analysis")
         
-        for chiefdom in all_chiefdoms:
-            chiefdom_data = extracted_df[extracted_df['Chiefdom'] == chiefdom]
+        # Filter data for this district
+        district_data = extracted_df[extracted_df['District'] == district]
+        district_chiefdoms = district_data['Chiefdom'].dropna().unique()
+        
+        if len(district_chiefdoms) > 0:
+            # Calculate by chiefdom for this district
+            district_chiefdom_analysis = []
             
-            total_enrollment = 0
-            total_itn = 0
-            
-            for class_num in range(1, 6):
-                boys_col = f"Number of boys in class {class_num}"
-                girls_col = f"Number of girls in class {class_num}"
-                itn_col = f"Number of ITN distributed to class {class_num}"
+            for chiefdom in district_chiefdoms:
+                chiefdom_data = district_data[district_data['Chiefdom'] == chiefdom]
                 
-                if boys_col in chiefdom_data.columns:
-                    total_enrollment += chiefdom_data[boys_col].fillna(0).sum()
-                if girls_col in chiefdom_data.columns:
-                    total_enrollment += chiefdom_data[girls_col].fillna(0).sum()
-                if itn_col in chiefdom_data.columns:
-                    total_itn += chiefdom_data[itn_col].fillna(0).sum()
+                total_enrollment = 0
+                total_itn = 0
+                
+                for class_num in range(1, 6):
+                    boys_col = f"Number of boys in class {class_num}"
+                    girls_col = f"Number of girls in class {class_num}"
+                    itn_col = f"Number of ITN distributed to class {class_num}"
+                    
+                    if boys_col in chiefdom_data.columns:
+                        total_enrollment += chiefdom_data[boys_col].fillna(0).sum()
+                    if girls_col in chiefdom_data.columns:
+                        total_enrollment += chiefdom_data[girls_col].fillna(0).sum()
+                    if itn_col in chiefdom_data.columns:
+                        total_itn += chiefdom_data[itn_col].fillna(0).sum()
+                
+                # Calculate coverage percentage
+                coverage = (total_itn / total_enrollment * 100) if total_enrollment > 0 else 0
+                
+                district_chiefdom_analysis.append({
+                    'Chiefdom': chiefdom,
+                    'Total_Enrollment': total_enrollment,
+                    'Total_ITN': total_itn,
+                    'Coverage': coverage
+                })
             
-            # Calculate coverage percentage
-            coverage = (total_itn / total_enrollment * 100) if total_enrollment > 0 else 0
+            district_chiefdom_df = pd.DataFrame(district_chiefdom_analysis)
+            district_chiefdom_df = district_chiefdom_df.sort_values('Total_Enrollment', ascending=False)
             
-            chiefdom_analysis.append({
-                'Chiefdom': chiefdom,
-                'Total_Enrollment': total_enrollment,
-                'Total_ITN': total_itn,
-                'Coverage': coverage
-            })
-        
-        chiefdom_df = pd.DataFrame(chiefdom_analysis)
-        chiefdom_df = chiefdom_df.sort_values('Total_Enrollment', ascending=False)
-        
-        if len(chiefdom_df) > 0:
-            # Create 3-column subplot for all chiefdoms (Enrollment, ITN, Coverage)
-            fig_chiefdoms, (ax1_chief, ax2_chief, ax3_chief) = plt.subplots(1, 3, figsize=(24, 8))
-            
-            # Total Enrollment by All Chiefdoms (Blue)
-            bars1 = ax1_chief.barh(chiefdom_df['Chiefdom'], chiefdom_df['Total_Enrollment'], 
-                                   color='#4682B4', edgecolor='navy')
-            ax1_chief.set_title('Total Enrollment by Chiefdom', fontsize=14, fontweight='bold')
-            ax1_chief.set_xlabel('Number of Students')
-            
-            # Add value labels
-            for i, v in enumerate(chiefdom_df['Total_Enrollment']):
-                ax1_chief.text(v + max(chiefdom_df['Total_Enrollment']) * 0.01, i, 
-                              str(int(v)), va='center', fontweight='bold')
-            
-            # Total ITN by All Chiefdoms (Green)
-            bars2 = ax2_chief.barh(chiefdom_df['Chiefdom'], chiefdom_df['Total_ITN'], 
-                                   color='#32CD32', edgecolor='darkgreen')
-            ax2_chief.set_title('Total ITN Distributed by Chiefdom', fontsize=14, fontweight='bold')
-            ax2_chief.set_xlabel('Number of ITNs')
-            
-            # Add value labels
-            for i, v in enumerate(chiefdom_df['Total_ITN']):
-                ax2_chief.text(v + max(chiefdom_df['Total_ITN']) * 0.01, i, 
-                              str(int(v)), va='center', fontweight='bold')
-            
-            # Coverage by All Chiefdoms (Yellow)
-            bars3 = ax3_chief.barh(chiefdom_df['Chiefdom'], chiefdom_df['Coverage'], 
-                                   color='#FFD700', edgecolor='orange')
-            ax3_chief.set_title('ITN Coverage by Chiefdom (%)', fontsize=14, fontweight='bold')
-            ax3_chief.set_xlabel('Coverage Percentage (%)')
-            
-            # Add value labels
-            for i, v in enumerate(chiefdom_df['Coverage']):
-                ax3_chief.text(v + max(chiefdom_df['Coverage']) * 0.01, i, 
-                              f'{v:.1f}%', va='center', fontweight='bold')
-            
-            plt.tight_layout()
-            st.pyplot(fig_chiefdoms)
-            
-            # Chiefdom-level pie charts
-            st.subheader("📊 Chiefdom-Level Distribution (Pie Charts)")
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Enrollment pie chart by chiefdom
-                if chiefdom_df['Total_Enrollment'].sum() > 0:
-                    fig_pie_chief1, ax_pie_chief1 = plt.subplots(figsize=(10, 10))
-                    colors_blue = plt.cm.Blues(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                    # Filter out zero values
-                    enrollment_chief_data = chiefdom_df[chiefdom_df['Total_Enrollment'] > 0]
-                    if len(enrollment_chief_data) > 0:
-                        wedges, texts, autotexts = ax_pie_chief1.pie(enrollment_chief_data['Total_Enrollment'], 
-                                                                    labels=enrollment_chief_data['Chiefdom'],
-                                                                    autopct='%1.1f%%',
-                                                                    colors=colors_blue[:len(enrollment_chief_data)],
-                                                                    startangle=90)
-                        ax_pie_chief1.set_title('Enrollment Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                        plt.setp(autotexts, size=8, weight="bold")
-                        st.pyplot(fig_pie_chief1)
-                    else:
-                        st.warning("No enrollment data for chiefdom pie chart")
-                else:
-                    st.warning("No enrollment data for chiefdom pie chart")
-            
-            with col2:
-                # ITN distribution pie chart by chiefdom
-                if chiefdom_df['Total_ITN'].sum() > 0:
-                    fig_pie_chief2, ax_pie_chief2 = plt.subplots(figsize=(10, 10))
-                    colors_green = plt.cm.Greens(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                    # Filter out zero values
-                    itn_chief_data = chiefdom_df[chiefdom_df['Total_ITN'] > 0]
-                    if len(itn_chief_data) > 0:
-                        wedges, texts, autotexts = ax_pie_chief2.pie(itn_chief_data['Total_ITN'], 
-                                                                    labels=itn_chief_data['Chiefdom'],
-                                                                    autopct='%1.1f%%',
-                                                                    colors=colors_green[:len(itn_chief_data)],
-                                                                    startangle=90)
-                        ax_pie_chief2.set_title('ITN Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                        plt.setp(autotexts, size=8, weight="bold")
-                        st.pyplot(fig_pie_chief2)
-                    else:
-                        st.warning("No ITN data for chiefdom pie chart")
-                else:
-                    st.warning("No ITN data for chiefdom pie chart")
-            
-            with col3:
-                # Coverage pie chart by chiefdom (showing relative coverage levels)
-                if chiefdom_df['Coverage'].sum() > 0:
-                    fig_pie_chief3, ax_pie_chief3 = plt.subplots(figsize=(10, 10))
-                    colors_yellow = plt.cm.YlOrRd(np.linspace(0.3, 0.9, len(chiefdom_df)))
-                    # Filter out zero values and use coverage values for pie chart
-                    coverage_chief_data = chiefdom_df[chiefdom_df['Coverage'] > 0]
-                    if len(coverage_chief_data) > 0:
-                        coverage_values = coverage_chief_data['Coverage'].values
-                        wedges, texts, autotexts = ax_pie_chief3.pie(coverage_values, 
-                                                                    labels=coverage_chief_data['Chiefdom'],
-                                                                    autopct='%1.1f%%',
-                                                                    colors=colors_yellow[:len(coverage_chief_data)],
-                                                                    startangle=90)
-                        ax_pie_chief3.set_title('Coverage Distribution\nby Chiefdom', fontsize=14, fontweight='bold')
-                        plt.setp(autotexts, size=8, weight="bold")
-                        st.pyplot(fig_pie_chief3)
-                    else:
-                        st.warning("No coverage data for chiefdom pie chart")
-                else:
-                    st.warning("No coverage data for chiefdom pie chart")
-            
+            if len(district_chiefdom_df) > 0:
+                # Create 3-column subplot for this district's chiefdoms
+                fig_district, (ax1_dist, ax2_dist, ax3_dist) = plt.subplots(1, 3, figsize=(24, 8))
+                
+                # Total Enrollment by Chiefdoms in this District (Blue)
+                bars1 = ax1_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_Enrollment'], 
+                                      color='#4682B4', edgecolor='navy')
+                ax1_dist.set_title(f'{district} District - Total Enrollment by Chiefdom', fontsize=14, fontweight='bold')
+                ax1_dist.set_xlabel('Number of Students')
+                
+                # Add value labels
+                for i, v in enumerate(district_chiefdom_df['Total_Enrollment']):
+                    if v > 0:  # Only show label if value is greater than 0
+                        ax1_dist.text(v + max(district_chiefdom_df['Total_Enrollment']) * 0.01, i, 
+                                      str(int(v)), va='center', fontweight='bold')
+                
+                # Total ITN by Chiefdoms in this District (Green)
+                bars2 = ax2_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_ITN'], 
+                                      color='#32CD32', edgecolor='darkgreen')
+                ax2_dist.set_title(f'{district} District - Total ITN Distributed by Chiefdom', fontsize=14, fontweight='bold')
+                ax2_dist.set_xlabel('Number of ITNs')
+                
+                # Add value labels
+                for i, v in enumerate(district_chiefdom_df['Total_ITN']):
+                    if v > 0:  # Only show label if value is greater than 0
+                        ax2_dist.text(v + max(district_chiefdom_df['Total_ITN']) * 0.01, i, 
+                                      str(int(v)), va='center', fontweight='bold')
+                
+                # Coverage by Chiefdoms in this District (Yellow)
+                bars3 = ax3_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Coverage'], 
+                                      color='#FFD700', edgecolor='orange')
+                ax3_dist.set_title(f'{district} District - ITN Coverage by Chiefdom (%)', fontsize=14, fontweight='bold')
+                ax3_dist.set_xlabel('Coverage Percentage (%)')
+                
+                # Add value labels
+                for i, v in enumerate(district_chiefdom_df['Coverage']):
+                    if v > 0:  # Only show label if value is greater than 0
+                        ax3_dist.text(v + max(district_chiefdom_df['Coverage']) * 0.01, i, 
+                                      f'{v:.1f}%', va='center', fontweight='bold')
+                
+                plt.tight_layout()
+                st.pyplot(fig_district)
+                
+                # Display summary table for this district
+                st.write(f"**{district} District Summary:**")
+                summary_cols = st.columns(3)
+                with summary_cols[0]:
+                    st.metric("Total Chiefdoms", len(district_chiefdom_df))
+                with summary_cols[1]:
+                    st.metric("Total Students", int(district_chiefdom_df['Total_Enrollment'].sum()))
+                with summary_cols[2]:
+                    st.metric("Total ITNs", int(district_chiefdom_df['Total_ITN'].sum()))
+                
+                st.divider()
+            else:
+                st.warning(f"No chiefdom data available for {district} district")
         else:
-            st.warning("No chiefdom data available for analysis")
-    else:
-        st.warning("No chiefdom data found in the dataset")
+            st.warning(f"No chiefdoms found for {district} district")
     
     # Display Original Data Sample
     st.subheader("📄 Original Data Sample")
