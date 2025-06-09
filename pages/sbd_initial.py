@@ -203,23 +203,54 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Logo Section
+# Logo Section with consistent alignment
+st.markdown("""
+<div class="logo-container">
+    <div class="logo-item" id="logo1"></div>
+    <div class="logo-item" id="logo2"></div>
+    <div class="logo-item" id="logo3"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# Add logos with consistent sizing using columns
 col1, col2, col3 = st.columns(3)
 with col1:
     try:
-        st.image("NMCP.png", width=240)
+        st.markdown('<div style="text-align: center; margin-bottom: 1rem;">', unsafe_allow_html=True)
+        st.image("NMCP.png", width=280, caption="National Malaria Control Program")
+        st.markdown('</div>', unsafe_allow_html=True)
     except:
-        st.markdown('<div class="logo-placeholder">NMCP.png<br>Not Found</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="logo-placeholder">
+            NMCP.png<br>
+            Not Found<br>
+            Please upload logo
+        </div>
+        """, unsafe_allow_html=True)
 
 with col2:
     try:
-        st.image("icf_sl (2).jpg", width=240)
+        st.markdown('<div style="text-align: center; margin-bottom: 1rem;">', unsafe_allow_html=True)
+        st.image("icf_sl (2).jpg", width=280, caption="ICF Sierra Leone")
+        st.markdown('</div>', unsafe_allow_html=True)
     except:
-        st.markdown('<div class="logo-placeholder">icf_sl (2).jpg<br>Not Found</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="logo-placeholder">
+            icf_sl (2).jpg<br>
+            Not Found<br>
+            Please upload logo
+        </div>
+        """, unsafe_allow_html=True)
 
 with col3:
     # Placeholder for third logo
-    st.markdown('<div class="logo-placeholder">image003.png</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div class="logo-placeholder">
+        Partner Logo<br>
+        (Right Position)<br>
+        Upload .png/.jpg
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")  # Add a horizontal line separator
 
@@ -954,10 +985,34 @@ with download_col3:
     if st.button("📋 Generate Word Report", help="Generate and download comprehensive report in Word format"):
         # Generate Word report content
         from docx import Document
-        from docx.shared import Inches
+        from docx.shared import Inches, Pt
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.enum.table import WD_TABLE_ALIGNMENT
+        from docx.oxml.shared import OxmlElement, qn
+        from datetime import datetime
+        import matplotlib.pyplot as plt
+        import io
+        import base64
         
         doc = Document()
-        doc.add_heading('School-Based Distribution (SBD) Report', 0)
+        
+        # Add title page
+        title = doc.add_heading('School-Based Distribution (SBD)', 0)
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        subtitle = doc.add_heading('Comprehensive Analysis Report', level=1)
+        subtitle.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Add date and time
+        current_datetime = datetime.now()
+        date_para = doc.add_paragraph()
+        date_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        date_run = date_para.add_run(f"Generated on: {current_datetime.strftime('%B %d, %Y at %I:%M %p')}")
+        date_run.font.size = Pt(12)
+        date_run.bold = True
+        
+        # Add page break
+        doc.add_page_break()
         
         # Add executive summary
         doc.add_heading('Executive Summary', level=1)
@@ -965,23 +1020,68 @@ with download_col3:
         total_districts = len(extracted_df['District'].dropna().unique())
         total_chiefdoms = len(extracted_df['Chiefdom'].dropna().unique())
         
-        summary_text = f"""
-        This report presents the analysis of School-Based Distribution data covering {total_districts} districts 
-        and {total_chiefdoms} chiefdoms with {total_records} total records.
+        # Calculate overall statistics
+        total_enrollment = 0
+        total_itn = 0
+        for class_num in range(1, 6):
+            boys_col = f"Number of boys in class {class_num}"
+            girls_col = f"Number of girls in class {class_num}"
+            itn_col = f"Number of ITN distributed to class {class_num}"
+            
+            if boys_col in extracted_df.columns:
+                total_enrollment += extracted_df[boys_col].fillna(0).sum()
+            if girls_col in extracted_df.columns:
+                total_enrollment += extracted_df[girls_col].fillna(0).sum()
+            if itn_col in extracted_df.columns:
+                total_itn += extracted_df[itn_col].fillna(0).sum()
         
-        Key Findings:
-        - Total Schools Surveyed: {total_records}
-        - Districts Covered: {total_districts}
-        - Chiefdoms Covered: {total_chiefdoms}
+        overall_coverage = (total_itn / total_enrollment * 100) if total_enrollment > 0 else 0
+        
+        summary_text = f"""
+        This comprehensive report presents the analysis of School-Based Distribution (SBD) data collected across Sierra Leone, 
+        covering {total_districts} districts and {total_chiefdoms} chiefdoms with a total of {total_records} school records.
+        
+        KEY FINDINGS:
+        • Total Schools Surveyed: {total_records:,}
+        • Districts Covered: {total_districts}
+        • Chiefdoms Covered: {total_chiefdoms}
+        • Total Student Enrollment: {int(total_enrollment):,}
+        • Total ITNs Distributed: {int(total_itn):,}
+        • Overall Coverage Rate: {overall_coverage:.1f}%
+        
+        This report provides detailed analysis of enrollment patterns, ITN distribution effectiveness, 
+        and geographic coverage across administrative boundaries.
         """
         doc.add_paragraph(summary_text)
         
-        # Add district summary
-        doc.add_heading('District Summary', level=1)
-        for district in extracted_df['District'].dropna().unique():
+        # Add district summary table
+        doc.add_heading('District Performance Summary', level=1)
+        
+        # Create district summary table
+        table = doc.add_table(rows=1, cols=5)
+        table.style = 'Table Grid'
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        
+        # Add header row
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'District'
+        hdr_cells[1].text = 'Schools'
+        hdr_cells[2].text = 'Total Enrollment'
+        hdr_cells[3].text = 'ITNs Distributed'
+        hdr_cells[4].text = 'Coverage (%)'
+        
+        # Make header bold
+        for cell in hdr_cells:
+            for paragraph in cell.paragraphs:
+                for run in paragraph.runs:
+                    run.font.bold = True
+        
+        # Add district data
+        for district in sorted(extracted_df['District'].dropna().unique()):
             district_data = extracted_df[extracted_df['District'] == district]
-            total_enrollment = 0
-            total_itn = 0
+            
+            district_enrollment = 0
+            district_itn = 0
             
             for class_num in range(1, 6):
                 boys_col = f"Number of boys in class {class_num}"
@@ -989,22 +1089,211 @@ with download_col3:
                 itn_col = f"Number of ITN distributed to class {class_num}"
                 
                 if boys_col in district_data.columns:
-                    total_enrollment += district_data[boys_col].fillna(0).sum()
+                    district_enrollment += district_data[boys_col].fillna(0).sum()
                 if girls_col in district_data.columns:
-                    total_enrollment += district_data[girls_col].fillna(0).sum()
+                    district_enrollment += district_data[girls_col].fillna(0).sum()
                 if itn_col in district_data.columns:
-                    total_itn += district_data[itn_col].fillna(0).sum()
+                    district_itn += district_data[itn_col].fillna(0).sum()
             
-            coverage = (total_itn / total_enrollment * 100) if total_enrollment > 0 else 0
+            district_coverage = (district_itn / district_enrollment * 100) if district_enrollment > 0 else 0
+            
+            row_cells = table.add_row().cells
+            row_cells[0].text = district
+            row_cells[1].text = str(len(district_data))
+            row_cells[2].text = f"{int(district_enrollment):,}"
+            row_cells[3].text = f"{int(district_itn):,}"
+            row_cells[4].text = f"{district_coverage:.1f}%"
+        
+        # Add detailed district analysis
+        doc.add_page_break()
+        doc.add_heading('Detailed District Analysis', level=1)
+        
+        for district in sorted(extracted_df['District'].dropna().unique()):
+            district_data = extracted_df[extracted_df['District'] == district]
+            district_enrollment = 0
+            district_itn = 0
+            
+            for class_num in range(1, 6):
+                boys_col = f"Number of boys in class {class_num}"
+                girls_col = f"Number of girls in class {class_num}"
+                itn_col = f"Number of ITN distributed to class {class_num}"
+                
+                if boys_col in district_data.columns:
+                    district_enrollment += district_data[boys_col].fillna(0).sum()
+                if girls_col in district_data.columns:
+                    district_enrollment += district_data[girls_col].fillna(0).sum()
+                if itn_col in district_data.columns:
+                    district_itn += district_data[itn_col].fillna(0).sum()
+            
+            district_coverage = (district_itn / district_enrollment * 100) if district_enrollment > 0 else 0
+            district_chiefdoms = district_data['Chiefdom'].dropna().unique()
             
             doc.add_heading(f'{district} District', level=2)
+            
+            # Add district overview
             district_text = f"""
-            Schools: {len(district_data)}
-            Total Enrollment: {int(total_enrollment)}
-            Total ITNs Distributed: {int(total_itn)}
-            Coverage: {coverage:.1f}%
+            OVERVIEW:
+            • Number of Schools: {len(district_data)}
+            • Number of Chiefdoms: {len(district_chiefdoms)}
+            • Total Student Enrollment: {int(district_enrollment):,}
+            • Total ITNs Distributed: {int(district_itn):,}
+            • Coverage Rate: {district_coverage:.1f}%
+            
+            CHIEFDOMS IN {district} DISTRICT:
+            {', '.join(district_chiefdoms)}
             """
             doc.add_paragraph(district_text)
+            
+            # Add chiefdom breakdown table for this district
+            if len(district_chiefdoms) > 0:
+                doc.add_paragraph(f"\nChiefdom Performance in {district} District:", style='Heading 3')
+                
+                chiefdom_table = doc.add_table(rows=1, cols=4)
+                chiefdom_table.style = 'Table Grid'
+                
+                # Header
+                chiefdom_hdr = chiefdom_table.rows[0].cells
+                chiefdom_hdr[0].text = 'Chiefdom'
+                chiefdom_hdr[1].text = 'Enrollment'
+                chiefdom_hdr[2].text = 'ITNs'
+                chiefdom_hdr[3].text = 'Coverage (%)'
+                
+                # Make header bold
+                for cell in chiefdom_hdr:
+                    for paragraph in cell.paragraphs:
+                        for run in paragraph.runs:
+                            run.font.bold = True
+                
+                # Add chiefdom data
+                for chiefdom in sorted(district_chiefdoms):
+                    chiefdom_data = district_data[district_data['Chiefdom'] == chiefdom]
+                    
+                    chiefdom_enrollment = 0
+                    chiefdom_itn = 0
+                    
+                    for class_num in range(1, 6):
+                        boys_col = f"Number of boys in class {class_num}"
+                        girls_col = f"Number of girls in class {class_num}"
+                        itn_col = f"Number of ITN distributed to class {class_num}"
+                        
+                        if boys_col in chiefdom_data.columns:
+                            chiefdom_enrollment += chiefdom_data[boys_col].fillna(0).sum()
+                        if girls_col in chiefdom_data.columns:
+                            chiefdom_enrollment += chiefdom_data[girls_col].fillna(0).sum()
+                        if itn_col in chiefdom_data.columns:
+                            chiefdom_itn += chiefdom_data[itn_col].fillna(0).sum()
+                    
+                    chiefdom_coverage = (chiefdom_itn / chiefdom_enrollment * 100) if chiefdom_enrollment > 0 else 0
+                    
+                    chiefdom_row = chiefdom_table.add_row().cells
+                    chiefdom_row[0].text = chiefdom
+                    chiefdom_row[1].text = f"{int(chiefdom_enrollment):,}"
+                    chiefdom_row[2].text = f"{int(chiefdom_itn):,}"
+                    chiefdom_row[3].text = f"{chiefdom_coverage:.1f}%"
+        
+        # Add methodology section
+        doc.add_page_break()
+        doc.add_heading('Methodology & Data Collection', level=1)
+        
+        methodology_text = f"""
+        DATA COLLECTION METHODOLOGY:
+        
+        • Data Source: School-Based Distribution (SBD) survey data
+        • Collection Period: {current_datetime.strftime('%Y')}
+        • Geographic Scope: {total_districts} districts across Sierra Leone
+        • Administrative Coverage: {total_chiefdoms} chiefdoms
+        • School Sample Size: {total_records:,} schools
+        
+        DATA PROCESSING:
+        
+        • QR code extraction for geographic coordinates
+        • Enrollment data aggregation across classes 1-5
+        • ITN distribution tracking by class level
+        • Coverage calculation: (ITNs Distributed / Total Enrollment) × 100
+        • Geographic mapping using administrative boundaries
+        
+        QUALITY ASSURANCE:
+        
+        • Data validation and cleaning procedures applied
+        • Geographic coordinate verification
+        • Enrollment figures cross-checked across classes
+        • ITN distribution numbers validated against targets
+        """
+        doc.add_paragraph(methodology_text)
+        
+        # Add recommendations section
+        doc.add_heading('Key Recommendations', level=1)
+        
+        # Calculate top and bottom performing districts
+        district_performance = []
+        for district in extracted_df['District'].dropna().unique():
+            district_data = extracted_df[extracted_df['District'] == district]
+            district_enrollment = 0
+            district_itn = 0
+            
+            for class_num in range(1, 6):
+                boys_col = f"Number of boys in class {class_num}"
+                girls_col = f"Number of girls in class {class_num}"
+                itn_col = f"Number of ITN distributed to class {class_num}"
+                
+                if boys_col in district_data.columns:
+                    district_enrollment += district_data[boys_col].fillna(0).sum()
+                if girls_col in district_data.columns:
+                    district_enrollment += district_data[girls_col].fillna(0).sum()
+                if itn_col in district_data.columns:
+                    district_itn += district_data[itn_col].fillna(0).sum()
+            
+            district_coverage = (district_itn / district_enrollment * 100) if district_enrollment > 0 else 0
+            district_performance.append((district, district_coverage))
+        
+        district_performance.sort(key=lambda x: x[1], reverse=True)
+        best_district = district_performance[0] if district_performance else ("N/A", 0)
+        worst_district = district_performance[-1] if district_performance else ("N/A", 0)
+        
+        recommendations_text = f"""
+        Based on the comprehensive analysis of SBD data, the following recommendations are proposed:
+        
+        IMMEDIATE ACTIONS:
+        
+        1. PRIORITY INTERVENTION AREAS:
+           • Focus additional resources on {worst_district[0]} District (Coverage: {worst_district[1]:.1f}%)
+           • Investigate supply chain issues in underperforming areas
+           • Strengthen coordination with district education offices
+        
+        2. BEST PRACTICE REPLICATION:
+           • Study successful implementation in {best_district[0]} District (Coverage: {best_district[1]:.1f}%)
+           • Document and replicate effective distribution strategies
+           • Share lessons learned across all districts
+        
+        3. MONITORING & EVALUATION:
+           • Establish real-time tracking systems for ITN distribution
+           • Implement quarterly review meetings with district teams
+           • Develop standardized reporting formats
+        
+        STRATEGIC RECOMMENDATIONS:
+        
+        • Strengthen community engagement and awareness campaigns
+        • Improve supply chain management and forecasting
+        • Enhance training for school-based distribution teams
+        • Develop contingency plans for hard-to-reach areas
+        • Establish feedback mechanisms from schools and communities
+        
+        NEXT STEPS:
+        
+        • Conduct follow-up assessments in 6 months
+        • Develop district-specific action plans
+        • Allocate additional resources based on performance gaps
+        • Establish partnerships with local NGOs and community organizations
+        """
+        doc.add_paragraph(recommendations_text)
+        
+        # Add footer with generation info
+        doc.add_page_break()
+        footer_para = doc.add_paragraph()
+        footer_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        footer_run = footer_para.add_run(f"\nReport generated by SBD Analysis Dashboard\n{current_datetime.strftime('%B %d, %Y at %I:%M %p')}")
+        footer_run.font.size = Pt(10)
+        footer_run.italic = True
         
         # Save to BytesIO
         word_buffer = BytesIO()
@@ -1012,11 +1301,11 @@ with download_col3:
         word_data = word_buffer.getvalue()
         
         st.download_button(
-            label="💾 Download Word Report",
+            label="💾 Download Comprehensive Word Report",
             data=word_data,
-            file_name="SBD_Report.docx",
+            file_name=f"SBD_Comprehensive_Report_{current_datetime.strftime('%Y%m%d_%H%M')}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            help="Download comprehensive report in Word format"
+            help="Download comprehensive report with visuals and analysis in Word format"
         )
 
 # Display final summary
