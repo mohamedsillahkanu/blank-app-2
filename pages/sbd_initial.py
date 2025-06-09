@@ -5,47 +5,49 @@ import numpy as np
 import matplotlib.pyplot as plt
 import geopandas as gpd
 
-# Custom CSS to minimize sidebar distance
+# Custom CSS to align main content to left with proper spacing
 st.markdown("""
 <style>
-    /* Reduce main content left padding to minimum */
-    .css-1d391kg {
-        padding-left: 0.2rem !important;
-    }
-    .css-1y4p8pa {
-        padding-left: 0.2rem !important;
-    }
-    .css-1lcbmhc {
-        padding-left: 0.2rem !important;
-    }
-    .css-k1vhr4 {
-        padding-left: 0.2rem !important;
-    }
-    
-    /* Move main app content closer to sidebar */
-    .stApp > div:first-child {
-        margin-left: -3rem !important;
-    }
-    
-    /* Make sidebar narrower */
+    /* Reduce sidebar width and adjust main content positioning */
     section[data-testid="stSidebar"] {
-        width: 250px !important;
+        width: 280px !important;
     }
     
-    /* Remove extra spacing from main container */
+    /* Align main content to left with adequate spacing */
     .main .block-container {
-        padding-left: 0.5rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        margin-left: 0 !important;
+        max-width: none !important;
+    }
+    
+    /* Remove centering and align left */
+    div[data-testid="stAppViewContainer"] {
+        padding-left: 1rem !important;
         margin-left: 0 !important;
     }
     
-    /* Target the main content area specifically */
-    div[data-testid="stAppViewContainer"] {
-        padding-left: 0.3rem !important;
+    /* Ensure content starts from left after sidebar */
+    .css-1d391kg {
+        padding-left: 1rem !important;
+        margin-left: 0 !important;
     }
     
-    /* Additional container adjustments */
+    /* Remove default centering behavior */
+    .stApp > div:first-child {
+        margin-left: 0 !important;
+    }
+    
+    /* Make content fill available width properly */
+    .css-k1vhr4 {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    /* Ensure proper content alignment */
     .css-18e3th9 {
-        padding-left: 0.2rem !important;
+        padding-left: 1rem !important;
+        margin-left: 0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
