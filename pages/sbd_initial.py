@@ -277,6 +277,191 @@ if uploaded_file:
     else:
         st.error("Shapefile not loaded. Cannot display map.")
     
+    # Enrollment and ITN Distribution Analysis
+    st.subheader("📊 Enrollment and ITN Distribution Analysis")
+    
+    # Calculate total enrollment and ITN distribution by district
+    district_analysis = []
+    
+    for district in extracted_df['District'].dropna().unique():
+        district_data = extracted_df[extracted_df['District'] == district]
+        
+        total_enrollment = 0
+        total_itn = 0
+        
+        # Sum enrollments and ITN by class
+        for class_num in range(1, 6):
+            boys_col = f"Number of boys in class {class_num}"
+            girls_col = f"Number of girls in class {class_num}"
+            itn_col = f"Number of ITN distributed to class {class_num}"
+            
+            if boys_col in district_data.columns:
+                total_enrollment += district_data[boys_col].fillna(0).sum()
+            if girls_col in district_data.columns:
+                total_enrollment += district_data[girls_col].fillna(0).sum()
+            if itn_col in district_data.columns:
+                total_itn += district_data[itn_col].fillna(0).sum()
+        
+        district_analysis.append({
+            'District': district,
+            'Total_Enrollment': total_enrollment,
+            'Total_ITN': total_itn
+        })
+    
+    district_df = pd.DataFrame(district_analysis)
+    
+    # Create 2-column subplot for district analysis
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+    # Total Enrollment by District
+    ax1.bar(district_df['District'], district_df['Total_Enrollment'], color='skyblue', edgecolor='navy')
+    ax1.set_title('Total Enrollment by District', fontsize=14, fontweight='bold')
+    ax1.set_ylabel('Number of Students')
+    ax1.tick_params(axis='x', rotation=45)
+    
+    # Add value labels on bars
+    for i, v in enumerate(district_df['Total_Enrollment']):
+        ax1.text(i, v + max(district_df['Total_Enrollment']) * 0.01, str(int(v)), ha='center', fontweight='bold')
+    
+    # Total ITN Distributed by District
+    ax2.bar(district_df['District'], district_df['Total_ITN'], color='lightcoral', edgecolor='darkred')
+    ax2.set_title('Total ITN Distributed by District', fontsize=14, fontweight='bold')
+    ax2.set_ylabel('Number of ITNs')
+    ax2.tick_params(axis='x', rotation=45)
+    
+    # Add value labels on bars
+    for i, v in enumerate(district_df['Total_ITN']):
+        ax2.text(i, v + max(district_df['Total_ITN']) * 0.01, str(int(v)), ha='center', fontweight='bold')
+    
+    plt.tight_layout()
+    st.pyplot(fig)
+    
+    # BO District Chiefdoms Analysis
+    st.subheader("📊 BO District - Chiefdoms Analysis")
+    
+    bo_district_data = extracted_df[extracted_df['District'] == 'BO']
+    if len(bo_district_data) > 0:
+        # Calculate by chiefdom
+        bo_chiefdom_analysis = []
+        
+        for chiefdom in bo_district_data['Chiefdom'].dropna().unique():
+            chiefdom_data = bo_district_data[bo_district_data['Chiefdom'] == chiefdom]
+            
+            total_enrollment = 0
+            total_itn = 0
+            
+            for class_num in range(1, 6):
+                boys_col = f"Number of boys in class {class_num}"
+                girls_col = f"Number of girls in class {class_num}"
+                itn_col = f"Number of ITN distributed to class {class_num}"
+                
+                if boys_col in chiefdom_data.columns:
+                    total_enrollment += chiefdom_data[boys_col].fillna(0).sum()
+                if girls_col in chiefdom_data.columns:
+                    total_enrollment += chiefdom_data[girls_col].fillna(0).sum()
+                if itn_col in chiefdom_data.columns:
+                    total_itn += chiefdom_data[itn_col].fillna(0).sum()
+            
+            bo_chiefdom_analysis.append({
+                'Chiefdom': chiefdom,
+                'Total_Enrollment': total_enrollment,
+                'Total_ITN': total_itn
+            })
+        
+        bo_chiefdom_df = pd.DataFrame(bo_chiefdom_analysis)
+        
+        if len(bo_chiefdom_df) > 0:
+            # Create 2-column subplot for BO chiefdoms
+            fig_bo, (ax1_bo, ax2_bo) = plt.subplots(1, 2, figsize=(16, 8))
+            
+            # Total Enrollment by BO Chiefdoms
+            ax1_bo.barh(bo_chiefdom_df['Chiefdom'], bo_chiefdom_df['Total_Enrollment'], color='lightgreen', edgecolor='darkgreen')
+            ax1_bo.set_title('BO District - Total Enrollment by Chiefdom', fontsize=14, fontweight='bold')
+            ax1_bo.set_xlabel('Number of Students')
+            
+            # Add value labels
+            for i, v in enumerate(bo_chiefdom_df['Total_Enrollment']):
+                ax1_bo.text(v + max(bo_chiefdom_df['Total_Enrollment']) * 0.01, i, str(int(v)), va='center', fontweight='bold')
+            
+            # Total ITN by BO Chiefdoms
+            ax2_bo.barh(bo_chiefdom_df['Chiefdom'], bo_chiefdom_df['Total_ITN'], color='orange', edgecolor='darkorange')
+            ax2_bo.set_title('BO District - Total ITN Distributed by Chiefdom', fontsize=14, fontweight='bold')
+            ax2_bo.set_xlabel('Number of ITNs')
+            
+            # Add value labels
+            for i, v in enumerate(bo_chiefdom_df['Total_ITN']):
+                ax2_bo.text(v + max(bo_chiefdom_df['Total_ITN']) * 0.01, i, str(int(v)), va='center', fontweight='bold')
+            
+            plt.tight_layout()
+            st.pyplot(fig_bo)
+        else:
+            st.warning("No chiefdom data available for BO district")
+    else:
+        st.warning("No data available for BO district")
+    
+    # BOMBALI District Chiefdoms Analysis
+    st.subheader("📊 BOMBALI District - Chiefdoms Analysis")
+    
+    bombali_district_data = extracted_df[extracted_df['District'] == 'BOMBALI']
+    if len(bombali_district_data) > 0:
+        # Calculate by chiefdom
+        bombali_chiefdom_analysis = []
+        
+        for chiefdom in bombali_district_data['Chiefdom'].dropna().unique():
+            chiefdom_data = bombali_district_data[bombali_district_data['Chiefdom'] == chiefdom]
+            
+            total_enrollment = 0
+            total_itn = 0
+            
+            for class_num in range(1, 6):
+                boys_col = f"Number of boys in class {class_num}"
+                girls_col = f"Number of girls in class {class_num}"
+                itn_col = f"Number of ITN distributed to class {class_num}"
+                
+                if boys_col in chiefdom_data.columns:
+                    total_enrollment += chiefdom_data[boys_col].fillna(0).sum()
+                if girls_col in chiefdom_data.columns:
+                    total_enrollment += chiefdom_data[girls_col].fillna(0).sum()
+                if itn_col in chiefdom_data.columns:
+                    total_itn += chiefdom_data[itn_col].fillna(0).sum()
+            
+            bombali_chiefdom_analysis.append({
+                'Chiefdom': chiefdom,
+                'Total_Enrollment': total_enrollment,
+                'Total_ITN': total_itn
+            })
+        
+        bombali_chiefdom_df = pd.DataFrame(bombali_chiefdom_analysis)
+        
+        if len(bombali_chiefdom_df) > 0:
+            # Create 2-column subplot for BOMBALI chiefdoms
+            fig_bombali, (ax1_bombali, ax2_bombali) = plt.subplots(1, 2, figsize=(16, 8))
+            
+            # Total Enrollment by BOMBALI Chiefdoms
+            ax1_bombali.barh(bombali_chiefdom_df['Chiefdom'], bombali_chiefdom_df['Total_Enrollment'], color='lightblue', edgecolor='darkblue')
+            ax1_bombali.set_title('BOMBALI District - Total Enrollment by Chiefdom', fontsize=14, fontweight='bold')
+            ax1_bombali.set_xlabel('Number of Students')
+            
+            # Add value labels
+            for i, v in enumerate(bombali_chiefdom_df['Total_Enrollment']):
+                ax1_bombali.text(v + max(bombali_chiefdom_df['Total_Enrollment']) * 0.01, i, str(int(v)), va='center', fontweight='bold')
+            
+            # Total ITN by BOMBALI Chiefdoms
+            ax2_bombali.barh(bombali_chiefdom_df['Chiefdom'], bombali_chiefdom_df['Total_ITN'], color='plum', edgecolor='purple')
+            ax2_bombali.set_title('BOMBALI District - Total ITN Distributed by Chiefdom', fontsize=14, fontweight='bold')
+            ax2_bombali.set_xlabel('Number of ITNs')
+            
+            # Add value labels
+            for i, v in enumerate(bombali_chiefdom_df['Total_ITN']):
+                ax2_bombali.text(v + max(bombali_chiefdom_df['Total_ITN']) * 0.01, i, str(int(v)), va='center', fontweight='bold')
+            
+            plt.tight_layout()
+            st.pyplot(fig_bombali)
+        else:
+            st.warning("No chiefdom data available for BOMBALI district")
+    else:
+        st.warning("No data available for BOMBALI district")
+    
     # Display Original Data Sample
     st.subheader("📄 Original Data Sample")
     st.dataframe(df_original.head())
