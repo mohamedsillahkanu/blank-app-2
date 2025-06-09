@@ -61,8 +61,8 @@ st.markdown("""
     }
     
     .logo-placeholder {
-        width: 200px;
-        height: 200px;
+        width: 120px;
+        height: 80px;
         border: 2px dashed #cccccc;
         display: flex;
         align-items: center;
@@ -80,13 +80,13 @@ st.markdown("""
 col1, col2, col3 = st.columns(3)
 with col1:
     try:
-        st.image("NMCP.png", width=120)
+        st.image("NMCP.png", width=240)
     except:
         st.markdown('<div class="logo-placeholder">NMCP.png<br>Not Found</div>', unsafe_allow_html=True)
 
 with col2:
     try:
-        st.image("icf_sl (2).jpg", width=120)
+        st.image("icf_sl (2).jpg", width=240)
     except:
         st.markdown('<div class="logo-placeholder">icf_sl (2).jpg<br>Not Found</div>', unsafe_allow_html=True)
 
@@ -97,7 +97,7 @@ with col3:
 st.markdown("---")  # Add a horizontal line separator
 
 # Streamlit App
-st.title("School-Based Distribution of ITNs in Sierra Leone")
+st.title("📊 Text Data Extraction & Visualization")
 
 # Upload file
 uploaded_file = "Report_GMB253374_SBD_1749318384635_submissions.xlsx"
