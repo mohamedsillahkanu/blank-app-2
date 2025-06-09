@@ -106,10 +106,37 @@ if uploaded_file:
     # Display Dual Maps at the top
     st.subheader("🗺️ Geographic Distribution Maps")
     
+    # Debug information
+    st.write("**Debug Information:**")
+    if gdf is not None:
+        st.write(f"✅ Shapefile loaded with {len(gdf)} features")
+        st.write(f"Shapefile columns: {list(gdf.columns)}")
+        if 'FIRST_DNAM' in gdf.columns:
+            st.write(f"Available districts in shapefile: {sorted(gdf['FIRST_DNAM'].unique())}")
+    else:
+        st.write("❌ Shapefile not loaded")
+    
+    st.write(f"Extracted data columns: {list(extracted_df.columns)}")
+    if "GPS Location" in extracted_df.columns:
+        st.write(f"✅ GPS Location column found")
+        st.write(f"GPS data sample: {extracted_df['GPS Location'].dropna().head(3).tolist()}")
+    else:
+        st.write("❌ GPS Location column not found")
+    
+    if "District" in extracted_df.columns:
+        st.write(f"Available districts in data: {sorted(extracted_df['District'].dropna().unique())}")
+    
     if gdf is not None and "GPS Location" in extracted_df.columns:
         # Define specific districts for left and right maps
         left_district = "BO"
         right_district = "BOMBALI"
+        
+        # Check if these districts exist in the data
+        bo_data = extracted_df[extracted_df["District"] == left_district]
+        bombali_data = extracted_df[extracted_df["District"] == right_district]
+        
+        st.write(f"BO district records: {len(bo_data)}")
+        st.write(f"BOMBALI district records: {len(bombali_data)}")
         
         # Create two columns for side-by-side maps
         col1, col2 = st.columns(2)
@@ -473,7 +500,7 @@ if uploaded_file:
         ax.set_xlabel("")
         
         ax.set_ylabel("Number of Students")
-        plt.xticks(rotation=45, ha='right')
+        plt.xticks(rotation=90, ha='right')
         plt.tight_layout()
         st.pyplot(fig)
     else:
