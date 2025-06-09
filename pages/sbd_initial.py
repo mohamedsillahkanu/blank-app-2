@@ -103,6 +103,179 @@ if uploaded_file:
             # Apply filter to the dataframe
             filtered_df = filtered_df[filtered_df[level] == selected_value]
     
+    # Display Dual Maps at the top
+    st.subheader("🗺️ Geographic Distribution Maps")
+    
+    if gdf is not None and "GPS Location" in extracted_df.columns:
+        # Define specific districts for left and right maps
+        left_district = "BO"
+        right_district = "BOMBALI"
+        
+        # Create two columns for side-by-side maps
+        col1, col2 = st.columns(2)
+        
+        # LEFT MAP - BO District with its Chiefdoms
+        with col1:
+            st.write(f"**{left_district} District - All Chiefdoms**")
+            
+            # Filter data for BO district
+            district_data = extracted_df[extracted_df["District"] == left_district].copy()
+                
+                if len(district_data) > 0:
+                    # Extract GPS coordinates for this district
+                    gps_data = district_data["GPS Location"].dropna()
+                    coords_extracted = []
+                    
+                    for gps_val in gps_data:
+                        coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
+                        if len(coords) >= 2:
+                            coords_extracted.append([float(coords[0]), float(coords[1])])
+                        else:
+                            coords_extracted.append([None, None])
+                    
+                    # Create map data
+                    map_data_left = district_data.copy()
+                    map_data_left['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
+                                               for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_left) - len(coords_extracted)))]
+                    map_data_left['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
+                                               for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_left) - len(coords_extracted)))]
+                    
+                    # Remove rows with missing GPS data
+                    map_data_left = map_data_left.dropna(subset=['temp_lat', 'temp_lon'])
+                    
+                    if len(map_data_left) > 0:
+                        # Calculate total enrollment
+                        map_data_left["Total Enrollment"] = 0
+                        for class_num in range(1, 6):
+                            total_col = f"Number of enrollments in class {class_num}"
+                            if total_col in map_data_left.columns:
+                                map_data_left["Total Enrollment"] += map_data_left[total_col].fillna(0)
+                        
+                        # Create the left plot
+                        fig_left, ax_left = plt.subplots(figsize=(8, 8))
+                        
+                        # Filter shapefile to show only chiefdoms of BO district
+                        district_gdf = gdf[gdf['FIRST_DNAM'] == left_district] if 'FIRST_DNAM' in gdf.columns else gdf
+                        
+                        # Plot shapefile boundaries in white with black edges
+                        district_gdf.plot(ax=ax_left, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+                        
+                        # Plot school points in blue
+                        ax_left.scatter(
+                            map_data_left['temp_lon'], 
+                            map_data_left['temp_lat'],
+                            c='blue',
+                            s=60,  # Fixed size for better visibility
+                            alpha=0.8,
+                            edgecolors='darkblue',
+                            linewidth=1
+                        )
+                        
+                        # Customize plot
+                        ax_left.set_title(f'{left_district} District\nSchools: {len(map_data_left)}', fontsize=12, fontweight='bold')
+                        ax_left.set_xlabel('Longitude')
+                        ax_left.set_ylabel('Latitude')
+                        
+                        # Remove axis ticks for cleaner look
+                        ax_left.set_xticks([])
+                        ax_left.set_yticks([])
+                        
+                        plt.tight_layout()
+                        st.pyplot(fig_left)
+                        
+                        # Display chiefdoms in this district
+                        unique_chiefdoms = map_data_left['Chiefdom'].dropna().unique()
+                        st.write(f"**Chiefdoms ({len(unique_chiefdoms)}):** {', '.join(unique_chiefdoms)}")
+                        
+                        # Summary metrics
+                        st.metric("Total Students", int(map_data_left['Total Enrollment'].sum()))
+                    else:
+                        st.warning("No valid GPS coordinates found for this district.")
+                else:
+                    st.warning(f"No data found for {left_district} district.")
+            
+            # RIGHT MAP - BOMBALI District
+            with col2:
+                st.write(f"**{right_district} District - All Chiefdoms**")
+                
+                # Filter data for BOMBALI district
+                bombali_data = extracted_df[extracted_df["District"] == right_district].copy()
+                
+                if len(bombali_data) > 0:
+                    # Extract GPS coordinates for BOMBALI district
+                    gps_data = bombali_data["GPS Location"].dropna()
+                    coords_extracted = []
+                    
+                    for gps_val in gps_data:
+                        coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
+                        if len(coords) >= 2:
+                            coords_extracted.append([float(coords[0]), float(coords[1])])
+                        else:
+                            coords_extracted.append([None, None])
+                    
+                    # Create map data
+                    map_data_right = bombali_data.copy()
+                    map_data_right['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
+                                                for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_right) - len(coords_extracted)))]
+                    map_data_right['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
+                                                for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data_right) - len(coords_extracted)))]
+                    
+                    # Remove rows with missing GPS data
+                    map_data_right = map_data_right.dropna(subset=['temp_lat', 'temp_lon'])
+                    
+                    if len(map_data_right) > 0:
+                        # Calculate total enrollment
+                        map_data_right["Total Enrollment"] = 0
+                        for class_num in range(1, 6):
+                            total_col = f"Number of enrollments in class {class_num}"
+                            if total_col in map_data_right.columns:
+                                map_data_right["Total Enrollment"] += map_data_right[total_col].fillna(0)
+                        
+                        # Create the right plot
+                        fig_right, ax_right = plt.subplots(figsize=(8, 8))
+                        
+                        # Filter shapefile to show only chiefdoms of BOMBALI district
+                        bombali_gdf = gdf[gdf['FIRST_DNAM'] == right_district] if 'FIRST_DNAM' in gdf.columns else gdf
+                        
+                        # Plot shapefile boundaries in white with black edges
+                        bombali_gdf.plot(ax=ax_right, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+                        
+                        # Plot school points in blue
+                        ax_right.scatter(
+                            map_data_right['temp_lon'], 
+                            map_data_right['temp_lat'],
+                            c='blue',
+                            s=60,  # Fixed size for better visibility
+                            alpha=0.8,
+                            edgecolors='darkblue',
+                            linewidth=1
+                        )
+                        
+                        # Customize plot
+                        ax_right.set_title(f'{right_district} District\nSchools: {len(map_data_right)}', fontsize=12, fontweight='bold')
+                        ax_right.set_xlabel('Longitude')
+                        ax_right.set_ylabel('Latitude')
+                        
+                        # Remove axis ticks for cleaner look
+                        ax_right.set_xticks([])
+                        ax_right.set_yticks([])
+                        
+                        plt.tight_layout()
+                        st.pyplot(fig_right)
+                        
+                        # Display chiefdoms in BOMBALI district
+                        unique_chiefdoms = map_data_right['Chiefdom'].dropna().unique()
+                        st.write(f"**Chiefdoms ({len(unique_chiefdoms)}):** {', '.join(unique_chiefdoms)}")
+                        
+                        # Summary metrics
+                        st.metric("Total Students", int(map_data_right['Total Enrollment'].sum()))
+                    else:
+                        st.warning("No valid GPS coordinates found for BOMBALI district.")
+                else:
+                    st.warning(f"No data found for {right_district} district.")
+    else:
+        st.error("Shapefile not loaded or GPS Location column not found.")
+    
     # Display Original Data Sample
     st.subheader("📄 Original Data Sample")
     st.dataframe(df_original.head())
@@ -119,95 +292,6 @@ if uploaded_file:
         file_name="extracted_school_data.csv",
         mime="text/csv"
     )
-    
-    # Display Map at the top
-    st.subheader("🗺️ Geographic Distribution Map")
-    
-    if gdf is not None:
-        # Look for the specific "GPS Location" column
-        if "GPS Location" in extracted_df.columns:
-            gps_data = extracted_df["GPS Location"].dropna()
-            if len(gps_data) > 0:
-                st.write(f"Found {len(gps_data)} GPS coordinates")
-                
-                # Extract coordinates from GPS Location
-                coords_extracted = []
-                for gps_val in gps_data:
-                    coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
-                    if len(coords) >= 2:
-                        coords_extracted.append([float(coords[0]), float(coords[1])])
-                    else:
-                        coords_extracted.append([None, None])
-                
-                # Create map data with all coordinates
-                map_data = extracted_df.copy()
-                map_data['temp_lat'] = [coord[0] if i < len(coords_extracted) and coord[0] is not None else np.nan 
-                                       for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data) - len(coords_extracted)))]
-                map_data['temp_lon'] = [coord[1] if i < len(coords_extracted) and coord[1] is not None else np.nan 
-                                       for i, coord in enumerate(coords_extracted + [[None, None]] * max(0, len(map_data) - len(coords_extracted)))]
-                
-                # Remove rows with missing GPS data
-                map_data = map_data.dropna(subset=['temp_lat', 'temp_lon'])
-                
-                if len(map_data) > 0:
-                    # Calculate total enrollment
-                    map_data["Total Enrollment"] = 0
-                    for class_num in range(1, 6):
-                        total_col = f"Number of enrollments in class {class_num}"
-                        if total_col in map_data.columns:
-                            map_data["Total Enrollment"] += map_data[total_col].fillna(0)
-                    
-                    # Create the plot
-                    fig, ax = plt.subplots(figsize=(14, 10))
-                    
-                    # Plot shapefile boundaries
-                    gdf.plot(ax=ax, color='lightblue', edgecolor='black', alpha=0.5)
-                    
-                    # Plot school points
-                    scatter = ax.scatter(
-                        map_data['temp_lon'], 
-                        map_data['temp_lat'],
-                        c=map_data['Total Enrollment'],
-                        s=map_data['Total Enrollment']/5,  # Size based on enrollment
-                        cmap='viridis',
-                        alpha=0.7,
-                        edgecolors='black',
-                        linewidth=0.5
-                    )
-                    
-                    # Add colorbar
-                    cbar = plt.colorbar(scatter, ax=ax)
-                    cbar.set_label('Total Enrollment', rotation=270, labelpad=15)
-                    
-                    # Customize plot
-                    ax.set_title('School Distribution Map - All Districts')
-                    ax.set_xlabel('Longitude')
-                    ax.set_ylabel('Latitude')
-                    
-                    # Remove axis ticks for cleaner look
-                    ax.set_xticks([])
-                    ax.set_yticks([])
-                    
-                    plt.tight_layout()
-                    st.pyplot(fig)
-                    
-                    # Display summary
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Schools Plotted", len(map_data))
-                    with col2:
-                        st.metric("Total Students", int(map_data['Total Enrollment'].sum()))
-                    with col3:
-                        st.metric("Avg Students/School", int(map_data['Total Enrollment'].mean()))
-                    
-                else:
-                    st.warning("No valid GPS coordinates found in the data.")
-            else:
-                st.warning("No GPS data found in GPS Location column.")
-        else:
-            st.warning("GPS Location column not found in the dataset.")
-    else:
-        st.error("Shapefile not loaded. Cannot display map.")
     
     # Summary buttons section
     st.subheader("📊 Summary Reports")
