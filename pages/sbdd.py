@@ -490,6 +490,75 @@ if uploaded_file:
     st.subheader("🗺️ Geographic Distribution Maps")
     
     if gdf is not None:
+        # OVERALL SIERRA LEONE MAP FIRST
+        st.write("**Sierra Leone - All Districts Overview**")
+        
+        # Create overall Sierra Leone map
+        fig_overall, ax_overall = plt.subplots(figsize=(16, 10))
+        
+        # Plot all districts in white with black edges
+        gdf.plot(ax=ax_overall, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+        
+        # Extract and plot ALL GPS coordinates from entire dataset
+        all_coords_extracted = []
+        if "GPS Location" in extracted_df.columns:
+            all_gps_data = extracted_df["GPS Location"].dropna()
+            
+            for idx, gps_val in enumerate(all_gps_data):
+                if pd.notna(gps_val):
+                    gps_str = str(gps_val).strip()
+                    
+                    # Handle the specific format: 8.6103181,-12.2029534
+                    if ',' in gps_str:
+                        try:
+                            parts = gps_str.split(',')
+                            if len(parts) == 2:
+                                lat = float(parts[0].strip())
+                                lon = float(parts[1].strip())
+                                
+                                # Check if coordinates are in valid range for Sierra Leone
+                                if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
+                                    all_coords_extracted.append([lat, lon])
+                        except ValueError:
+                            continue
+        
+        # Plot GPS points on the overall map
+        if all_coords_extracted:
+            lats, lons = zip(*all_coords_extracted)
+            
+            # Plot GPS points with #47B5FF color
+            scatter = ax_overall.scatter(
+                lons, lats,
+                c='#47B5FF',
+                s=80,
+                alpha=0.9,
+                edgecolors='white',
+                linewidth=2,
+                zorder=100,
+                label=f'Schools ({len(all_coords_extracted)})',
+                marker='o'
+            )
+            
+            # Add legend
+            ax_overall.legend(fontsize=12, loc='best')
+        
+        # Customize overall map
+        ax_overall.set_title('Sierra Leone - School Distribution Overview', fontsize=18, fontweight='bold', pad=20)
+        ax_overall.set_xlabel('Longitude', fontsize=14)
+        ax_overall.set_ylabel('Latitude', fontsize=14)
+        
+        # Add grid for reference
+        ax_overall.grid(True, alpha=0.3, linestyle='--')
+        
+        plt.tight_layout()
+        st.pyplot(fig_overall)
+        
+        # Save overall map
+        map_images['sierra_leone_overall'] = save_map_as_png(fig_overall, "Sierra_Leone_Overall_Map")
+        
+        st.divider()
+        
+        # NOW THE INDIVIDUAL DISTRICT MAPS
         # Define specific districts for left and right maps
         left_district = "BO"
         right_district = "BOMBALI"
@@ -1446,6 +1515,17 @@ if uploaded_file:
             # Add geographic maps section
             doc.add_heading('Geographic Distribution Maps', level=1)
             
+            # Add Overall Sierra Leone map FIRST
+            if 'sierra_leone_overall' in map_images:
+                doc.add_heading('Sierra Leone - Overall Distribution', level=2)
+                doc.add_paragraph("Overview of school distribution across all districts in Sierra Leone:")
+                chart_para = doc.add_paragraph()
+                chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                chart_run = chart_para.add_run()
+                map_images['sierra_leone_overall'].seek(0)
+                chart_run.add_picture(map_images['sierra_leone_overall'], width=Inches(6.5))
+                doc.add_paragraph()  # Add spacing
+            
             # Add BO District map
             if 'bo_district' in map_images:
                 doc.add_heading('BO District Map', level=2)
@@ -1474,15 +1554,26 @@ if uploaded_file:
             # Add overall summary charts
             doc.add_heading('Overall Analysis Charts', level=1)
             
-            # Add enrollment and ITN chart
-            if 'enrollment_itn' in map_images:
-                doc.add_heading('Enrollment and ITN Distribution by District', level=2)
-                doc.add_paragraph("Comparative analysis of student enrollment and ITN distribution across districts:")
+            # Add enrollment chart
+            if 'enrollment_by_district' in map_images:
+                doc.add_heading('Total Enrollment by District', level=2)
+                doc.add_paragraph("Student enrollment across all surveyed districts:")
                 chart_para = doc.add_paragraph()
                 chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 chart_run = chart_para.add_run()
-                map_images['enrollment_itn'].seek(0)
-                chart_run.add_picture(map_images['enrollment_itn'], width=Inches(6.5))
+                map_images['enrollment_by_district'].seek(0)
+                chart_run.add_picture(map_images['enrollment_by_district'], width=Inches(6.5))
+                doc.add_paragraph()  # Add spacing
+            
+            # Add ITN distribution chart
+            if 'itn_by_district' in map_images:
+                doc.add_heading('Total ITN Distribution by District', level=2)
+                doc.add_paragraph("ITN distribution across all surveyed districts:")
+                chart_para = doc.add_paragraph()
+                chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                chart_run = chart_para.add_run()
+                map_images['itn_by_district'].seek(0)
+                chart_run.add_picture(map_images['itn_by_district'], width=Inches(6.5))
                 doc.add_paragraph()  # Add spacing
             
             # Add gender analysis charts
