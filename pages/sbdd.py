@@ -891,7 +891,7 @@ if uploaded_file:
 
 
 
-### 
+### part 3
 
 # Chiefdoms Analysis by District
     st.subheader("📊 Chiefdoms Analysis by District")
@@ -942,50 +942,77 @@ if uploaded_file:
             district_chiefdom_df = district_chiefdom_df.sort_values('Total_Enrollment', ascending=False)
             
             if len(district_chiefdom_df) > 0:
-                # Create 3-column subplot for this district's chiefdoms
-                fig_district, (ax1_dist, ax2_dist, ax3_dist) = plt.subplots(1, 3, figsize=(24, 8))
+                # Create individual large plots for this district's chiefdoms
                 
-                # Total Enrollment by Chiefdoms in this District (Blue)
-                bars1 = ax1_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_Enrollment'], 
-                                      color='#4682B4', edgecolor='navy')
-                ax1_dist.set_title(f'{district} District - Total Enrollment by Chiefdom', fontsize=14, fontweight='bold')
-                ax1_dist.set_xlabel('Number of Students')
+                # Plot 1: Total Enrollment by Chiefdoms in this District (Blue)
+                fig1, ax1 = plt.subplots(figsize=(16, 10))
+                bars1 = ax1.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_Enrollment'], 
+                                 color='#4682B4', edgecolor='navy', linewidth=1.5)
+                ax1.set_title(f'{district} District - Total Enrollment by Chiefdom', fontsize=18, fontweight='bold', pad=20)
+                ax1.set_xlabel('Number of Students', fontsize=14, fontweight='bold')
+                ax1.set_ylabel('Chiefdoms', fontsize=14, fontweight='bold')
                 
                 # Add value labels
                 for i, v in enumerate(district_chiefdom_df['Total_Enrollment']):
                     if v > 0:  # Only show label if value is greater than 0
-                        ax1_dist.text(v + max(district_chiefdom_df['Total_Enrollment']) * 0.01, i, 
-                                      str(int(v)), va='center', fontweight='bold')
+                        ax1.text(v + max(district_chiefdom_df['Total_Enrollment']) * 0.02, i, 
+                                 f'{int(v):,}', va='center', fontweight='bold', fontsize=12)
                 
-                # Total ITN by Chiefdoms in this District (Green)
-                bars2 = ax2_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_ITN'], 
-                                      color='#32CD32', edgecolor='darkgreen')
-                ax2_dist.set_title(f'{district} District - Total ITN Distributed by Chiefdom', fontsize=14, fontweight='bold')
-                ax2_dist.set_xlabel('Number of ITNs')
+                # Customize appearance
+                ax1.grid(axis='x', alpha=0.3, linestyle='--')
+                ax1.tick_params(axis='both', which='major', labelsize=11)
+                plt.tight_layout()
+                st.pyplot(fig1)
+                
+                # Save enrollment chart
+                map_images[f'{district}_enrollment'] = save_map_as_png(fig1, f"{district}_Enrollment_by_Chiefdom")
+                
+                # Plot 2: Total ITN Distributed by Chiefdoms in this District (Green)
+                fig2, ax2 = plt.subplots(figsize=(16, 10))
+                bars2 = ax2.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Total_ITN'], 
+                                 color='#32CD32', edgecolor='darkgreen', linewidth=1.5)
+                ax2.set_title(f'{district} District - Total ITN Distributed by Chiefdom', fontsize=18, fontweight='bold', pad=20)
+                ax2.set_xlabel('Number of ITNs', fontsize=14, fontweight='bold')
+                ax2.set_ylabel('Chiefdoms', fontsize=14, fontweight='bold')
                 
                 # Add value labels
                 for i, v in enumerate(district_chiefdom_df['Total_ITN']):
                     if v > 0:  # Only show label if value is greater than 0
-                        ax2_dist.text(v + max(district_chiefdom_df['Total_ITN']) * 0.01, i, 
-                                      str(int(v)), va='center', fontweight='bold')
+                        ax2.text(v + max(district_chiefdom_df['Total_ITN']) * 0.02, i, 
+                                 f'{int(v):,}', va='center', fontweight='bold', fontsize=12)
                 
-                # Coverage by Chiefdoms in this District (Yellow)
-                bars3 = ax3_dist.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Coverage'], 
-                                      color='#FFD700', edgecolor='orange')
-                ax3_dist.set_title(f'{district} District - ITN Coverage by Chiefdom (%)', fontsize=14, fontweight='bold')
-                ax3_dist.set_xlabel('Coverage Percentage (%)')
+                # Customize appearance
+                ax2.grid(axis='x', alpha=0.3, linestyle='--')
+                ax2.tick_params(axis='both', which='major', labelsize=11)
+                plt.tight_layout()
+                st.pyplot(fig2)
+                
+                # Save ITN chart
+                map_images[f'{district}_itn'] = save_map_as_png(fig2, f"{district}_ITN_by_Chiefdom")
+                
+                # Plot 3: Coverage by Chiefdoms in this District (Orange)
+                fig3, ax3 = plt.subplots(figsize=(16, 10))
+                bars3 = ax3.barh(district_chiefdom_df['Chiefdom'], district_chiefdom_df['Coverage'], 
+                                 color='#FF8C00', edgecolor='darkorange', linewidth=1.5)
+                ax3.set_title(f'{district} District - ITN Coverage by Chiefdom (%)', fontsize=18, fontweight='bold', pad=20)
+                ax3.set_xlabel('Coverage Percentage (%)', fontsize=14, fontweight='bold')
+                ax3.set_ylabel('Chiefdoms', fontsize=14, fontweight='bold')
                 
                 # Add value labels
                 for i, v in enumerate(district_chiefdom_df['Coverage']):
                     if v > 0:  # Only show label if value is greater than 0
-                        ax3_dist.text(v + max(district_chiefdom_df['Coverage']) * 0.01, i, 
-                                      f'{v:.1f}%', va='center', fontweight='bold')
+                        ax3.text(v + max(district_chiefdom_df['Coverage']) * 0.02, i, 
+                                 f'{v:.1f}%', va='center', fontweight='bold', fontsize=12)
                 
+                # Customize appearance
+                ax3.grid(axis='x', alpha=0.3, linestyle='--')
+                ax3.tick_params(axis='both', which='major', labelsize=11)
+                ax3.set_xlim(0, max(district_chiefdom_df['Coverage']) * 1.15)  # Add some space for labels
                 plt.tight_layout()
-                st.pyplot(fig_district)
+                st.pyplot(fig3)
                 
-                # Save chiefdom analysis chart
-                map_images[f'{district}_chiefdom_analysis'] = save_map_as_png(fig_district, f"{district}_Chiefdom_Analysis")
+                # Save coverage chart
+                map_images[f'{district}_coverage'] = save_map_as_png(fig3, f"{district}_Coverage_by_Chiefdom")
                 
                 # Display summary table for this district
                 st.write(f"**{district} District Summary:**")
@@ -1406,16 +1433,48 @@ if uploaded_file:
             doc.add_paragraph("Detailed performance analysis at the chiefdom level within each district, showing enrollment, ITN distribution, and coverage rates.")
             
             for district in extracted_df['District'].dropna().unique():
-                chart_key = f'{district}_chiefdom_analysis'
-                if chart_key in map_images:
-                    doc.add_heading(f'{district} District - Chiefdom Analysis', level=2)
-                    doc.add_paragraph(f"Performance metrics for all chiefdoms within {district} District:")
+                doc.add_heading(f'{district} District - Chiefdom Analysis', level=2)
+                
+                # Add enrollment chart
+                enrollment_key = f'{district}_enrollment'
+                if enrollment_key in map_images:
+                    doc.add_heading(f'{district} District - Enrollment by Chiefdom', level=3)
+                    doc.add_paragraph(f"Student enrollment across all chiefdoms in {district} District:")
                     chart_para = doc.add_paragraph()
                     chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                     chart_run = chart_para.add_run()
-                    map_images[chart_key].seek(0)
-                    chart_run.add_picture(map_images[chart_key], width=Inches(6.5))
+                    map_images[enrollment_key].seek(0)
+                    chart_run.add_picture(map_images[enrollment_key], width=Inches(6.5))
                     doc.add_paragraph()  # Add spacing
+                
+                # Add ITN distribution chart
+                itn_key = f'{district}_itn'
+                if itn_key in map_images:
+                    doc.add_heading(f'{district} District - ITN Distribution by Chiefdom', level=3)
+                    doc.add_paragraph(f"ITN distribution across all chiefdoms in {district} District:")
+                    chart_para = doc.add_paragraph()
+                    chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    chart_run = chart_para.add_run()
+                    map_images[itn_key].seek(0)
+                    chart_run.add_picture(map_images[itn_key], width=Inches(6.5))
+                    doc.add_paragraph()  # Add spacing
+                
+                # Add coverage chart
+                coverage_key = f'{district}_coverage'
+                if coverage_key in map_images:
+                    doc.add_heading(f'{district} District - Coverage by Chiefdom', level=3)
+                    doc.add_paragraph(f"ITN coverage rates across all chiefdoms in {district} District:")
+                    chart_para = doc.add_paragraph()
+                    chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                    chart_run = chart_para.add_run()
+                    map_images[coverage_key].seek(0)
+                    chart_run.add_picture(map_images[coverage_key], width=Inches(6.5))
+                    doc.add_paragraph()  # Add spacing
+                
+                # Add page break between districts (except for the last one)
+                districts_list = list(extracted_df['District'].dropna().unique())
+                if district != districts_list[-1]:
+                    doc.add_page_break()
             
             # Add District Summary Table
             doc.add_page_break()
