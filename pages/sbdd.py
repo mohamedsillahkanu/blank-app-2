@@ -355,8 +355,8 @@ with col3:
     st.markdown("""
     <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
         Partner Logo<br>
-        (Right Position)<br>
-        Upload .png/.jpg
+        pmi.png<br>
+        PMI Evolve
     </div>
     """, unsafe_allow_html=True)
 
