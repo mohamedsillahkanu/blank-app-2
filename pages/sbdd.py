@@ -351,14 +351,16 @@ with col2:
         """, unsafe_allow_html=True)
 
 with col3:
-    # Placeholder for third logo
-    st.markdown("""
-    <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
-        Partner Logo<br>
-        pmi.png<br>
-        PMI Evolve
-    </div>
-    """, unsafe_allow_html=True)
+    try:
+        st.image("pmi.png", width=280, caption="PMI Evolve")
+    except:
+        st.markdown("""
+        <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
+            pmi.png<br>
+            Not Found<br>
+            Please upload PMI logo
+        </div>
+        """, unsafe_allow_html=True)
 
 st.markdown("---")  # Add a horizontal line separator
 
@@ -976,7 +978,8 @@ if uploaded_file:
     st.subheader("📈 Chiefdom Summary Table")
     chiefdom_summary_df = pd.DataFrame(summaries['chiefdom'])
     st.dataframe(chiefdom_summary_df)
-    
+
+
 ### part 3----------------------------------------------------------------------------------------------------------------
 
 # Chiefdoms Analysis by District
