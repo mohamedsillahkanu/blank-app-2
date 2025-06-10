@@ -519,28 +519,73 @@ if uploaded_file:
                 gps_data = bo_data["GPS Location"].dropna()
                 coords_extracted = []
                 
-                for gps_val in gps_data:
-                    coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
-                    if len(coords) >= 2:
-                        try:
-                            lat, lon = float(coords[0]), float(coords[1])
-                            coords_extracted.append([lat, lon])
-                        except:
-                            continue
+                st.write(f"**Debug: Found {len(gps_data)} GPS entries for BO District**")
+                
+                for idx, gps_val in enumerate(gps_data):
+                    if pd.notna(gps_val):
+                        gps_str = str(gps_val).strip()
+                        st.write(f"GPS {idx+1}: {gps_str}")  # Debug output
+                        
+                        # Handle the specific format: 8.6103181,-12.2029534
+                        if ',' in gps_str:
+                            try:
+                                parts = gps_str.split(',')
+                                if len(parts) == 2:
+                                    lat = float(parts[0].strip())
+                                    lon = float(parts[1].strip())
+                                    
+                                    # Check if coordinates are in valid range for Sierra Leone
+                                    # Sierra Leone: Latitude 6°55'N to 10°N, Longitude 10°14'W to 13°18'W
+                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
+                                        coords_extracted.append([lat, lon])
+                                        st.write(f"✅ Valid coordinates: {lat}, {lon}")
+                                    else:
+                                        st.write(f"❌ Invalid coordinates (outside Sierra Leone): {lat}, {lon}")
+                            except ValueError as e:
+                                st.write(f"❌ Could not parse coordinates: {gps_str} - Error: {e}")
+                        else:
+                            # Fallback: try to extract numbers if no comma
+                            coords = re.findall(r'-?\d+\.?\d*', gps_str)
+                            if len(coords) >= 2:
+                                try:
+                                    lat, lon = float(coords[0]), float(coords[1])
+                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
+                                        coords_extracted.append([lat, lon])
+                                        st.write(f"✅ Valid coordinates (fallback): {lat}, {lon}")
+                                except ValueError:
+                                    st.write(f"❌ Could not convert to numbers: {coords}")
+                
+                st.write(f"**Total valid coordinates extracted: {len(coords_extracted)}**")
                 
                 if coords_extracted:
                     lats, lons = zip(*coords_extracted)
-                    ax_bo.scatter(
+                    scatter = ax_bo.scatter(
                         lons, lats,
-                        c='blue',
-                        s=60,
-                        alpha=0.8,
-                        edgecolors='darkblue',
-                        linewidth=1,
-                        zorder=5,
-                        label=f'Schools ({len(coords_extracted)})'
+                        c='red',
+                        s=120,
+                        alpha=0.9,
+                        edgecolors='darkred',
+                        linewidth=2,
+                        zorder=10,
+                        label=f'Schools ({len(coords_extracted)})',
+                        marker='o'
                     )
-                    ax_bo.legend()
+                    ax_bo.legend(fontsize=12, loc='best')
+                    
+                    # Add coordinate info to title
+                    current_title = ax_bo.get_title()
+                    ax_bo.set_title(f'{current_title} | {len(coords_extracted)} GPS Points', fontsize=16, fontweight='bold')
+                    
+                    # Show coordinate range for verification
+                    st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
+                else:
+                    st.warning("No valid GPS coordinates found for BO District")
+                    # Still show the message on the plot
+                    ax_bo.text(0.5, 0.02, 'No GPS coordinates available', 
+                              transform=ax_bo.transAxes, ha='center', 
+                              bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
+            else:
+                st.warning("No GPS Location column found or no data for BO District")
             
             # Customize plot
             ax_bo.set_title(f'{left_district} District - Chiefdoms: {len(bo_gdf)}', fontsize=16, fontweight='bold')
@@ -605,28 +650,73 @@ if uploaded_file:
                 gps_data = bombali_data["GPS Location"].dropna()
                 coords_extracted = []
                 
-                for gps_val in gps_data:
-                    coords = re.findall(r'-?\d+\.?\d*', str(gps_val))
-                    if len(coords) >= 2:
-                        try:
-                            lat, lon = float(coords[0]), float(coords[1])
-                            coords_extracted.append([lat, lon])
-                        except:
-                            continue
+                st.write(f"**Debug: Found {len(gps_data)} GPS entries for BOMBALI District**")
+                
+                for idx, gps_val in enumerate(gps_data):
+                    if pd.notna(gps_val):
+                        gps_str = str(gps_val).strip()
+                        st.write(f"GPS {idx+1}: {gps_str}")  # Debug output
+                        
+                        # Handle the specific format: 8.6103181,-12.2029534
+                        if ',' in gps_str:
+                            try:
+                                parts = gps_str.split(',')
+                                if len(parts) == 2:
+                                    lat = float(parts[0].strip())
+                                    lon = float(parts[1].strip())
+                                    
+                                    # Check if coordinates are in valid range for Sierra Leone
+                                    # Sierra Leone: Latitude 6°55'N to 10°N, Longitude 10°14'W to 13°18'W
+                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
+                                        coords_extracted.append([lat, lon])
+                                        st.write(f"✅ Valid coordinates: {lat}, {lon}")
+                                    else:
+                                        st.write(f"❌ Invalid coordinates (outside Sierra Leone): {lat}, {lon}")
+                            except ValueError as e:
+                                st.write(f"❌ Could not parse coordinates: {gps_str} - Error: {e}")
+                        else:
+                            # Fallback: try to extract numbers if no comma
+                            coords = re.findall(r'-?\d+\.?\d*', gps_str)
+                            if len(coords) >= 2:
+                                try:
+                                    lat, lon = float(coords[0]), float(coords[1])
+                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
+                                        coords_extracted.append([lat, lon])
+                                        st.write(f"✅ Valid coordinates (fallback): {lat}, {lon}")
+                                except ValueError:
+                                    st.write(f"❌ Could not convert to numbers: {coords}")
+                
+                st.write(f"**Total valid coordinates extracted: {len(coords_extracted)}**")
                 
                 if coords_extracted:
                     lats, lons = zip(*coords_extracted)
-                    ax_bombali.scatter(
+                    scatter = ax_bombali.scatter(
                         lons, lats,
-                        c='blue',
-                        s=60,
-                        alpha=0.8,
-                        edgecolors='darkblue',
-                        linewidth=1,
-                        zorder=5,
-                        label=f'Schools ({len(coords_extracted)})'
+                        c='red',
+                        s=120,
+                        alpha=0.9,
+                        edgecolors='darkred',
+                        linewidth=2,
+                        zorder=10,
+                        label=f'Schools ({len(coords_extracted)})',
+                        marker='o'
                     )
-                    ax_bombali.legend()
+                    ax_bombali.legend(fontsize=12, loc='best')
+                    
+                    # Add coordinate info to title
+                    current_title = ax_bombali.get_title()
+                    ax_bombali.set_title(f'{current_title} | {len(coords_extracted)} GPS Points', fontsize=16, fontweight='bold')
+                    
+                    # Show coordinate range for verification
+                    st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
+                else:
+                    st.warning("No valid GPS coordinates found for BOMBALI District")
+                    # Still show the message on the plot
+                    ax_bombali.text(0.5, 0.02, 'No GPS coordinates available', 
+                                   transform=ax_bombali.transAxes, ha='center', 
+                                   bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
+            else:
+                st.warning("No GPS Location column found or no data for BOMBALI District")
             
             # Customize plot
             ax_bombali.set_title(f'{right_district} District - Chiefdoms: {len(bombali_gdf)}', fontsize=16, fontweight='bold')
@@ -899,7 +989,6 @@ if uploaded_file:
     st.subheader("📈 Chiefdom Summary Table")
     chiefdom_summary_df = pd.DataFrame(summaries['chiefdom'])
     st.dataframe(chiefdom_summary_df)
-
 
 ### part 3----------------------------------------------------------------------------------------------------------------
 
