@@ -266,7 +266,7 @@ uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx', 'xls'])
 if uploaded_file is None:
     try:
         # Try to load default file if it exists
-        uploaded_file = "Report_GMB253374_SBD_1749318384635_submissions.xlsx"
+        uploaded_file = "latest_sbd_06_10_2025.xlsx"
         if not os.path.exists(uploaded_file):
             st.warning("Please upload an Excel file to proceed with the analysis.")
             st.stop()
