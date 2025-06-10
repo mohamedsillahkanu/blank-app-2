@@ -496,13 +496,35 @@ if uploaded_file:
         # Create overall Sierra Leone map
         fig_overall, ax_overall = plt.subplots(figsize=(16, 10))
         
-        # Plot all districts in white with black edges
-        gdf.plot(ax=ax_overall, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+        # Plot all chiefdoms with gray edges (base layer)
+        gdf.plot(ax=ax_overall, color='white', edgecolor='gray', alpha=0.8, linewidth=0.5)
+        
+        # Plot district boundaries with thick black lines
+        # Get district boundaries by dissolving chiefdoms by FIRST_DNAM
+        if 'FIRST_DNAM' in gdf.columns:
+            district_boundaries = gdf.dissolve(by='FIRST_DNAM')
+            district_boundaries.plot(ax=ax_overall, facecolor='none', edgecolor='black', linewidth=3, alpha=1.0)
+            
+            # Add district labels at centroids
+            for idx, row in district_boundaries.iterrows():
+                centroid = row.geometry.centroid
+                ax_overall.annotate(
+                    idx,  # District name
+                    (centroid.x, centroid.y),
+                    fontsize=12,
+                    fontweight='bold',
+                    ha='center',
+                    va='center',
+                    color='black',
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8, edgecolor='black')
+                )
         
         # Extract and plot ALL GPS coordinates from entire dataset
         all_coords_extracted = []
         if "GPS Location" in extracted_df.columns:
             all_gps_data = extracted_df["GPS Location"].dropna()
+            
+            st.write(f"**Debug: Processing {len(all_gps_data)} GPS entries for overall map**")
             
             for idx, gps_val in enumerate(all_gps_data):
                 if pd.notna(gps_val):
@@ -521,6 +543,8 @@ if uploaded_file:
                                     all_coords_extracted.append([lat, lon])
                         except ValueError:
                             continue
+            
+            st.write(f"**Total valid coordinates for overall map: {len(all_coords_extracted)}**")
         
         # Plot GPS points on the overall map
         if all_coords_extracted:
@@ -530,7 +554,7 @@ if uploaded_file:
             scatter = ax_overall.scatter(
                 lons, lats,
                 c='#47B5FF',
-                s=80,
+                s=100,
                 alpha=0.9,
                 edgecolors='white',
                 linewidth=2,
@@ -540,15 +564,22 @@ if uploaded_file:
             )
             
             # Add legend
-            ax_overall.legend(fontsize=12, loc='best')
+            ax_overall.legend(fontsize=14, loc='best')
+            
+            # Show coordinate range for verification
+            st.write(f"**Overall coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
         
         # Customize overall map
-        ax_overall.set_title('Sierra Leone - School Distribution Overview', fontsize=18, fontweight='bold', pad=20)
+        ax_overall.set_title('Sierra Leone - School Distribution by District', fontsize=18, fontweight='bold', pad=20)
         ax_overall.set_xlabel('Longitude', fontsize=14)
         ax_overall.set_ylabel('Latitude', fontsize=14)
         
         # Add grid for reference
         ax_overall.grid(True, alpha=0.3, linestyle='--')
+        
+        # Set axis limits to show full country
+        ax_overall.set_xlim(gdf.total_bounds[0] - 0.1, gdf.total_bounds[2] + 0.1)
+        ax_overall.set_ylim(gdf.total_bounds[1] - 0.1, gdf.total_bounds[3] + 0.1)
         
         plt.tight_layout()
         st.pyplot(fig_overall)
