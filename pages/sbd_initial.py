@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import geopandas as gpd
 from io import BytesIO
 from datetime import datetime
+import os
 
 # Custom CSS with blue and white theme and zoom functionality
 st.markdown("""
@@ -259,33 +260,17 @@ st.markdown("---")  # Add a horizontal line separator
 # Streamlit App
 st.title("📊 Text Data Extraction & Visualization")
 
-# File upload widget
-uploaded_file = st.file_uploader("Choose an Excel file", type=['xlsx', 'xls'])
+# Use embedded file
+uploaded_file = "Report_GMB253374_SBD_1749318384635_submissions.xlsx"
 
-# If no file is uploaded, try to use a default file
-if uploaded_file is None:
-    try:
-        # Try to load default file if it exists
-        uploaded_file = "latest_sbd_06_10_2025.xlsx"
-        if not os.path.exists(uploaded_file):
-            st.warning("Please upload an Excel file to proceed with the analysis.")
-            st.stop()
-    except:
-        st.warning("Please upload an Excel file to proceed with the analysis.")
-        st.stop()
-
-if uploaded_file:
-    try:
-        # Read the uploaded Excel file
-        if isinstance(uploaded_file, str):
-            df_original = pd.read_excel(uploaded_file)
-        else:
-            df_original = pd.read_excel(uploaded_file)
-        
-        st.success(f"✅ File loaded successfully! {len(df_original)} records found.")
-    except Exception as e:
-        st.error(f"❌ Error reading file: {e}")
-        st.stop()
+try:
+    # Read the Excel file
+    df_original = pd.read_excel(uploaded_file)
+    st.success(f"✅ File loaded successfully! {len(df_original)} records found.")
+except Exception as e:
+    st.error(f"❌ Error reading file: {e}")
+    st.write("Please ensure the file 'Report_GMB253374_SBD_1749318384635_submissions.xlsx' exists in the same directory.")
+    st.stop()
     
     # Load shapefile
     try:
