@@ -322,6 +322,7 @@ def generate_summaries(df):
     summaries['chiefdom'] = chiefdom_summary
     
     return summaries
+### part 2-----------------------------------------------------------------------------------------------------------------
 
 # Logo Section with consistent alignment
 st.markdown("""
@@ -699,66 +700,66 @@ if uploaded_file:
     
     # Gender Analysis
     st.subheader("👫 Gender Analysis")
-    gender_col1, gender_col2 = st.columns(2)
     
-    with gender_col1:
-        # Overall gender distribution pie chart
-        fig_gender, ax_gender = plt.subplots(figsize=(8, 8))
-        labels = ['Boys', 'Girls']
-        sizes = [summaries['overall']['total_boys'], summaries['overall']['total_girls']]
-        colors = ['#4A90E2', '#F39C12']
-        
-        wedges, texts, autotexts = ax_gender.pie(sizes, labels=labels, autopct='%1.1f%%', 
-                                                colors=colors, startangle=90)
-        ax_gender.set_title('Overall Gender Distribution', fontsize=14, fontweight='bold')
-        plt.setp(autotexts, size=12, weight="bold")
-        st.pyplot(fig_gender)
-        
-        # Save gender chart
-        map_images['gender_overall'] = save_map_as_png(fig_gender, "Overall_Gender_Distribution")
+    # Overall gender distribution pie chart
+    fig_gender, ax_gender = plt.subplots(figsize=(10, 8))
+    labels = ['Boys', 'Girls']
+    sizes = [summaries['overall']['total_boys'], summaries['overall']['total_girls']]
+    colors = ['#4A90E2', '#F39C12']
     
-    with gender_col2:
-        # Gender ratio by district chart
-        districts = [d['district'] for d in summaries['district']]
-        boys_counts = [d['boys'] for d in summaries['district']]
-        girls_counts = [d['girls'] for d in summaries['district']]
-        
-        fig_gender_district, ax_gender_district = plt.subplots(figsize=(10, 6))
-        x = np.arange(len(districts))
-        width = 0.35
-        
-        bars1 = ax_gender_district.bar(x - width/2, boys_counts, width, label='Boys', color='#4A90E2')
-        bars2 = ax_gender_district.bar(x + width/2, girls_counts, width, label='Girls', color='#F39C12')
-        
-        ax_gender_district.set_title('Gender Distribution by District', fontsize=14, fontweight='bold')
-        ax_gender_district.set_xlabel('Districts')
-        ax_gender_district.set_ylabel('Number of Students')
-        ax_gender_district.set_xticks(x)
-        ax_gender_district.set_xticklabels(districts, rotation=45)
-        ax_gender_district.legend()
-        
-        # Add value labels on bars
-        for bar in bars1:
-            height = bar.get_height()
-            ax_gender_district.annotate(f'{int(height):,}',
-                                      xy=(bar.get_x() + bar.get_width() / 2, height),
-                                      xytext=(0, 3),
-                                      textcoords="offset points",
-                                      ha='center', va='bottom', fontsize=8)
-        
-        for bar in bars2:
-            height = bar.get_height()
-            ax_gender_district.annotate(f'{int(height):,}',
-                                      xy=(bar.get_x() + bar.get_width() / 2, height),
-                                      xytext=(0, 3),
-                                      textcoords="offset points",
-                                      ha='center', va='bottom', fontsize=8)
-        
-        plt.tight_layout()
-        st.pyplot(fig_gender_district)
-        
-        # Save gender district chart
-        map_images['gender_district'] = save_map_as_png(fig_gender_district, "Gender_Distribution_by_District")
+    wedges, texts, autotexts = ax_gender.pie(sizes, labels=labels, autopct='%1.1f%%', 
+                                            colors=colors, startangle=90)
+    ax_gender.set_title('Overall Gender Distribution', fontsize=16, fontweight='bold', pad=20)
+    plt.setp(autotexts, size=14, weight="bold")
+    plt.setp(texts, size=12, weight="bold")
+    plt.tight_layout()
+    st.pyplot(fig_gender)
+    
+    # Save gender chart
+    map_images['gender_overall'] = save_map_as_png(fig_gender, "Overall_Gender_Distribution")
+    
+    # Gender ratio by district chart
+    districts = [d['district'] for d in summaries['district']]
+    boys_counts = [d['boys'] for d in summaries['district']]
+    girls_counts = [d['girls'] for d in summaries['district']]
+    
+    fig_gender_district, ax_gender_district = plt.subplots(figsize=(14, 8))
+    x = np.arange(len(districts))
+    width = 0.35
+    
+    bars1 = ax_gender_district.bar(x - width/2, boys_counts, width, label='Boys', color='#4A90E2', edgecolor='navy', linewidth=1)
+    bars2 = ax_gender_district.bar(x + width/2, girls_counts, width, label='Girls', color='#F39C12', edgecolor='darkorange', linewidth=1)
+    
+    ax_gender_district.set_title('Gender Distribution by District', fontsize=16, fontweight='bold', pad=20)
+    ax_gender_district.set_xlabel('Districts', fontsize=12, fontweight='bold')
+    ax_gender_district.set_ylabel('Number of Students', fontsize=12, fontweight='bold')
+    ax_gender_district.set_xticks(x)
+    ax_gender_district.set_xticklabels(districts, rotation=45, ha='right')
+    ax_gender_district.legend(fontsize=12)
+    ax_gender_district.grid(axis='y', alpha=0.3, linestyle='--')
+    
+    # Add value labels on bars
+    for bar in bars1:
+        height = bar.get_height()
+        ax_gender_district.annotate(f'{int(height):,}',
+                                  xy=(bar.get_x() + bar.get_width() / 2, height),
+                                  xytext=(0, 3),
+                                  textcoords="offset points",
+                                  ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+    for bar in bars2:
+        height = bar.get_height()
+        ax_gender_district.annotate(f'{int(height):,}',
+                                  xy=(bar.get_x() + bar.get_width() / 2, height),
+                                  xytext=(0, 3),
+                                  textcoords="offset points",
+                                  ha='center', va='bottom', fontsize=10, fontweight='bold')
+    
+    plt.tight_layout()
+    st.pyplot(fig_gender_district)
+    
+    # Save gender district chart
+    map_images['gender_district'] = save_map_as_png(fig_gender_district, "Gender_Distribution_by_District")
     
     # Enrollment and ITN Distribution Analysis
     st.subheader("📊 Enrollment and ITN Distribution Analysis")
@@ -797,87 +798,98 @@ if uploaded_file:
     
     district_df = pd.DataFrame(district_analysis)
     
-    # Create bar charts for district analysis
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    # Create individual bar charts for district analysis
     
-    # Total Enrollment by District
-    ax1.bar(district_df['District'], district_df['Total_Enrollment'], color='skyblue', edgecolor='navy')
-    ax1.set_title('Total Enrollment by District', fontsize=14, fontweight='bold')
-    ax1.set_ylabel('Number of Students')
-    ax1.tick_params(axis='x', rotation=45)
+    # Chart 1: Total Enrollment by District
+    fig1, ax1 = plt.subplots(figsize=(14, 8))
+    ax1.bar(district_df['District'], district_df['Total_Enrollment'], color='skyblue', edgecolor='navy', linewidth=1.5)
+    ax1.set_title('Total Enrollment by District', fontsize=16, fontweight='bold', pad=20)
+    ax1.set_ylabel('Number of Students', fontsize=12, fontweight='bold')
+    ax1.tick_params(axis='x', rotation=45, labelsize=11)
+    ax1.tick_params(axis='y', labelsize=11)
+    ax1.grid(axis='y', alpha=0.3, linestyle='--')
     
     # Add value labels on bars
     for i, v in enumerate(district_df['Total_Enrollment']):
-        ax1.text(i, v + max(district_df['Total_Enrollment']) * 0.01, str(int(v)), ha='center', fontweight='bold')
+        ax1.text(i, v + max(district_df['Total_Enrollment']) * 0.02, f'{int(v):,}', ha='center', fontweight='bold', fontsize=10)
     
-    # Total ITN Distributed by District
-    ax2.bar(district_df['District'], district_df['Total_ITN'], color='lightcoral', edgecolor='darkred')
-    ax2.set_title('Total ITN Distributed by District', fontsize=14, fontweight='bold')
-    ax2.set_ylabel('Number of ITNs')
-    ax2.tick_params(axis='x', rotation=45)
+    plt.tight_layout()
+    st.pyplot(fig1)
+    
+    # Save enrollment chart
+    map_images['enrollment_by_district'] = save_map_as_png(fig1, "Total_Enrollment_by_District")
+    
+    # Chart 2: Total ITN Distributed by District
+    fig2, ax2 = plt.subplots(figsize=(14, 8))
+    ax2.bar(district_df['District'], district_df['Total_ITN'], color='lightcoral', edgecolor='darkred', linewidth=1.5)
+    ax2.set_title('Total ITN Distributed by District', fontsize=16, fontweight='bold', pad=20)
+    ax2.set_ylabel('Number of ITNs', fontsize=12, fontweight='bold')
+    ax2.tick_params(axis='x', rotation=45, labelsize=11)
+    ax2.tick_params(axis='y', labelsize=11)
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
     
     # Add value labels on bars
     for i, v in enumerate(district_df['Total_ITN']):
-        ax2.text(i, v + max(district_df['Total_ITN']) * 0.01, str(int(v)), ha='center', fontweight='bold')
+        ax2.text(i, v + max(district_df['Total_ITN']) * 0.02, f'{int(v):,}', ha='center', fontweight='bold', fontsize=10)
     
     plt.tight_layout()
-    st.pyplot(fig)
+    st.pyplot(fig2)
     
-    # Save enrollment and ITN chart
-    map_images['enrollment_itn'] = save_map_as_png(fig, "Enrollment_and_ITN_by_District")
+    # Save ITN chart
+    map_images['itn_by_district'] = save_map_as_png(fig2, "Total_ITN_by_District")
     
     # District-level pie charts
     st.subheader("📊 District-Level Distribution (Pie Charts)")
     
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Enrollment pie chart
-        if district_df['Total_Enrollment'].sum() > 0:
-            fig_pie1, ax_pie1 = plt.subplots(figsize=(8, 8))
-            colors_enrollment = ['#87CEEB', '#4682B4', '#1E90FF', '#0000CD', '#000080']
-            # Filter out zero values for pie chart
-            enrollment_data = district_df[district_df['Total_Enrollment'] > 0]
-            if len(enrollment_data) > 0:
-                wedges, texts, autotexts = ax_pie1.pie(enrollment_data['Total_Enrollment'], 
-                                                      labels=enrollment_data['District'],
-                                                      autopct='%1.1f%%',
-                                                      colors=colors_enrollment[:len(enrollment_data)],
-                                                      startangle=90)
-                ax_pie1.set_title('Total Enrollment Distribution\nby District', fontsize=14, fontweight='bold')
-                plt.setp(autotexts, size=10, weight="bold")
-                st.pyplot(fig_pie1)
-                
-                # Save enrollment pie chart
-                map_images['enrollment_pie'] = save_map_as_png(fig_pie1, "Enrollment_Distribution_Pie")
-            else:
-                st.warning("No enrollment data available for pie chart")
+    # Enrollment pie chart
+    if district_df['Total_Enrollment'].sum() > 0:
+        fig_pie1, ax_pie1 = plt.subplots(figsize=(10, 8))
+        colors_enrollment = ['#87CEEB', '#4682B4', '#1E90FF', '#0000CD', '#000080']
+        # Filter out zero values for pie chart
+        enrollment_data = district_df[district_df['Total_Enrollment'] > 0]
+        if len(enrollment_data) > 0:
+            wedges, texts, autotexts = ax_pie1.pie(enrollment_data['Total_Enrollment'], 
+                                                  labels=enrollment_data['District'],
+                                                  autopct='%1.1f%%',
+                                                  colors=colors_enrollment[:len(enrollment_data)],
+                                                  startangle=90)
+            ax_pie1.set_title('Total Enrollment Distribution by District', fontsize=16, fontweight='bold', pad=20)
+            plt.setp(autotexts, size=12, weight="bold")
+            plt.setp(texts, size=11, weight="bold")
+            plt.tight_layout()
+            st.pyplot(fig_pie1)
+            
+            # Save enrollment pie chart
+            map_images['enrollment_pie'] = save_map_as_png(fig_pie1, "Enrollment_Distribution_Pie")
         else:
             st.warning("No enrollment data available for pie chart")
+    else:
+        st.warning("No enrollment data available for pie chart")
     
-    with col2:
-        # ITN distribution pie chart
-        if district_df['Total_ITN'].sum() > 0:
-            fig_pie2, ax_pie2 = plt.subplots(figsize=(8, 8))
-            colors_itn = ['#90EE90', '#32CD32', '#228B22', '#006400', '#004000']
-            # Filter out zero values for pie chart
-            itn_data = district_df[district_df['Total_ITN'] > 0]
-            if len(itn_data) > 0:
-                wedges, texts, autotexts = ax_pie2.pie(itn_data['Total_ITN'], 
-                                                      labels=itn_data['District'],
-                                                      autopct='%1.1f%%',
-                                                      colors=colors_itn[:len(itn_data)],
-                                                      startangle=90)
-                ax_pie2.set_title('Total ITN Distribution\nby District', fontsize=14, fontweight='bold')
-                plt.setp(autotexts, size=10, weight="bold")
-                st.pyplot(fig_pie2)
-                
-                # Save ITN pie chart
-                map_images['itn_pie'] = save_map_as_png(fig_pie2, "ITN_Distribution_Pie")
-            else:
-                st.warning("No ITN distribution data available for pie chart")
+    # ITN distribution pie chart
+    if district_df['Total_ITN'].sum() > 0:
+        fig_pie2, ax_pie2 = plt.subplots(figsize=(10, 8))
+        colors_itn = ['#90EE90', '#32CD32', '#228B22', '#006400', '#004000']
+        # Filter out zero values for pie chart
+        itn_data = district_df[district_df['Total_ITN'] > 0]
+        if len(itn_data) > 0:
+            wedges, texts, autotexts = ax_pie2.pie(itn_data['Total_ITN'], 
+                                                  labels=itn_data['District'],
+                                                  autopct='%1.1f%%',
+                                                  colors=colors_itn[:len(itn_data)],
+                                                  startangle=90)
+            ax_pie2.set_title('Total ITN Distribution by District', fontsize=16, fontweight='bold', pad=20)
+            plt.setp(autotexts, size=12, weight="bold")
+            plt.setp(texts, size=11, weight="bold")
+            plt.tight_layout()
+            st.pyplot(fig_pie2)
+            
+            # Save ITN pie chart
+            map_images['itn_pie'] = save_map_as_png(fig_pie2, "ITN_Distribution_Pie")
         else:
             st.warning("No ITN distribution data available for pie chart")
+    else:
+        st.warning("No ITN distribution data available for pie chart")
     
     # Display Summary Tables
     st.subheader("📈 District Summary Table")
@@ -889,9 +901,7 @@ if uploaded_file:
     st.dataframe(chiefdom_summary_df)
 
 
-
-
-### part 3
+### part 3----------------------------------------------------------------------------------------------------------------
 
 # Chiefdoms Analysis by District
     st.subheader("📊 Chiefdoms Analysis by District")
