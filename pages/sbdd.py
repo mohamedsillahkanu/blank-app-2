@@ -1197,7 +1197,8 @@ if uploaded_file:
         # Show list of saved maps
         with st.expander("📁 View Saved Map Files"):
             for map_name in map_images.keys():
-                st.write(f"• {map_name}.png")d_paragraph()
+                #st.write(f"• {map_name}.png")d_paragraph()
+                st.write(f"• {map_name}.png")  # Clean and proper
                 chart_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
                 chart_run = chart_para.add_run()
                 map_images['bombali_district'].seek(0)
