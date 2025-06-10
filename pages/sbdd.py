@@ -324,113 +324,64 @@ def generate_summaries(df):
     return summaries
 ### part 2-----------------------------------------------------------------------------------------------------------------
 
-# Logo Section with proper alignment (4 logos)
-st.markdown("""
-<style>
-.logo-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin: 20px 0;
-    gap: 15px;
-}
-.logo-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 250px;
-    height: 200px;
-    border: 2px solid #3498db;
-    border-radius: 15px;
-    background: linear-gradient(135deg, #f8f9fd, #e3f2fd);
-    padding: 8px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-.logo-box img {
-    max-width: 230px;
-    max-height: 140px;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    margin-bottom: 8px;
-}
-.logo-caption {
-    font-size: 12px;
-    font-weight: 600;
-    color: #2c3e50;
-    text-align: center;
-    line-height: 1.2;
-    margin-top: 5px;
-}
-</style>
-""", unsafe_allow_html=True)
-
+# Logo Section - Clean 4 Logo Layout
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
     try:
         st.image("NMCP.png", width=230)
-        st.markdown('<div class="logo-caption">National Malaria Control Program</div>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">National Malaria Control Program</p>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div style="height: 140px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3498db; border-radius: 10px; margin-bottom: 8px;">
+        <div style="width: 230px; height: 160px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 10px; margin: 0 auto;">
             <div style="text-align: center; color: #666; font-size: 11px;">
                 NMCP.png<br>Not Found
             </div>
         </div>
-        <div class="logo-caption">National Malaria Control Program</div>
+        <p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">National Malaria Control Program</p>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col2:
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
     try:
         st.image("icf_sl (2).jpg", width=230)
-        st.markdown('<div class="logo-caption">ICF Sierra Leone</div>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">ICF Sierra Leone</p>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div style="height: 140px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3498db; border-radius: 10px; margin-bottom: 8px;">
+        <div style="width: 230px; height: 160px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 10px; margin: 0 auto;">
             <div style="text-align: center; color: #666; font-size: 11px;">
                 icf_sl (2).jpg<br>Not Found
             </div>
         </div>
-        <div class="logo-caption">ICF Sierra Leone</div>
+        <p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">ICF Sierra Leone</p>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col3:
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
     try:
         st.image("pmi.png", width=230)
-        st.markdown('<div class="logo-caption">PMI Evolve</div>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">PMI Evolve</p>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div style="height: 140px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3498db; border-radius: 10px; margin-bottom: 8px;">
+        <div style="width: 230px; height: 160px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 10px; margin: 0 auto;">
             <div style="text-align: center; color: #666; font-size: 11px;">
                 pmi.png<br>Not Found
             </div>
         </div>
-        <div class="logo-caption">PMI Evolve</div>
+        <p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">PMI Evolve</p>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 with col4:
-    st.markdown('<div class="logo-box">', unsafe_allow_html=True)
     try:
         st.image("abt.png", width=230)
-        st.markdown('<div class="logo-caption">Abt Associates</div>', unsafe_allow_html=True)
+        st.markdown('<p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">Abt Associates</p>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div style="height: 140px; display: flex; align-items: center; justify-content: center; border: 2px dashed #3498db; border-radius: 10px; margin-bottom: 8px;">
+        <div style="width: 230px; height: 160px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 10px; margin: 0 auto;">
             <div style="text-align: center; color: #666; font-size: 11px;">
                 abt.png<br>Not Found
             </div>
         </div>
-        <div class="logo-caption">Abt Associates</div>
+        <p style="text-align: center; font-size: 12px; font-weight: 600; color: #2c3e50; margin-top: 5px;">Abt Associates</p>
         """, unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown("---")  # Add a horizontal line separator
 
