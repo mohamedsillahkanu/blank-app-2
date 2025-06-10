@@ -1518,7 +1518,7 @@ if uploaded_file:
         with st.expander("📁 View Saved Map Files"):
             for map_name in map_images.keys():
                 st.write(f"• {map_name}.png")
-images['enrollment_pie'] = save_map_as_png(fig_pie1, "Enrollment_Distribution_Pie")
+                images['enrollment_pie'] = save_map_as_png(fig_pie1, "Enrollment_Distribution_Pie")
             else:
                 st.warning("No enrollment data available for pie chart")
         else:
