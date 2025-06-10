@@ -498,33 +498,19 @@ if uploaded_file:
             fig_bo, ax_bo = plt.subplots(figsize=(14, 8))
             
             # Plot chiefdom boundaries in white with black edges
-            bo_gdf.plot(ax=ax_bo, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+            bo_gdf.plot(ax=ax_bo, color='white', edgecolor='black', alpha=0.8, linewidth=2)
             
-            # Add chiefdom labels
-            for idx, row in bo_gdf.iterrows():
-                if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
-                    centroid = row.geometry.centroid
-                    ax_bo.annotate(
-                        row['FIRST_CHIE'], 
-                        (centroid.x, centroid.y),
-                        xytext=(5, 5), 
-                        textcoords='offset points',
-                        fontsize=10,
-                        ha='left',
-                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8)
-                    )
-            
-            # Plot GPS coordinates if available
+            # Extract and plot GPS coordinates FIRST
+            coords_extracted = []
             if len(bo_data) > 0 and "GPS Location" in bo_data.columns:
                 gps_data = bo_data["GPS Location"].dropna()
-                coords_extracted = []
                 
                 st.write(f"**Debug: Found {len(gps_data)} GPS entries for BO District**")
                 
                 for idx, gps_val in enumerate(gps_data):
                     if pd.notna(gps_val):
                         gps_str = str(gps_val).strip()
-                        st.write(f"GPS {idx+1}: {gps_str}")  # Debug output
+                        st.write(f"GPS {idx+1}: {gps_str}")
                         
                         # Handle the specific format: 8.6103181,-12.2029534
                         if ',' in gps_str:
@@ -535,7 +521,6 @@ if uploaded_file:
                                     lon = float(parts[1].strip())
                                     
                                     # Check if coordinates are in valid range for Sierra Leone
-                                    # Sierra Leone: Latitude 6°55'N to 10°N, Longitude 10°14'W to 13°18'W
                                     if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
                                         coords_extracted.append([lat, lon])
                                         st.write(f"✅ Valid coordinates: {lat}, {lon}")
@@ -543,58 +528,73 @@ if uploaded_file:
                                         st.write(f"❌ Invalid coordinates (outside Sierra Leone): {lat}, {lon}")
                             except ValueError as e:
                                 st.write(f"❌ Could not parse coordinates: {gps_str} - Error: {e}")
-                        else:
-                            # Fallback: try to extract numbers if no comma
-                            coords = re.findall(r'-?\d+\.?\d*', gps_str)
-                            if len(coords) >= 2:
-                                try:
-                                    lat, lon = float(coords[0]), float(coords[1])
-                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
-                                        coords_extracted.append([lat, lon])
-                                        st.write(f"✅ Valid coordinates (fallback): {lat}, {lon}")
-                                except ValueError:
-                                    st.write(f"❌ Could not convert to numbers: {coords}")
                 
                 st.write(f"**Total valid coordinates extracted: {len(coords_extracted)}**")
+            
+            # Plot GPS points on the shapefile
+            if coords_extracted:
+                lats, lons = zip(*coords_extracted)
                 
-                if coords_extracted:
-                    lats, lons = zip(*coords_extracted)
-                    scatter = ax_bo.scatter(
-                        lons, lats,
-                        c='red',
-                        s=120,
-                        alpha=0.9,
-                        edgecolors='darkred',
-                        linewidth=2,
-                        zorder=10,
-                        label=f'Schools ({len(coords_extracted)})',
-                        marker='o'
+                # Plot GPS points with high visibility
+                scatter = ax_bo.scatter(
+                    lons, lats,
+                    c='red',
+                    s=150,
+                    alpha=1.0,
+                    edgecolors='white',
+                    linewidth=3,
+                    zorder=100,  # Very high z-order to ensure visibility
+                    label=f'Schools ({len(coords_extracted)})',
+                    marker='o'
+                )
+                
+                # Add text labels for each point
+                for i, (lat, lon) in enumerate(coords_extracted):
+                    ax_bo.annotate(f'S{i+1}', 
+                                  (lon, lat),
+                                  xytext=(5, 5), 
+                                  textcoords='offset points',
+                                  fontsize=10,
+                                  fontweight='bold',
+                                  color='red',
+                                  bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
+                
+                # Show coordinate range for verification
+                st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
+                
+                # Set map extent to include all points with padding
+                margin = 0.05
+                ax_bo.set_xlim(min(lons) - margin, max(lons) + margin)
+                ax_bo.set_ylim(min(lats) - margin, max(lats) + margin)
+                
+            # Add chiefdom labels
+            for idx, row in bo_gdf.iterrows():
+                if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
+                    centroid = row.geometry.centroid
+                    ax_bo.annotate(
+                        row['FIRST_CHIE'], 
+                        (centroid.x, centroid.y),
+                        xytext=(5, 5), 
+                        textcoords='offset points',
+                        fontsize=9,
+                        ha='left',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.7)
                     )
-                    ax_bo.legend(fontsize=12, loc='best')
-                    
-                    # Add coordinate info to title
-                    current_title = ax_bo.get_title()
-                    ax_bo.set_title(f'{current_title} | {len(coords_extracted)} GPS Points', fontsize=16, fontweight='bold')
-                    
-                    # Show coordinate range for verification
-                    st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
-                else:
-                    st.warning("No valid GPS coordinates found for BO District")
-                    # Still show the message on the plot
-                    ax_bo.text(0.5, 0.02, 'No GPS coordinates available', 
-                              transform=ax_bo.transAxes, ha='center', 
-                              bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
-            else:
-                st.warning("No GPS Location column found or no data for BO District")
             
             # Customize plot
-            ax_bo.set_title(f'{left_district} District - Chiefdoms: {len(bo_gdf)}', fontsize=16, fontweight='bold')
+            title_text = f'{left_district} District - Chiefdoms: {len(bo_gdf)}'
+            if coords_extracted:
+                title_text += f' | GPS Points: {len(coords_extracted)}'
+            ax_bo.set_title(title_text, fontsize=16, fontweight='bold')
             ax_bo.set_xlabel('Longitude', fontsize=12)
             ax_bo.set_ylabel('Latitude', fontsize=12)
             
-            # Remove axis ticks for cleaner look
-            ax_bo.set_xticks([])
-            ax_bo.set_yticks([])
+            # Add legend if GPS points exist
+            if coords_extracted:
+                ax_bo.legend(fontsize=12, loc='best')
+            
+            # Add grid for reference
+            ax_bo.grid(True, alpha=0.3, linestyle='--')
             
             plt.tight_layout()
             st.pyplot(fig_bo)
@@ -629,33 +629,19 @@ if uploaded_file:
             fig_bombali, ax_bombali = plt.subplots(figsize=(14, 8))
             
             # Plot chiefdom boundaries in white with black edges
-            bombali_gdf.plot(ax=ax_bombali, color='white', edgecolor='black', alpha=0.8, linewidth=1)
+            bombali_gdf.plot(ax=ax_bombali, color='white', edgecolor='black', alpha=0.8, linewidth=2)
             
-            # Add chiefdom labels
-            for idx, row in bombali_gdf.iterrows():
-                if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
-                    centroid = row.geometry.centroid
-                    ax_bombali.annotate(
-                        row['FIRST_CHIE'], 
-                        (centroid.x, centroid.y),
-                        xytext=(5, 5), 
-                        textcoords='offset points',
-                        fontsize=10,
-                        ha='left',
-                        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8)
-                    )
-            
-            # Plot GPS coordinates if available
+            # Extract and plot GPS coordinates FIRST
+            coords_extracted = []
             if len(bombali_data) > 0 and "GPS Location" in bombali_data.columns:
                 gps_data = bombali_data["GPS Location"].dropna()
-                coords_extracted = []
                 
                 st.write(f"**Debug: Found {len(gps_data)} GPS entries for BOMBALI District**")
                 
                 for idx, gps_val in enumerate(gps_data):
                     if pd.notna(gps_val):
                         gps_str = str(gps_val).strip()
-                        st.write(f"GPS {idx+1}: {gps_str}")  # Debug output
+                        st.write(f"GPS {idx+1}: {gps_str}")
                         
                         # Handle the specific format: 8.6103181,-12.2029534
                         if ',' in gps_str:
@@ -666,7 +652,6 @@ if uploaded_file:
                                     lon = float(parts[1].strip())
                                     
                                     # Check if coordinates are in valid range for Sierra Leone
-                                    # Sierra Leone: Latitude 6°55'N to 10°N, Longitude 10°14'W to 13°18'W
                                     if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
                                         coords_extracted.append([lat, lon])
                                         st.write(f"✅ Valid coordinates: {lat}, {lon}")
@@ -674,58 +659,73 @@ if uploaded_file:
                                         st.write(f"❌ Invalid coordinates (outside Sierra Leone): {lat}, {lon}")
                             except ValueError as e:
                                 st.write(f"❌ Could not parse coordinates: {gps_str} - Error: {e}")
-                        else:
-                            # Fallback: try to extract numbers if no comma
-                            coords = re.findall(r'-?\d+\.?\d*', gps_str)
-                            if len(coords) >= 2:
-                                try:
-                                    lat, lon = float(coords[0]), float(coords[1])
-                                    if 6.0 <= lat <= 11.0 and -14.0 <= lon <= -10.0:
-                                        coords_extracted.append([lat, lon])
-                                        st.write(f"✅ Valid coordinates (fallback): {lat}, {lon}")
-                                except ValueError:
-                                    st.write(f"❌ Could not convert to numbers: {coords}")
                 
                 st.write(f"**Total valid coordinates extracted: {len(coords_extracted)}**")
+            
+            # Plot GPS points on the shapefile
+            if coords_extracted:
+                lats, lons = zip(*coords_extracted)
                 
-                if coords_extracted:
-                    lats, lons = zip(*coords_extracted)
-                    scatter = ax_bombali.scatter(
-                        lons, lats,
-                        c='red',
-                        s=120,
-                        alpha=0.9,
-                        edgecolors='darkred',
-                        linewidth=2,
-                        zorder=10,
-                        label=f'Schools ({len(coords_extracted)})',
-                        marker='o'
+                # Plot GPS points with high visibility
+                scatter = ax_bombali.scatter(
+                    lons, lats,
+                    c='red',
+                    s=150,
+                    alpha=1.0,
+                    edgecolors='white',
+                    linewidth=3,
+                    zorder=100,  # Very high z-order to ensure visibility
+                    label=f'Schools ({len(coords_extracted)})',
+                    marker='o'
+                )
+                
+                # Add text labels for each point
+                for i, (lat, lon) in enumerate(coords_extracted):
+                    ax_bombali.annotate(f'S{i+1}', 
+                                       (lon, lat),
+                                       xytext=(5, 5), 
+                                       textcoords='offset points',
+                                       fontsize=10,
+                                       fontweight='bold',
+                                       color='red',
+                                       bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
+                
+                # Show coordinate range for verification
+                st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
+                
+                # Set map extent to include all points with padding
+                margin = 0.05
+                ax_bombali.set_xlim(min(lons) - margin, max(lons) + margin)
+                ax_bombali.set_ylim(min(lats) - margin, max(lats) + margin)
+                
+            # Add chiefdom labels
+            for idx, row in bombali_gdf.iterrows():
+                if 'FIRST_CHIE' in row and pd.notna(row['FIRST_CHIE']):
+                    centroid = row.geometry.centroid
+                    ax_bombali.annotate(
+                        row['FIRST_CHIE'], 
+                        (centroid.x, centroid.y),
+                        xytext=(5, 5), 
+                        textcoords='offset points',
+                        fontsize=9,
+                        ha='left',
+                        bbox=dict(boxstyle='round,pad=0.3', facecolor='lightblue', alpha=0.7)
                     )
-                    ax_bombali.legend(fontsize=12, loc='best')
-                    
-                    # Add coordinate info to title
-                    current_title = ax_bombali.get_title()
-                    ax_bombali.set_title(f'{current_title} | {len(coords_extracted)} GPS Points', fontsize=16, fontweight='bold')
-                    
-                    # Show coordinate range for verification
-                    st.write(f"**Coordinate range:** Lat: {min(lats):.4f} to {max(lats):.4f}, Lon: {min(lons):.4f} to {max(lons):.4f}")
-                else:
-                    st.warning("No valid GPS coordinates found for BOMBALI District")
-                    # Still show the message on the plot
-                    ax_bombali.text(0.5, 0.02, 'No GPS coordinates available', 
-                                   transform=ax_bombali.transAxes, ha='center', 
-                                   bbox=dict(boxstyle='round', facecolor='yellow', alpha=0.7))
-            else:
-                st.warning("No GPS Location column found or no data for BOMBALI District")
             
             # Customize plot
-            ax_bombali.set_title(f'{right_district} District - Chiefdoms: {len(bombali_gdf)}', fontsize=16, fontweight='bold')
+            title_text = f'{right_district} District - Chiefdoms: {len(bombali_gdf)}'
+            if coords_extracted:
+                title_text += f' | GPS Points: {len(coords_extracted)}'
+            ax_bombali.set_title(title_text, fontsize=16, fontweight='bold')
             ax_bombali.set_xlabel('Longitude', fontsize=12)
             ax_bombali.set_ylabel('Latitude', fontsize=12)
             
-            # Remove axis ticks for cleaner look
-            ax_bombali.set_xticks([])
-            ax_bombali.set_yticks([])
+            # Add legend if GPS points exist
+            if coords_extracted:
+                ax_bombali.legend(fontsize=12, loc='best')
+            
+            # Add grid for reference
+            ax_bombali.grid(True, alpha=0.3, linestyle='--')
             
             plt.tight_layout()
             st.pyplot(fig_bombali)
