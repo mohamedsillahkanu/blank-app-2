@@ -325,24 +325,13 @@ def generate_summaries(df):
 ### part 2-----------------------------------------------------------------------------------------------------------------
 
 # Logo Section with consistent alignment
-st.markdown("""
-<div class="logo-container">
-    <div class="logo-item" id="logo1"></div>
-    <div class="logo-item" id="logo2"></div>
-    <div class="logo-item" id="logo3"></div>
-</div>
-""", unsafe_allow_html=True)
-
-# Add logos with consistent sizing using columns
 col1, col2, col3 = st.columns(3)
 with col1:
     try:
-        st.markdown('<div style="text-align: center; margin-bottom: 1rem;">', unsafe_allow_html=True)
         st.image("NMCP.png", width=280, caption="National Malaria Control Program")
-        st.markdown('</div>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div class="logo-placeholder">
+        <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
             NMCP.png<br>
             Not Found<br>
             Please upload logo
@@ -351,12 +340,10 @@ with col1:
 
 with col2:
     try:
-        st.markdown('<div style="text-align: center; margin-bottom: 1rem;">', unsafe_allow_html=True)
         st.image("icf_sl (2).jpg", width=280, caption="ICF Sierra Leone")
-        st.markdown('</div>', unsafe_allow_html=True)
     except:
         st.markdown("""
-        <div class="logo-placeholder">
+        <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
             icf_sl (2).jpg<br>
             Not Found<br>
             Please upload logo
@@ -366,7 +353,7 @@ with col2:
 with col3:
     # Placeholder for third logo
     st.markdown("""
-    <div class="logo-placeholder">
+    <div style="width: 280px; height: 180px; border: 2px dashed #3498db; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f8f9fd, #e3f2fd); border-radius: 15px; font-size: 14px; color: #2c3e50; text-align: center; font-weight: 600;">
         Partner Logo<br>
         (Right Position)<br>
         Upload .png/.jpg
@@ -989,7 +976,7 @@ if uploaded_file:
     st.subheader("📈 Chiefdom Summary Table")
     chiefdom_summary_df = pd.DataFrame(summaries['chiefdom'])
     st.dataframe(chiefdom_summary_df)
-
+    
 ### part 3----------------------------------------------------------------------------------------------------------------
 
 # Chiefdoms Analysis by District
