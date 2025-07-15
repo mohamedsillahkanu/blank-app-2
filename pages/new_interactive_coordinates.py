@@ -91,35 +91,20 @@ try:
 
     # Parse GPS Location column to extract latitude and longitude
     if 'GPS Location' in facility_data.columns:
-        facility_data[['parsed_lat', 'parsed_lon']] = facility_data['GPS Location'].apply(
+        facility_data[['final_lat', 'final_lon']] = facility_data['GPS Location'].apply(
             lambda x: pd.Series(parse_gps_location(x))
         )
         
         # Drop rows with invalid GPS coordinates
         original_count = len(facility_data)
-        facility_data = facility_data.dropna(subset=['parsed_lat', 'parsed_lon'])
+        facility_data = facility_data.dropna(subset=['final_lat', 'final_lon'])
         invalid_count = original_count - len(facility_data)
         
         if invalid_count > 0:
             st.info(f"Note: {invalid_count} facilities were excluded due to invalid GPS coordinates.")
-        
-        # Check if we have the old column names as fallback
-        if 'w_lat' in facility_data.columns and 'w_long' in facility_data.columns:
-            # Use parsed coordinates if available, otherwise fall back to old columns
-            facility_data['final_lat'] = facility_data['parsed_lat'].fillna(facility_data['w_lat'])
-            facility_data['final_lon'] = facility_data['parsed_lon'].fillna(facility_data['w_long'])
-        else:
-            # Use only the parsed coordinates
-            facility_data['final_lat'] = facility_data['parsed_lat']
-            facility_data['final_lon'] = facility_data['parsed_lon']
             
-    elif 'w_lat' in facility_data.columns and 'w_long' in facility_data.columns:
-        # Fallback to old column names if GPS Location doesn't exist
-        facility_data['final_lat'] = facility_data['w_lat']
-        facility_data['final_lon'] = facility_data['w_long']
-        st.warning("Using legacy coordinate columns (w_lat, w_long). Consider updating to GPS Location format.")
     else:
-        st.error("No valid GPS coordinate columns found. Expected 'GPS Location' or 'w_lat'/'w_long' columns.")
+        st.error("No 'GPS Location' column found in the uploaded file.")
         st.stop()
 
     # Remove any remaining rows with invalid coordinates
@@ -214,7 +199,11 @@ try:
                 )
             )
         
-        # Add facilities with coordinates
+        # Add facilities with coordinates using GPS coordinates as identifiers
+        district_facilities['display_name'] = district_facilities.apply(
+            lambda row: f"Location: {row['final_lat']:.4f}, {row['final_lon']:.4f}", axis=1
+        )
+        
         fig.add_trace(
             go.Scattermapbox(
                 lat=district_facilities['final_lat'],
@@ -224,11 +213,11 @@ try:
                     size=point_size,
                     color=point_color,
                 ),
-                text=district_facilities['facility'],
+                text=district_facilities['display_name'],
                 hovertemplate=(
                     "<b>%{text}</b><br>" +
                     "Chiefdom: " + district_facilities['FIRST_CHIE'] + "<br>" +
-                    f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
+                    f"GPS: %{{lat:.6f}}, %{{lon:.6f}}<br>" +
                     "<extra></extra>"
                 ),
                 name='Health Facilities'
@@ -335,13 +324,13 @@ try:
         st.success(f"Generated map for {selected_district} District with {len(district_facilities)} facilities")
         
         # Show coordinate format information
-        st.info(f"Using GPS coordinates from: {'GPS Location column' if 'GPS Location' in facility_data.columns else 'Legacy w_lat/w_long columns'}")
+        st.info("Using GPS coordinates from GPS Location column as location identifiers")
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
-    st.write("Please ensure you upload the correct files:")
-    st.write("- Excel file (.xlsx or .xls) with health facilities data containing 'GPS Location' column")
-    st.write("- Complete shapefile components (.shp, .shx, .dbf files)")
+    st.write("Please ensure:")
+    st.write("- Your Excel file (.xlsx or .xls) contains health facilities data with 'GPS Location' column")
+    st.write("- The shapefile 'Chiefdom 2021.shp' (and .shx, .dbf files) are in the same directory as this script")
     st.write("Expected GPS Location format: '8.2458033,-11.5196267' (latitude,longitude)")
     
     # Clean up temporary directory if it exists
