@@ -74,9 +74,9 @@ class HealthFacilityProcessor:
                         f'{inactive_count}',
                         ha='center', va='center')
 
-        plt.title('Health Facility Counts by Region', fontsize=14, pad=20)
+        plt.title('Health Facility Counts by District', fontsize=14, pad=20)
         plt.xlabel('Number of Health Facilities', fontsize=12, labelpad=10)
-        plt.ylabel('Region', fontsize=12, labelpad=10)
+        plt.ylabel('District', fontsize=12, labelpad=10)
         plt.yticks(y, adm1_values)
         plt.legend()
 
@@ -119,9 +119,9 @@ class HealthFacilityProcessor:
                     ax.text(active_pct + inactive_pct/2, i, f'{inactive_pct:.1f}%',
                             ha='center', va='center')
 
-        plt.title('Health Facility Distribution by Region (%)', fontsize=14, pad=20)
+        plt.title('Health Facility Distribution by District (%)', fontsize=14, pad=20)
         plt.xlabel('Percentage of Health Facilities', fontsize=12, labelpad=10)
-        plt.ylabel('Region', fontsize=12, labelpad=10)
+        plt.ylabel('District', fontsize=12, labelpad=10)
         plt.yticks(y, adm1_values)
         plt.xlim(0, 100)
         plt.legend()
@@ -138,7 +138,7 @@ def save_fig_to_bytes(fig):
     return buf
 
 def main():
-    st.title("Health Facility Regional Distribution Analysis")
+    st.title("Health Facility District Distribution Analysis")
     st.snow()
     st.balloons()
     
