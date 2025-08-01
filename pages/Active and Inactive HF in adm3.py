@@ -88,9 +88,9 @@ class HealthFacilityProcessor:
                             f'{inactive_count:,}',
                             ha='center', va='center')
         
-        plt.title(f'Health Facility Distribution in {selected_adm1} by District', fontsize=14, pad=20)
+        plt.title(f'Health Facility Distribution in {selected_adm1}', fontsize=14, pad=20)
         plt.xlabel('Number of Health Facilities', fontsize=12, labelpad=10)
-        plt.ylabel('District', fontsize=12, labelpad=10)
+        plt.ylabel('adm3', fontsize=12, labelpad=10)
         plt.yticks(y, adm3_values)
         plt.legend()
         
