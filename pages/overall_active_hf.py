@@ -106,6 +106,37 @@ class HealthFacilityProcessor:
         plt.tight_layout()
         return fig
 
+    def plot_overall_counts(self, active_count, inactive_count):
+        fig, ax = plt.subplots(figsize=(6, 4))
+        labels = ['Active', 'Inactive']
+        values = [active_count, inactive_count]
+        colors = ['#47B5FF', 'lightpink']
+
+        ax.barh(labels, values, color=colors, alpha=0.8)
+        for i, v in enumerate(values):
+            ax.text(v + 1, i, f'{v}', va='center', fontsize=10)
+
+        ax.set_title('Overall Facility Counts')
+        ax.set_xlabel('Number of Facilities')
+        plt.tight_layout()
+        return fig
+
+    def plot_overall_percentages(self, active_pct, inactive_pct):
+        fig, ax = plt.subplots(figsize=(6, 4))
+        labels = ['Active', 'Inactive']
+        values = [active_pct, inactive_pct]
+        colors = ['#47B5FF', 'lightpink']
+
+        ax.barh(labels, values, color=colors, alpha=0.8)
+        for i, v in enumerate(values):
+            ax.text(v / 2, i, f'{v:.1f}%', ha='center', va='center', fontsize=10, color='black')
+
+        ax.set_title('Overall Facility Distribution (%)')
+        ax.set_xlabel('Percentage')
+        ax.set_xlim(0, 100)
+        plt.tight_layout()
+        return fig
+
 def save_fig_to_bytes(fig):
     from io import BytesIO
     buf = BytesIO()
@@ -139,7 +170,22 @@ def main():
                 col2.metric("Active Facilities", f"{active_hfs} ({active_pct:.1f}%)")
                 col3.metric("Inactive Facilities", f"{inactive_hfs} ({inactive_pct:.1f}%)")
 
-                # --- Count Visualization ---
+                # --- Overall Facility Visualizations ---
+                st.subheader("Overall Facility Count")
+                fig_total_counts = processor.plot_overall_counts(active_hfs, inactive_hfs)
+                st.pyplot(fig_total_counts)
+
+                count_bytes = save_fig_to_bytes(fig_total_counts)
+                st.download_button("Download Overall Count", data=count_bytes, file_name="overall_counts.png", mime="image/png")
+
+                st.subheader("Overall Facility Distribution (%)")
+                fig_total_percentages = processor.plot_overall_percentages(active_pct, inactive_pct)
+                st.pyplot(fig_total_percentages)
+
+                pct_bytes = save_fig_to_bytes(fig_total_percentages)
+                st.download_button("Download Overall Percentage", data=pct_bytes, file_name="overall_percentages.png", mime="image/png")
+
+                # --- Count Visualization by Region ---
                 st.subheader("Facility Counts by Region")
                 fig_counts = processor.plot_counts_by_adm1(active_df, inactive_df)
                 st.pyplot(fig_counts)
@@ -152,7 +198,7 @@ def main():
                     mime="image/png"
                 )
 
-                # --- Percentage Visualization ---
+                # --- Percentage Visualization by Region ---
                 st.subheader("Facility Distribution by Region (%)")
                 fig_percentages = processor.plot_percentages_by_adm1(active_df, inactive_df)
                 st.pyplot(fig_percentages)
