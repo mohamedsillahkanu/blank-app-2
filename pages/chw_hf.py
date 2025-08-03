@@ -116,11 +116,10 @@ try:
                             )
                     
                     # Set title and formatting
-                    ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} facilities)', 
+                    ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} hf/chw)', 
                                fontsize=10, fontweight='bold')
                     ax.set_aspect('equal')
-                    ax.grid(True, alpha=0.3)
-                    ax.tick_params(labelsize=8)
+                    ax.axis('off')  # Turn off axes
                     
                     # Add legend if there are facilities
                     if len(chiefdom_facilities) > 0:
@@ -183,7 +182,7 @@ try:
             ax.set_title('Sierra Leone - All Districts and Health Facilities', 
                         fontsize=16, fontweight='bold')
             ax.set_aspect('equal')
-            ax.grid(True, alpha=0.3)
+            ax.axis('off')  # Turn off axes
             ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
             
             plt.tight_layout()
@@ -279,8 +278,7 @@ try:
             ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} facilities)', 
                        fontsize=10, fontweight='bold')
             ax.set_aspect('equal')
-            ax.grid(True, alpha=0.3)
-            ax.tick_params(labelsize=8)
+            ax.axis('off')  # Turn off axes
             
             # Add legend if there are facilities
             if len(chiefdom_facilities) > 0:
