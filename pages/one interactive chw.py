@@ -24,7 +24,7 @@ TYPE_COLORS = {
 try:
     # Read files directly
     shapefile = gpd.read_file("Chiefdom 2021.shp")
-    facility_data = pd.read_excel("CHW Geo (1).xlsx")
+    facility_data = pd.read_excel("CHW Geo.xlsx")
 
     # Set the CRS for the shapefile if not already set
     if shapefile.crs is None:
@@ -33,12 +33,32 @@ try:
     # Clean the facility data - remove rows with missing coordinates
     clean_facility_data = facility_data.dropna(subset=['w_long', 'w_lat']).copy()
     
+    # Debug: Show facility types in original data
+    st.write("**Facility types in data:**")
+    type_counts_original = clean_facility_data['type'].value_counts()
+    for type_val, count in type_counts_original.items():
+        st.write(f"- {type_val}: {count}")
+    
     # Create GeoDataFrame from facility data
     facilities_gdf = gpd.GeoDataFrame(
         clean_facility_data,
         geometry=[Point(xy) for xy in zip(clean_facility_data['w_long'], clean_facility_data['w_lat'])],
         crs=shapefile.crs
     )
+
+    # Spatial join to add district and chiefdom information to facilities
+    facilities_with_admin = gpd.sjoin(
+        facilities_gdf,
+        shapefile[['FIRST_DNAM', 'FIRST_CHIE', 'geometry']],
+        how="left",
+        predicate="within"
+    )
+    
+    # Debug: Show facility types after spatial join
+    st.write("**Facility types after adding district/chiefdom info:**")
+    type_counts_after = facilities_with_admin['type'].value_counts()
+    for type_val, count in type_counts_after.items():
+        st.write(f"- {type_val}: {count}")
 
     # Get country bounds for centering
     bounds = shapefile.total_bounds
@@ -65,24 +85,31 @@ try:
         )
     
     # Add all facilities grouped by type
-    for type_value in facilities_gdf['type'].unique():
+    for type_value in facilities_with_admin['type'].unique():
         if pd.notna(type_value):  # Skip NaN values
-            type_facilities = facilities_gdf[facilities_gdf['type'] == type_value]
+            type_facilities = facilities_with_admin[facilities_with_admin['type'] == type_value]
+            
+            # Debug: Show count for each type being plotted
+            st.write(f"Plotting {type_value}: {len(type_facilities)} facilities")
             
             # Create different hover templates based on type
             if type_value == 'HF':
                 # For HF: show facility name from 'hf' column
                 hover_template = (
                     "<b>%{text}</b><br>" +
+                    "District: " + type_facilities['FIRST_DNAM'].fillna('Unknown').astype(str) + "<br>" +
+                    "Chiefdom: " + type_facilities['FIRST_CHIE'].fillna('Unknown').astype(str) + "<br>" +
                     "Coordinates: %{lon:.6f}, %{lat:.6f}<br>" +
                     "<extra></extra>"
                 )
                 # Use the 'hf' column for HF facilities
-                text_data = type_facilities['hf'] if 'hf' in type_facilities.columns else type_facilities.index
+                text_data = type_facilities['hf'] if 'hf' in type_facilities.columns else [f"HF Facility {i}" for i in range(len(type_facilities))]
             else:
                 # For others: show type
                 hover_template = (
                     f"<b>{type_value}</b><br>" +
+                    "District: " + type_facilities['FIRST_DNAM'].fillna('Unknown').astype(str) + "<br>" +
+                    "Chiefdom: " + type_facilities['FIRST_CHIE'].fillna('Unknown').astype(str) + "<br>" +
                     "Coordinates: %{lon:.6f}, %{lat:.6f}<br>" +
                     "<extra></extra>"
                 )
@@ -97,6 +124,7 @@ try:
                     marker=dict(
                         size=POINT_SIZE,
                         color=TYPE_COLORS.get(type_value, '#666666'),
+                        opacity=0.8
                     ),
                     text=text_data,
                     hovertemplate=hover_template,
@@ -250,8 +278,8 @@ try:
     )
 
     # Show total summary
-    total_facilities = len(facilities_gdf)
-    type_counts = facilities_gdf['type'].value_counts()
+    total_facilities = len(facilities_with_admin)
+    type_counts = facilities_with_admin['type'].value_counts()
     
     st.write(f"**Total Health Facilities: {total_facilities}**")
     
