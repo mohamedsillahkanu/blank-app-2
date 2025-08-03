@@ -6,7 +6,7 @@ import numpy as np
 from shapely.geometry import Point
 
 st.set_page_config(layout="wide", page_title="Health Facility Map Generator")
-st.title("Interactive Health Facility Map Generator")
+st.title("Interactive Health Facility/CHW Map Generator")
 st.write("Sierra Leone Health Facilities Map")
 
 # Add celebration effects
@@ -31,7 +31,7 @@ TYPE_COLORS = {
 try:
     # Read files directly
     shapefile = gpd.read_file("Chiefdom 2021.shp")
-    facility_data = pd.read_excel("master_hf_list.xlsx")
+    facility_data = pd.read_excel("CHW Geo.xlsx")
 
     # Get districts and user selection
     districts = sorted(shapefile['FIRST_DNAM'].unique())
