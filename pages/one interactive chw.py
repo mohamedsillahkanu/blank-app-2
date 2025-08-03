@@ -24,7 +24,7 @@ TYPE_COLORS = {
 try:
     # Read files directly
     shapefile = gpd.read_file("Chiefdom 2021.shp")
-    facility_data = pd.read_excel("CHW Geo.xlsx")
+    facility_data = pd.read_excel("CHW Geo (1).xlsx")
 
     # Set the CRS for the shapefile if not already set
     if shapefile.crs is None:
