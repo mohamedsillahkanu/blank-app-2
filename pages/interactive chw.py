@@ -45,17 +45,17 @@ try:
     # Show unique facility types with their assigned colors
     if 'type' in facility_data.columns:
         unique_types = facility_data['type'].value_counts()
-        st.write("**Facility types found with assigned colors:**")
-        for ftype, count in unique_types.items():
+        st.write("**Values found in 'type' column with assigned colors:**")
+        for type_value, count in unique_types.items():
             color_display = {
                 'HF': '🔵 Blue',
                 'HTR': '🟢 Green', 
                 'ETR': '🟣 Purple',
                 'HTR/ETR': '🟠 Orange'
-            }.get(ftype, '⚫ Unknown')
-            st.write(f"- {color_display} **{ftype}**: {count} facilities")
+            }.get(type_value, '⚫ Unknown')
+            st.write(f"- {color_display} **{type_value}**: {count} facilities")
     else:
-        st.error("'type' column not found in data")
+        st.error("Column 'type' not found in data")
         st.stop()
 
     # Get districts and user selection
@@ -131,26 +131,27 @@ try:
             if pd.notna(type_value):  # Skip NaN values
                 type_facilities = district_facilities[district_facilities['type'] == type_value]
                 
-                # Use facility name column - check if 'hf' exists, otherwise use first text column
-                name_column = 'hf' if 'hf' in type_facilities.columns else type_facilities.select_dtypes(include=['object']).columns[0]
-                
                 # Create different hover templates based on type
-                if type == 'HF':
-                    # For HF: show only chiefdom and coordinates (no facility name)
+                if type_value == 'HF':
+                    # For HF: show facility name from 'hf' column, chiefdom, and coordinates
                     hover_template = (
-                        "<b>Health Facility (HF)</b><br>" +
+                        "<b>%{text}</b><br>" +
                         "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
                         f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
                         "<extra></extra>"
                     )
+                    # Use the 'hf' column for HF facilities
+                    text_data = type_facilities['hf'] if 'hf' in type_facilities.columns else type_facilities.index
                 else:
                     # For others: show type, chiefdom, and coordinates
                     hover_template = (
-                        f"<b>Type: {type_value}</b><br>" +
+                        f"<b>{type_value}</b><br>" +
                         "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
                         f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
                         "<extra></extra>"
                     )
+                    # Use the type value for other facilities
+                    text_data = [type_value] * len(type_facilities)
                 
                 fig.add_trace(
                     go.Scattermapbox(
@@ -161,7 +162,7 @@ try:
                             size=POINT_SIZE,
                             color=TYPE_COLORS.get(type_value, '#666666'),  # Default gray for unknown types
                         ),
-                        text=type_facilities[name_column] if name_column in type_facilities.columns else type_facilities.index,
+                        text=text_data,
                         hovertemplate=hover_template,
                         name=f'{type_value} ({len(type_facilities)})'
                     )
