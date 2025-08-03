@@ -135,7 +135,7 @@ try:
                 name_column = 'hf' if 'hf' in type_facilities.columns else type_facilities.select_dtypes(include=['object']).columns[0]
                 
                 # Create different hover templates based on type
-                if type_value == 'HF':
+                if type == 'HF':
                     # For HF: show only chiefdom and coordinates (no facility name)
                     hover_template = (
                         "<b>Health Facility (HF)</b><br>" +
