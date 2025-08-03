@@ -78,17 +78,19 @@ try:
                 fig, axes = plt.subplots(rows, cols, figsize=(20, 5*rows))
                 fig.suptitle(f'{district} District - Chiefdoms', fontsize=16, fontweight='bold')
                 
-                # Handle single row case
-                if rows == 1:
-                    axes = axes.reshape(1, -1) if len(chiefdoms) > 1 else [axes]
-                elif len(chiefdoms) == 1:
+                # Ensure axes is always a 2D array for consistent indexing
+                if rows == 1 and cols == 1:
+                    axes = np.array([[axes]])
+                elif rows == 1:
+                    axes = axes.reshape(1, -1)
+                elif cols == 1:
                     axes = axes.reshape(-1, 1)
                 
                 # Plot each chiefdom
                 for idx, chiefdom in enumerate(chiefdoms):
                     row = idx // cols
                     col = idx % cols
-                    ax = axes[row, col] if rows > 1 else axes[col]
+                    ax = axes[row, col]
                     
                     # Filter data for this chiefdom
                     chiefdom_shape = district_shapefile[district_shapefile['FIRST_CHIE'] == chiefdom]
@@ -129,7 +131,7 @@ try:
                 for idx in range(len(chiefdoms), total_subplots):
                     row = idx // cols
                     col = idx % cols
-                    ax = axes[row, col] if rows > 1 else axes[col]
+                    ax = axes[row, col]
                     ax.set_visible(False)
                 
                 plt.tight_layout()
@@ -236,17 +238,19 @@ try:
         fig, axes = plt.subplots(rows, cols, figsize=(20, 5*rows))
         fig.suptitle(f'{selected_district} District - Chiefdoms', fontsize=16, fontweight='bold')
         
-        # Handle single row case
-        if rows == 1:
-            axes = axes.reshape(1, -1) if len(chiefdoms) > 1 else [axes]
-        elif len(chiefdoms) == 1:
+        # Ensure axes is always a 2D array for consistent indexing
+        if rows == 1 and cols == 1:
+            axes = np.array([[axes]])
+        elif rows == 1:
+            axes = axes.reshape(1, -1)
+        elif cols == 1:
             axes = axes.reshape(-1, 1)
         
         # Plot each chiefdom
         for idx, chiefdom in enumerate(chiefdoms):
             row = idx // cols
             col = idx % cols
-            ax = axes[row, col] if rows > 1 else axes[col]
+            ax = axes[row, col]
             
             # Filter data for this chiefdom
             chiefdom_shape = district_shapefile[district_shapefile['FIRST_CHIE'] == chiefdom]
@@ -287,7 +291,7 @@ try:
         for idx in range(len(chiefdoms), total_subplots):
             row = idx // cols
             col = idx % cols
-            ax = axes[row, col] if rows > 1 else axes[col]
+            ax = axes[row, col]
             ax.set_visible(False)
         
         plt.tight_layout()
