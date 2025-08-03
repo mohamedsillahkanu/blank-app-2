@@ -20,12 +20,12 @@ BOUNDARY_WIDTH = 2
 MAP_HEIGHT = 800
 ZOOM_LEVEL = 9
 
-# Define colors for different facility types (updated as requested)
+# Define colors for different facility types (more distinct colors)
 TYPE_COLORS = {
-    'HF': '#2E86AB',      # Blue
-    'HTR': '#28A745',     # Green
-    'ETR': '#6F42C1',     # Purple
-    'HTR/ETR': '#FD7E14'  # Orange
+    'HF': '#1f77b4',      # Blue
+    'HTR': '#2ca02c',     # Green
+    'ETR': '#9467bd',     # Purple
+    'HTR/ETR': '#ff7f0e'  # Orange
 }
 
 try:
@@ -128,6 +128,24 @@ try:
                 # Use facility name column - check if 'hf' exists, otherwise use first text column
                 name_column = 'hf' if 'hf' in type_facilities.columns else type_facilities.select_dtypes(include=['object']).columns[0]
                 
+                # Create different hover templates based on type
+                if type_value == 'HF':
+                    # For HF: show hf name, chiefdom, and coordinates
+                    hover_template = (
+                        "<b>%{text}</b><br>" +
+                        "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
+                        f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
+                        "<extra></extra>"
+                    )
+                else:
+                    # For others: show type, chiefdom, and coordinates
+                    hover_template = (
+                        f"<b>Type: {type_value}</b><br>" +
+                        "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
+                        f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
+                        "<extra></extra>"
+                    )
+                
                 fig.add_trace(
                     go.Scattermapbox(
                         lat=type_facilities['w_lat'],
@@ -138,13 +156,7 @@ try:
                             color=TYPE_COLORS.get(type_value, '#666666'),  # Default gray for unknown types
                         ),
                         text=type_facilities[name_column] if name_column in type_facilities.columns else type_facilities.index,
-                        hovertemplate=(
-                            "<b>%{text}</b><br>" +
-                            f"Type: {type_value}<br>" +
-                            "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
-                            f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
-                            "<extra></extra>"
-                        ),
+                        hovertemplate=hover_template,
                         name=f'{type_value} ({len(type_facilities)})'
                     )
                 )
@@ -180,69 +192,156 @@ try:
             'modeBarButtonsToAdd': ['drawrect', 'eraseshape'],
         })
 
-        # For the HTML download, create a version with full browser height
-        html_content = fig.to_html(
+        # Create GitHub-friendly interactive HTML
+        github_html = fig.to_html(
             config={
                 'displayModeBar': True,
                 'scrollZoom': True,
+                'doubleClick': 'reset+autosize',
                 'displaylogo': False,
                 'responsive': True,
+                'toImageButtonOptions': {
+                    'format': 'png',
+                    'filename': f'{selected_district}_health_facilities',
+                    'height': 800,
+                    'width': 1200,
+                    'scale': 1
+                }
             },
-            include_plotlyjs=True,
-            full_html=True,
-            include_mathjax=False
+            include_plotlyjs='cdn',  # Use CDN for GitHub compatibility
+            div_id="health-facility-map",
+            full_html=True
         )
-
-        # Add CSS to make the HTML version full screen
-        full_screen_html = f"""
-        <html>
-            <head>
-                <style>
-                    body {{
-                        margin: 0;
-                        padding: 0;
-                        overflow: hidden;
-                    }}
-                    .js-plotly-plot {{
-                        height: 100vh !important;
-                    }}
-                    .plotly-graph-div {{
-                        height: 100vh !important;
-                    }}
-                </style>
-            </head>
-            <body>
-                {html_content}
-                <script>
-                    window.onload = function() {{
-                        setTimeout(function() {{
-                            window.dispatchEvent(new Event('resize'));
-                        }}, 100);
-                    }};
-                </script>
-            </body>
-        </html>
-        """
+        
+        # Add GitHub Pages compatible styling
+        github_ready_html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{selected_district} District - Health Facilities Map</title>
+    <style>
+        body {{
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }}
+        .container {{
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }}
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }}
+        .header h1 {{
+            margin: 0;
+            font-size: 2em;
+        }}
+        .header p {{
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }}
+        .map-container {{
+            padding: 0;
+            height: 800px;
+        }}
+        #health-facility-map {{
+            height: 100% !important;
+            width: 100% !important;
+        }}
+        .footer {{
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9em;
+        }}
+        @media (max-width: 768px) {{
+            body {{
+                padding: 10px;
+            }}
+            .header h1 {{
+                font-size: 1.5em;
+            }}
+            .map-container {{
+                height: 600px;
+            }}
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Health Facilities Distribution</h1>
+            <p>{selected_district} District, Sierra Leone</p>
+        </div>
+        <div class="map-container">
+            {github_html.split('<body>')[1].split('</body>')[0]}
+        </div>
+        <div class="footer">
+            Interactive map showing health facility locations | Generated with Plotly
+        </div>
+    </div>
+    <script>
+        window.addEventListener('load', function() {{
+            setTimeout(function() {{
+                window.dispatchEvent(new Event('resize'));
+                if (window.Plotly) {{
+                    window.Plotly.Plots.resize('health-facility-map');
+                }}
+            }}, 100);
+        }});
+    </script>
+</body>
+</html>"""
 
         # Download options
-        col7, col8 = st.columns(2)
+        col7, col8, col9 = st.columns(3)
         
         with col7:
             st.download_button(
-                label=f"Download {selected_district} District Map (HTML)",
-                data=full_screen_html,
-                file_name=f"health_facility_map_{selected_district}.html",
-                mime='text/html'
+                label=f"📱 GitHub-Ready Map (HTML)",
+                data=github_ready_html,
+                file_name=f"health_facility_map_{selected_district.lower().replace(' ', '_')}.html",
+                mime='text/html',
+                help="Interactive HTML file optimized for GitHub Pages and web embedding"
             )
 
         with col8:
+            # JSON export for developers
+            json_data = {
+                "district": selected_district,
+                "facilities": district_facilities[['w_lat', 'w_long', 'type']].to_dict('records'),
+                "bounds": bounds.tolist(),
+                "total_count": len(district_facilities),
+                "type_counts": type_counts.to_dict()
+            }
+            st.download_button(
+                label="📊 Data (JSON)",
+                data=pd.Series(json_data).to_json(),
+                file_name=f"health_facilities_{selected_district.lower().replace(' ', '_')}.json",
+                mime="application/json",
+                help="Structured data for developers"
+            )
+
+        with col9:
             if len(district_facilities) > 0:
                 csv = district_facilities.to_csv(index=False)
                 st.download_button(
-                    label="Download Facility Data (CSV)",
+                    label="📄 Data (CSV)",
                     data=csv,
-                    file_name=f"health_facilities_{selected_district}.csv",
-                    mime="text/csv"
+                    file_name=f"health_facilities_{selected_district.lower().replace(' ', '_')}.csv",
+                    mime="text/csv",
+                    help="Spreadsheet-compatible data export"
                 )
 
         # Display success message with facility count and type breakdown
