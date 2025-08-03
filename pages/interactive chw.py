@@ -48,11 +48,15 @@ try:
         for type_val, count in all_types.items():
             st.write(f"'{type_val}': {count} records")
         
-        # Show if any values contain extra spaces or different formatting
-        unique_types_list = facility_data['type'].unique()
-        st.write("**Raw type values (check for spaces/formatting):**")
-        for i, t in enumerate(unique_types_list):
-            st.write(f"{i+1}. '{t}' (length: {len(str(t)) if pd.notna(t) else 'NaN'})")
+        # Specifically check for HF
+        hf_count = len(facility_data[facility_data['type'] == 'HF'])
+        st.write(f"**HF count specifically:** {hf_count}")
+        
+        # Check if HF exists after cleaning coordinates
+        clean_data = facility_data.dropna(subset=['w_long', 'w_lat'])
+        hf_clean_count = len(clean_data[clean_data['type'] == 'HF'])
+        st.write(f"**HF count after removing missing coordinates:** {hf_clean_count}")
+        
     else:
         st.error("Column 'type' not found in data")
         st.stop()
