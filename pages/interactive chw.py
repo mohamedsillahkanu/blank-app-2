@@ -35,25 +35,24 @@ try:
 
     # Debug: Show data info
     st.write(f"**Data loaded:** {len(facility_data)} records")
-    st.write(f"**Columns:** {list(facility_data.columns)}")
     
     # Check for missing coordinates
     missing_coords = facility_data[['w_long', 'w_lat']].isnull().any(axis=1).sum()
     if missing_coords > 0:
         st.warning(f"Found {missing_coords} records with missing coordinates")
     
-    # Show unique facility types with their assigned colors
+    # Show ALL unique values in 'type' column (exactly as they appear)
     if 'type' in facility_data.columns:
-        unique_types = facility_data['type'].value_counts()
-        st.write("**Values found in 'type' column with assigned colors:**")
-        for type_value, count in unique_types.items():
-            color_display = {
-                'HF': '🔵 Blue',
-                'HTR': '🟢 Green', 
-                'ETR': '🟣 Purple',
-                'HTR/ETR': '🟠 Orange'
-            }.get(type_value, '⚫ Unknown')
-            st.write(f"- {color_display} **{type_value}**: {count} facilities")
+        st.write("**ALL unique values found in 'type' column:**")
+        all_types = facility_data['type'].value_counts(dropna=False)
+        for type_val, count in all_types.items():
+            st.write(f"'{type_val}': {count} records")
+        
+        # Show if any values contain extra spaces or different formatting
+        unique_types_list = facility_data['type'].unique()
+        st.write("**Raw type values (check for spaces/formatting):**")
+        for i, t in enumerate(unique_types_list):
+            st.write(f"{i+1}. '{t}' (length: {len(str(t)) if pd.notna(t) else 'NaN'})")
     else:
         st.error("Column 'type' not found in data")
         st.stop()
@@ -325,12 +324,13 @@ try:
 
         with col8:
             # JSON export for developers
+            facility_type_counts = district_facilities['type'].value_counts()
             json_data = {
                 "district": selected_district,
                 "facilities": district_facilities[['w_lat', 'w_long', 'type']].to_dict('records'),
                 "bounds": bounds.tolist(),
                 "total_count": len(district_facilities),
-                "type_counts": type_counts.to_dict()
+                "type_counts": facility_type_counts.to_dict()
             }
             st.download_button(
                 label="📊 Data (JSON)",
@@ -351,10 +351,10 @@ try:
                     help="Spreadsheet-compatible data export"
                 )
 
-        # Display success message with facility count and type breakdown
+        # Display success message with facility count
         st.success(f"Generated map for {selected_district} District with {len(district_facilities)} facilities")
         
-        # Show facility type breakdown with updated colors
+        # Calculate and show facility type breakdown with updated colors
         type_counts = district_facilities['type'].value_counts()
         st.write("**Facility Type Breakdown:**")
         for type_value, count in type_counts.items():
