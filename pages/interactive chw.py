@@ -42,12 +42,18 @@ try:
     if missing_coords > 0:
         st.warning(f"Found {missing_coords} records with missing coordinates")
     
-    # Show unique facility types
+    # Show unique facility types with their assigned colors
     if 'type' in facility_data.columns:
         unique_types = facility_data['type'].value_counts()
-        st.write("**Facility types found:**")
+        st.write("**Facility types found with assigned colors:**")
         for ftype, count in unique_types.items():
-            st.write(f"- {ftype}: {count}")
+            color_display = {
+                'HF': '🔵 Blue',
+                'HTR': '🟢 Green', 
+                'ETR': '🟣 Purple',
+                'HTR/ETR': '🟠 Orange'
+            }.get(ftype, '⚫ Unknown')
+            st.write(f"- {color_display} **{ftype}**: {count} facilities")
     else:
         st.error("'type' column not found in data")
         st.stop()
@@ -130,9 +136,9 @@ try:
                 
                 # Create different hover templates based on type
                 if type_value == 'HF':
-                    # For HF: show hf name, chiefdom, and coordinates
+                    # For HF: show only chiefdom and coordinates (no facility name)
                     hover_template = (
-                        "<b>%{text}</b><br>" +
+                        "<b>Health Facility (HF)</b><br>" +
                         "Chiefdom: " + type_facilities['FIRST_CHIE'].astype(str) + "<br>" +
                         f"Coordinates: %{{lon:.6f}}, %{{lat:.6f}}<br>" +
                         "<extra></extra>"
