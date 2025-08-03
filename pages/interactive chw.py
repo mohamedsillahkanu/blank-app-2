@@ -33,30 +33,34 @@ try:
     shapefile = gpd.read_file("Chiefdom 2021.shp")
     facility_data = pd.read_excel("CHW Geo.xlsx")
 
-    # Debug: Show data info
+    # Debug: Show data info - SPECIFICALLY LOOK FOR HF
     st.write(f"**Data loaded:** {len(facility_data)} records")
     
-    # Check for missing coordinates
-    missing_coords = facility_data[['w_long', 'w_lat']].isnull().any(axis=1).sum()
-    if missing_coords > 0:
-        st.warning(f"Found {missing_coords} records with missing coordinates")
-    
-    # Show ALL unique values in 'type' column (exactly as they appear)
+    # Show ALL unique values in 'type' column 
     if 'type' in facility_data.columns:
-        st.write("**ALL unique values found in 'type' column:**")
+        st.write("**ALL values in 'type' column:**")
         all_types = facility_data['type'].value_counts(dropna=False)
         for type_val, count in all_types.items():
-            st.write(f"'{type_val}': {count} records")
+            color_display = {
+                'HF': '🔵 Blue',
+                'HTR': '🟢 Green', 
+                'ETR': '🟣 Purple',
+                'HTR/ETR': '🟠 Orange'
+            }.get(type_val, '⚫ Unknown')
+            st.write(f"- {color_display} **'{type_val}'**: {count} records")
+            
+        # SPECIFICALLY check for HF
+        hf_exists = 'HF' in facility_data['type'].values
+        st.write(f"**Does 'HF' exist in type column? {hf_exists}**")
         
-        # Specifically check for HF
-        hf_count = len(facility_data[facility_data['type'] == 'HF'])
-        st.write(f"**HF count specifically:** {hf_count}")
-        
-        # Check if HF exists after cleaning coordinates
-        clean_data = facility_data.dropna(subset=['w_long', 'w_lat'])
-        hf_clean_count = len(clean_data[clean_data['type'] == 'HF'])
-        st.write(f"**HF count after removing missing coordinates:** {hf_clean_count}")
-        
+        if hf_exists:
+            hf_records = facility_data[facility_data['type'] == 'HF']
+            st.write(f"**HF records found: {len(hf_records)}**")
+            
+            # Check HF coordinates
+            hf_missing_coords = hf_records[['w_long', 'w_lat']].isnull().any(axis=1).sum()
+            st.write(f"**HF records with missing coordinates: {hf_missing_coords}**")
+            
     else:
         st.error("Column 'type' not found in data")
         st.stop()
@@ -78,6 +82,12 @@ try:
         clean_facility_data = facility_data.dropna(subset=['w_long', 'w_lat']).copy()
         st.write(f"**Clean data:** {len(clean_facility_data)} records with valid coordinates")
         
+        # Show types BEFORE spatial filtering
+        st.write("**Types in clean data BEFORE district filtering:**")
+        types_before = clean_facility_data['type'].value_counts()
+        for type_val, count in types_before.items():
+            st.write(f"- {type_val}: {count}")
+        
         # Create GeoDataFrame from facility data with explicit CRS
         facilities_gdf = gpd.GeoDataFrame(
             clean_facility_data,
@@ -92,6 +102,15 @@ try:
             how="inner",
             predicate="within"
         )
+
+        # Show types AFTER spatial filtering
+        st.write("**Types AFTER district spatial filtering:**")
+        if len(district_facilities) > 0:
+            types_after = district_facilities['type'].value_counts()
+            for type_val, count in types_after.items():
+                st.write(f"- {type_val}: {count}")
+        else:
+            st.write("No facilities found within district boundaries")
 
         if len(district_facilities) == 0:
             st.warning(f"No facilities found within {selected_district} District boundaries.")
