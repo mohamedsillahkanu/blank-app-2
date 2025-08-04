@@ -275,7 +275,7 @@ try:
                     )
             
             # Set title and formatting
-            ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} facilities)', 
+            ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} hf/chw)', 
                        fontsize=10, fontweight='bold')
             ax.set_aspect('equal')
             ax.axis('off')  # Turn off axes
@@ -322,7 +322,7 @@ try:
                 'ETR': '🟣 Purple',
                 'HTR/ETR': '🟠 Orange'
             }.get(facility_type, '⚫ Unknown')
-            st.write(f"  - {color_name} **{facility_type}**: {count} facilities")
+            st.write(f"  - {color_name} **{facility_type}**: {count} hf/chw")
 
 except Exception as e:
     st.error(f"An error occurred: {str(e)}")
