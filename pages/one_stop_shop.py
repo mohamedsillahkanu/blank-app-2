@@ -223,7 +223,6 @@ if uploaded_file is not None:
             
             with appearance_col3:
                 map_height = st.slider("Map Height", 400, 1000, 600)
-                show_border = st.checkbox("Show Point Border", True)
 
             # Map center location
             st.markdown("#### 🌍 Map Center Location")
@@ -378,7 +377,6 @@ if uploaded_file is not None:
                                 size=point_size,
                                 color=point_color,
                                 opacity=opacity,
-                                line=dict(width=3 if show_border else 0, color='white'),
                                 symbol='circle'
                             ),
                             hovertemplate=create_hover_template(),
