@@ -3,10 +3,11 @@ import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
 import geopandas as gpd
+from shapely.geometry import Point
 
-st.set_page_config(layout="wide", page_title="Central Point Interactive Map")
-st.title("🎯 Central Point Interactive Map Generator")
-st.markdown("Upload your Excel file and create a map with one central interactive point showing your selected data!")
+st.set_page_config(layout="wide", page_title="Chiefdom Center Points Map")
+st.title("🗺️ Interactive Chiefdom Center Points Map")
+st.markdown("Upload your Excel file and place interactive points at the center of each chiefdom!")
 
 # Initialize session state
 if 'data' not in st.session_state:
@@ -23,25 +24,26 @@ try:
     if shapefile.crs is None:
         shapefile = shapefile.set_crs(epsg=4326)
     
-    st.success(f"✅ Shapefile loaded successfully! Found {len(shapefile)} boundaries.")
+    st.success(f"✅ Shapefile loaded successfully! Found {len(shapefile)} chiefdoms.")
+    
+    # Calculate center points for each chiefdom
+    shapefile['center_lat'] = shapefile.geometry.centroid.y
+    shapefile['center_lon'] = shapefile.geometry.centroid.x
     
     # Show shapefile info
     with st.expander("🗺️ Shapefile Information"):
-        st.write(f"**Number of boundaries:** {len(shapefile)}")
+        st.write(f"**Number of chiefdoms:** {len(shapefile)}")
         if 'FIRST_DNAM' in shapefile.columns:
             districts = shapefile['FIRST_DNAM'].unique()
             st.write(f"**Districts found:** {', '.join(sorted(districts))}")
+        if 'FIRST_CHIE' in shapefile.columns:
+            chiefdoms = sorted(shapefile['FIRST_CHIE'].unique())
+            st.write(f"**Chiefdoms found:** {len(chiefdoms)} total")
+            
         st.write(f"**Columns:** {list(shapefile.columns)}")
-        
-        # Calculate shapefile bounds for auto-centering
-        bounds = shapefile.total_bounds
-        center_lat = (bounds[1] + bounds[3]) / 2
-        center_lon = (bounds[0] + bounds[2]) / 2
-        st.write(f"**Auto-calculated center:** {center_lat:.4f}, {center_lon:.4f}")
-        
-        # Store bounds for later use
-        st.session_state.shapefile_bounds = bounds
-        st.session_state.auto_center = (center_lat, center_lon)
+        st.write("**Sample chiefdom centers:**")
+        center_sample = shapefile[['FIRST_CHIE', 'center_lat', 'center_lon']].head()
+        st.dataframe(center_sample)
         
 except Exception as e:
     st.error(f"❌ Could not load shapefile: {str(e)}")
@@ -55,11 +57,11 @@ except Exception as e:
     st.stop()
 
 # File upload section
-st.markdown("### 📁 Step 1: Upload Your Excel File")
+st.markdown("### 📁 Upload Your Excel File")
 uploaded_file = st.file_uploader(
     "Choose an Excel file", 
     type=['xlsx', 'xls'],
-    help="Upload your Excel file containing the data you want to display"
+    help="Upload your Excel file containing the data you want to display at each chiefdom center"
 )
 
 if uploaded_file is not None:
@@ -89,16 +91,83 @@ if uploaded_file is not None:
                 })
             st.dataframe(pd.DataFrame(col_info))
 
+        # Step 1: Link data to chiefdoms (optional)
+        st.markdown("### 🔗 Step 1: Link Data to Chiefdoms (Optional)")
+        
+        link_option = st.radio(
+            "How do you want to display data?",
+            [
+                "Same data for all chiefdoms", 
+                "Different data per chiefdom (link by column)",
+                "Show summary statistics for all chiefdoms"
+            ]
+        )
+        
+        linked_data = None
+        
+        if link_option == "Different data per chiefdom (link by column)":
+            # Try to find a column that matches chiefdom names
+            potential_columns = [col for col in df.columns if df[col].dtype == 'object']
+            
+            if potential_columns:
+                link_column = st.selectbox(
+                    "Select column that contains chiefdom names:",
+                    options=potential_columns,
+                    help="Choose the column that contains names matching your shapefile chiefdoms"
+                )
+                
+                # Show matching analysis
+                chiefdom_names = set(shapefile['FIRST_CHIE'].str.upper().str.strip())
+                data_names = set(df[link_column].str.upper().str.strip()) if df[link_column].dtype == 'object' else set()
+                
+                matches = chiefdom_names.intersection(data_names)
+                st.write(f"**Matching analysis:**")
+                st.write(f"- Chiefdoms in shapefile: {len(chiefdom_names)}")
+                st.write(f"- Unique values in data: {len(data_names)}")
+                st.write(f"- **Matches found: {len(matches)}**")
+                
+                if matches:
+                    st.success(f"✅ Found {len(matches)} matching chiefdom names!")
+                    with st.expander("View Matches"):
+                        st.write(sorted(matches))
+                    
+                    # Create linked data
+                    df_upper = df.copy()
+                    df_upper[link_column] = df_upper[link_column].str.upper().str.strip()
+                    linked_data = df_upper
+                else:
+                    st.warning("⚠️ No exact matches found. Data will be applied to all chiefdoms.")
+            else:
+                st.warning("⚠️ No text columns found for linking. Using same data for all chiefdoms.")
+        
+        elif link_option == "Show summary statistics for all chiefdoms":
+            # Create summary statistics
+            summary_data = {}
+            for col in df.columns:
+                if df[col].dtype in ['float64', 'int64']:
+                    summary_data[f"{col}_mean"] = df[col].mean()
+                    summary_data[f"{col}_sum"] = df[col].sum()
+                    summary_data[f"{col}_count"] = df[col].count()
+                elif df[col].dtype == 'object':
+                    summary_data[f"{col}_unique"] = df[col].nunique()
+                    summary_data[f"{col}_mode"] = df[col].mode().iloc[0] if len(df[col].mode()) > 0 else "N/A"
+            
+            # Convert to single row dataframe
+            linked_data = pd.DataFrame([summary_data])
+        
         # Step 2: Select variables for hover popup
         st.markdown("### 🎯 Step 2: Select Variables for Interactive Popup")
-        st.markdown("Choose which columns you want to display when hovering over the central point:")
+        st.markdown("Choose which columns you want to display when hovering over each chiefdom center:")
+        
+        # Use appropriate dataframe for variable selection
+        source_df = linked_data if linked_data is not None else df
         
         # Create columns for better layout
         n_cols = 3
         cols = st.columns(n_cols)
         
         selected_vars = []
-        available_columns = list(df.columns)
+        available_columns = list(source_df.columns)
         
         for i, col in enumerate(available_columns):
             with cols[i % n_cols]:
@@ -124,7 +193,7 @@ if uploaded_file is not None:
         with quick_col3:
             if st.button("Text Columns Only"):
                 for col in available_columns:
-                    if df[col].dtype == 'object':
+                    if source_df[col].dtype == 'object':
                         st.session_state[f"var_{col}"] = True
                     else:
                         st.session_state[f"var_{col}"] = False
@@ -133,7 +202,7 @@ if uploaded_file is not None:
         with quick_col4:
             if st.button("Numeric Columns Only"):
                 for col in available_columns:
-                    if df[col].dtype in ['float64', 'int64']:
+                    if source_df[col].dtype in ['float64', 'int64']:
                         st.session_state[f"var_{col}"] = True
                     else:
                         st.session_state[f"var_{col}"] = False
@@ -145,152 +214,56 @@ if uploaded_file is not None:
         if selected_vars:
             st.success(f"✅ Selected {len(selected_vars)} variables for display: {', '.join(selected_vars)}")
             
-            # Step 3: Select which row to display (if multiple rows)
-            st.markdown("### 📋 Step 3: Select Data Row")
-            if len(df) > 1:
-                st.markdown(f"Your file has {len(df)} rows. Which row would you like to display in the popup?")
-                
-                # Show a preview of rows to help user choose
-                with st.expander("👀 Preview Rows"):
-                    for idx, row in df.head(10).iterrows():
-                        st.write(f"**Row {idx + 1}:** {dict(row[selected_vars] if selected_vars else row)}")
-                        if idx >= 4:  # Show only first 5 rows in preview
-                            if len(df) > 5:
-                                st.write(f"... and {len(df) - 5} more rows")
-                            break
-                
-                row_selection_method = st.radio(
-                    "How would you like to select the row?",
-                    ["Select by row number", "Select by specific value", "Show all rows as summary"]
-                )
-                
-                if row_selection_method == "Select by row number":
-                    selected_row_idx = st.selectbox(
-                        "Select row number",
-                        options=list(range(len(df))),
-                        format_func=lambda x: f"Row {x + 1}"
-                    )
-                    selected_data = df.iloc[selected_row_idx]
-                    display_mode = "single_row"
-                    
-                elif row_selection_method == "Select by specific value":
-                    filter_col = st.selectbox(
-                        "Select column to filter by",
-                        options=df.columns.tolist()
-                    )
-                    unique_values = df[filter_col].dropna().unique()
-                    selected_value = st.selectbox(
-                        f"Select value from '{filter_col}' column",
-                        options=unique_values
-                    )
-                    filtered_df = df[df[filter_col] == selected_value]
-                    if len(filtered_df) > 0:
-                        if len(filtered_df) == 1:
-                            selected_data = filtered_df.iloc[0]
-                            display_mode = "single_row"
-                        else:
-                            st.info(f"Found {len(filtered_df)} rows matching '{selected_value}'. Will show the first one.")
-                            selected_data = filtered_df.iloc[0]
-                            display_mode = "single_row"
-                    else:
-                        st.error("No rows found with that value!")
-                        st.stop()
-                        
-                else:  # Show all rows as summary
-                    selected_data = df
-                    display_mode = "summary"
-                    
-            else:
-                selected_data = df.iloc[0]
-                display_mode = "single_row"
-                st.info("Single row detected - will display this row's data.")
-
-            # Step 4: Customize map appearance
-            st.markdown("### 🎨 Step 4: Customize Map Appearance")
+            # Step 3: Customize appearance
+            st.markdown("### 🎨 Step 3: Customize Map Appearance")
             
             appearance_col1, appearance_col2, appearance_col3 = st.columns(3)
             
             with appearance_col1:
-                point_size = st.slider("Point Size", 10, 50, 25)
+                point_size = st.slider("Point Size", 8, 30, 15)
                 point_color = st.color_picker("Point Color", "#FF6B6B")
             
             with appearance_col2:
-                map_style = st.selectbox(
-                    "Map Style",
-                    ["carto-positron", "open-street-map", "carto-darkmatter", "satellite-streets"]
-                )
-                opacity = st.slider("Point Opacity", 0.3, 1.0, 0.9)
+                boundary_color = st.color_picker("Boundary Color", "#2E86AB")
+                boundary_width = st.slider("Boundary Width", 1, 5, 2)
             
             with appearance_col3:
-                map_height = st.slider("Map Height", 400, 1000, 600)
+                map_height = st.slider("Map Height", 400, 1000, 700)
+                point_opacity = st.slider("Point Opacity", 0.3, 1.0, 0.9)
 
-            # Map center location
-            st.markdown("#### 🌍 Map Center Location")
-            
-            # Option to use shapefile center or custom location
-            center_option = st.radio(
-                "Choose center location:",
-                ["Use shapefile center (auto)", "Custom coordinates"]
-            )
-            
-            if center_option == "Use shapefile center (auto)" and 'auto_center' in st.session_state:
-                center_lat, center_lon = st.session_state.auto_center
-                st.info(f"Using shapefile center: {center_lat:.4f}, {center_lon:.4f}")
+            # Optional: Filter by district
+            if 'FIRST_DNAM' in shapefile.columns:
+                st.markdown("#### 🗺️ Optional: Filter by District")
+                districts = ['All Districts'] + sorted(shapefile['FIRST_DNAM'].unique())
+                selected_district = st.selectbox("Select District (optional)", districts)
             else:
-                location_col1, location_col2 = st.columns(2)
-                
-                with location_col1:
-                    center_lat = st.number_input("Center Latitude", value=8.460555, format="%.6f")
-                with location_col2:
-                    center_lon = st.number_input("Center Longitude", value=-11.779889, format="%.6f")
-                
-                # Quick location presets
-                st.markdown("**Quick Location Presets:**")
-                preset_col1, preset_col2, preset_col3, preset_col4 = st.columns(4)
-                
-                with preset_col1:
-                    if st.button("🇺🇸 USA Center"):
-                        st.session_state.preset_lat = 39.8283
-                        st.session_state.preset_lon = -98.5795
-                with preset_col2:
-                    if st.button("🇪🇺 Europe Center"):
-                        st.session_state.preset_lat = 54.5260
-                        st.session_state.preset_lon = 15.2551
-                with preset_col3:
-                    if st.button("🌍 World Center"):
-                        st.session_state.preset_lat = 0.0
-                        st.session_state.preset_lon = 0.0
-                with preset_col4:
-                    if st.button("🇸🇱 Sierra Leone"):
-                        st.session_state.preset_lat = 8.460555
-                        st.session_state.preset_lon = -11.779889
+                selected_district = 'All Districts'
 
-                # Apply preset if selected
-                if 'preset_lat' in st.session_state:
-                    center_lat = st.session_state.preset_lat
-                    center_lon = st.session_state.preset_lon
-                    del st.session_state.preset_lat
-                    del st.session_state.preset_lon
-                    st.experimental_rerun()
-
-            zoom_level = st.slider("Zoom Level", 1, 15, 8)  # Default higher zoom for shapefile view
-
-            # Step 5: Generate Map
-            st.markdown("### 🚀 Step 5: Generate Your Interactive Map")
+            # Step 4: Generate Map
+            st.markdown("### 🚀 Step 4: Generate Your Interactive Map")
             
-            if st.button("🗺️ Generate Interactive Map", type="primary", use_container_width=True):
-                with st.spinner("Creating your interactive map..."):
+            if st.button("🗺️ Generate Chiefdom Centers Map", type="primary", use_container_width=True):
+                with st.spinner("Creating your interactive map with chiefdom centers..."):
                     
-                    # Create hover template based on display mode
-                    if display_mode == "single_row":
-                        def create_hover_template():
-                            hover_parts = ["<b>📊 Data Information</b><br>"]
-                            hover_parts.append("=" * 30 + "<br>")
-                            
+                    # Filter shapefile by district if selected
+                    if selected_district != 'All Districts':
+                        filtered_shapefile = shapefile[shapefile['FIRST_DNAM'] == selected_district].copy()
+                    else:
+                        filtered_shapefile = shapefile.copy()
+                    
+                    if len(filtered_shapefile) == 0:
+                        st.error("❌ No chiefdoms found for selected district!")
+                        st.stop()
+                    
+                    # Create hover template function
+                    def create_hover_template(chiefdom_name, row_data=None):
+                        hover_parts = [f"<b>🏛️ {chiefdom_name}</b><br>"]
+                        hover_parts.append("=" * 40 + "<br>")
+                        
+                        if row_data is not None:
                             for var in selected_vars:
-                                if pd.notna(selected_data[var]):
-                                    # Format the value nicely
-                                    value = selected_data[var]
+                                if var in row_data.index and pd.notna(row_data[var]):
+                                    value = row_data[var]
                                     if isinstance(value, float):
                                         if value.is_integer():
                                             value = int(value)
@@ -298,108 +271,131 @@ if uploaded_file is not None:
                                             value = f"{value:.3f}"
                                     
                                     hover_parts.append(f"<b>{var}:</b> {value}<br>")
-                            
-                            hover_parts.append(f"<br><i>💡 Click for more details</i>")
-                            return "".join(hover_parts) + "<extra></extra>"
-                    
-                    else:  # summary mode
-                        def create_hover_template():
-                            hover_parts = ["<b>📊 Dataset Summary</b><br>"]
-                            hover_parts.append("=" * 30 + "<br>")
-                            hover_parts.append(f"<b>Total Rows:</b> {len(selected_data)}<br>")
-                            hover_parts.append(f"<b>Selected Variables:</b> {len(selected_vars)}<br><br>")
-                            
-                            # Show summary statistics for selected numeric columns
-                            numeric_vars = [var for var in selected_vars if selected_data[var].dtype in ['float64', 'int64']]
-                            if numeric_vars:
-                                hover_parts.append("<b>📈 Numeric Summaries:</b><br>")
-                                for var in numeric_vars[:3]:  # Show only first 3 to avoid clutter
-                                    mean_val = selected_data[var].mean()
-                                    hover_parts.append(f"• {var}: Avg {mean_val:.2f}<br>")
-                            
-                            # Show unique counts for categorical columns
-                            categorical_vars = [var for var in selected_vars if selected_data[var].dtype == 'object']
-                            if categorical_vars:
-                                hover_parts.append("<br><b>📋 Categories:</b><br>")
-                                for var in categorical_vars[:3]:  # Show only first 3
-                                    unique_count = selected_data[var].nunique()
-                                    hover_parts.append(f"• {var}: {unique_count} unique values<br>")
-                            
-                            hover_parts.append(f"<br><i>💡 Click for detailed breakdown</i>")
-                            return "".join(hover_parts) + "<extra></extra>"
+                        else:
+                            # Use default row data
+                            if link_option == "Same data for all chiefdoms" and len(df) > 0:
+                                default_row = df.iloc[0]
+                                for var in selected_vars:
+                                    if var in default_row.index and pd.notna(default_row[var]):
+                                        value = default_row[var]
+                                        if isinstance(value, float):
+                                            if value.is_integer():
+                                                value = int(value)
+                                            else:
+                                                value = f"{value:.3f}"
+                                        hover_parts.append(f"<b>{var}:</b> {value}<br>")
+                        
+                        hover_parts.append(f"<br><b>📍 Coordinates:</b><br>")
+                        hover_parts.append(f"Lat: {filtered_shapefile[filtered_shapefile['FIRST_CHIE'] == chiefdom_name]['center_lat'].iloc[0]:.6f}<br>")
+                        hover_parts.append(f"Lon: {filtered_shapefile[filtered_shapefile['FIRST_CHIE'] == chiefdom_name]['center_lon'].iloc[0]:.6f}")
+                        hover_parts.append(f"<br><i>💡 Click for detailed view</i>")
+                        
+                        return "".join(hover_parts) + "<extra></extra>"
 
                     # Create figure
                     fig = go.Figure()
                     
-                    # Add shapefile boundaries first
-                    if 'shapefile' in st.session_state and st.session_state.shapefile is not None:
-                        shapefile = st.session_state.shapefile
+                    # Add chiefdom boundaries
+                    for _, boundary in filtered_shapefile.iterrows():
+                        boundary_geojson = boundary.geometry.__geo_interface__
                         
-                        # Add boundaries for each chiefdom/district
-                        for _, boundary in shapefile.iterrows():
-                            boundary_geojson = boundary.geometry.__geo_interface__
-                            
-                            # Handle both Polygon and MultiPolygon
-                            coords_list = []
-                            if boundary_geojson['type'] == 'Polygon':
-                                coords_list = [boundary_geojson['coordinates'][0]]
-                            elif boundary_geojson['type'] == 'MultiPolygon':
-                                coords_list = [poly[0] for poly in boundary_geojson['coordinates']]
-                            
-                            # Get boundary name for hover
-                            boundary_name = "Boundary"
-                            if 'FIRST_CHIE' in boundary.index:
-                                boundary_name = f"Chiefdom: {boundary['FIRST_CHIE']}"
-                            elif 'FIRST_DNAM' in boundary.index:
-                                boundary_name = f"District: {boundary['FIRST_DNAM']}"
-                            
-                            for coords in coords_list:
-                                fig.add_trace(
-                                    go.Scattermapbox(
-                                        mode='lines',
-                                        lon=[coord[0] for coord in coords],
-                                        lat=[coord[1] for coord in coords],
-                                        line=dict(color='rgba(0,0,0,0.6)', width=2),
-                                        name=boundary_name,
-                                        showlegend=False,
-                                        hovertemplate=f"<b>{boundary_name}</b><extra></extra>",
-                                        fill='none'
-                                    )
+                        # Handle both Polygon and MultiPolygon
+                        coords_list = []
+                        if boundary_geojson['type'] == 'Polygon':
+                            coords_list = [boundary_geojson['coordinates'][0]]
+                        elif boundary_geojson['type'] == 'MultiPolygon':
+                            coords_list = [poly[0] for poly in boundary_geojson['coordinates']]
+                        
+                        chiefdom_name = boundary.get('FIRST_CHIE', 'Unknown')
+                        
+                        for coords in coords_list:
+                            fig.add_trace(
+                                go.Scatter(
+                                    mode='lines',
+                                    x=[coord[0] for coord in coords],
+                                    y=[coord[1] for coord in coords],
+                                    line=dict(color=boundary_color, width=boundary_width),
+                                    name=f"Boundary: {chiefdom_name}",
+                                    showlegend=False,
+                                    hovertemplate=f"<b>🗺️ {chiefdom_name} Boundary</b><extra></extra>",
+                                    fill='none'
                                 )
+                            )
+
+                    # Add center points for each chiefdom
+                    center_lats = []
+                    center_lons = []
+                    hover_templates = []
+                    point_names = []
                     
-                    # Add the central point on top of boundaries
+                    for _, chiefdom in filtered_shapefile.iterrows():
+                        chiefdom_name = chiefdom['FIRST_CHIE']
+                        center_lat = chiefdom['center_lat']
+                        center_lon = chiefdom['center_lon']
+                        
+                        center_lats.append(center_lat)
+                        center_lons.append(center_lon)
+                        point_names.append(chiefdom_name)
+                        
+                        # Get data for this chiefdom
+                        chiefdom_data = None
+                        if link_option == "Different data per chiefdom (link by column)" and linked_data is not None:
+                            matching_rows = linked_data[linked_data[link_column].str.upper().str.strip() == chiefdom_name.upper().strip()]
+                            if len(matching_rows) > 0:
+                                chiefdom_data = matching_rows.iloc[0]
+                        elif link_option == "Show summary statistics for all chiefdoms" and linked_data is not None:
+                            chiefdom_data = linked_data.iloc[0]
+                        
+                        hover_template = create_hover_template(chiefdom_name, chiefdom_data)
+                        hover_templates.append(hover_template)
+                    
+                    # Add all center points as one trace
                     fig.add_trace(
-                        go.Scattermapbox(
-                            lat=[center_lat],
-                            lon=[center_lon],
+                        go.Scatter(
+                            x=center_lons,
+                            y=center_lats,
                             mode='markers',
                             marker=dict(
                                 size=point_size,
                                 color=point_color,
-                                opacity=opacity,
+                                opacity=point_opacity,
                                 symbol='circle'
                             ),
-                            hovertemplate=create_hover_template(),
-                            name='Data Point',
-                            text=['Interactive Data Point']
+                            hovertemplate=hover_templates,
+                            name=f'Chiefdom Centers ({len(center_lats)})',
+                            text=point_names
                         )
                     )
 
-                    # Update layout
+                    # Calculate bounds for the map
+                    bounds = filtered_shapefile.total_bounds
+                    center_lat = (bounds[1] + bounds[3]) / 2
+                    center_lon = (bounds[0] + bounds[2]) / 2
+
+                    # Update layout for shapefile-only view
                     fig.update_layout(
                         height=map_height,
                         title={
-                            'text': f"Interactive Map with Boundaries & Central Point<br><small>Displaying {len(selected_vars)} variables from your data</small>",
+                            'text': f"Interactive Chiefdom Centers Map<br><small>{len(filtered_shapefile)} chiefdoms with {len(selected_vars)} data variables</small>",
                             'y': 0.98,
                             'x': 0.5,
                             'xanchor': 'center',
                             'yanchor': 'top',
-                            'font': {'size': 20}
+                            'font': {'size': 18}
                         },
-                        mapbox=dict(
-                            style=map_style,
-                            center=dict(lat=center_lat, lon=center_lon),
-                            zoom=zoom_level
+                        xaxis=dict(
+                            title='Longitude',
+                            range=[bounds[0] - 0.01, bounds[2] + 0.01],
+                            showgrid=True,
+                            gridcolor='lightgray'
+                        ),
+                        yaxis=dict(
+                            title='Latitude',
+                            range=[bounds[1] - 0.01, bounds[3] + 0.01],
+                            showgrid=True,
+                            gridcolor='lightgray',
+                            scaleanchor="x",
+                            scaleratio=1
                         ),
                         showlegend=True,
                         legend=dict(
@@ -411,7 +407,9 @@ if uploaded_file is not None:
                             bordercolor="rgba(0,0,0,0.2)",
                             borderwidth=1
                         ),
-                        margin=dict(t=100, r=30, l=30, b=30)
+                        margin=dict(t=100, r=30, l=30, b=30),
+                        plot_bgcolor='white',
+                        paper_bgcolor='white'
                     )
 
                     # Display the map
@@ -421,59 +419,37 @@ if uploaded_file is not None:
                         'displaylogo': False,
                         'toImageButtonOptions': {
                             'format': 'png',
-                            'filename': 'central_point_interactive_map',
+                            'filename': 'chiefdom_centers_map',
                             'height': map_height,
                             'width': 1200,
                             'scale': 2
                         }
                     })
 
-                    # Display detailed information below the map
-                    st.markdown("### 📋 Detailed Data View")
+                    # Display summary information
+                    st.markdown("### 📊 Map Summary")
                     
-                    if display_mode == "single_row":
-                        # Show the selected row data in a nice format
-                        data_display = {}
-                        for var in selected_vars:
-                            if pd.notna(selected_data[var]):
-                                data_display[var] = selected_data[var]
-                        
-                        # Create a formatted display
-                        col1, col2 = st.columns(2)
-                        items = list(data_display.items())
-                        mid_point = len(items) // 2
-                        
-                        with col1:
-                            for var, value in items[:mid_point]:
-                                st.metric(var, value)
-                        
-                        with col2:
-                            for var, value in items[mid_point:]:
-                                st.metric(var, value)
+                    summary_col1, summary_col2, summary_col3, summary_col4 = st.columns(4)
                     
-                    else:  # summary mode
-                        # Show summary statistics
-                        summary_stats = {}
-                        for var in selected_vars:
-                            if df[var].dtype in ['float64', 'int64']:
-                                summary_stats[f"{var} (mean)"] = f"{df[var].mean():.2f}"
-                                summary_stats[f"{var} (total)"] = f"{df[var].sum():.2f}"
-                            else:
-                                summary_stats[f"{var} (unique)"] = df[var].nunique()
-                                summary_stats[f"{var} (most common)"] = df[var].mode().iloc[0] if len(df[var].mode()) > 0 else "N/A"
-                        
-                        # Display summary
-                        col1, col2 = st.columns(2)
-                        items = list(summary_stats.items())
-                        mid_point = len(items) // 2
-                        
-                        with col1:
-                            for key, value in items[:mid_point]:
-                                st.metric(key, value)
-                        
-                        with col2:
-                            for key, value in items[mid_point:]:
-                                st.metric(key, value)
+                    with summary_col1:
+                        st.metric("Chiefdoms Displayed", len(filtered_shapefile))
+                    with summary_col2:
+                        st.metric("Variables per Point", len(selected_vars))
+                    with summary_col3:
+                        if selected_district != 'All Districts':
+                            st.metric("District", selected_district)
+                        else:
+                            districts_shown = filtered_shapefile['FIRST_DNAM'].nunique()
+                            st.metric("Districts Shown", districts_shown)
+                    with summary_col4:
+                        st.metric("Map Center", f"{center_lat:.3f}, {center_lon:.3f}")
+
+                    # Show chiefdom list
+                    with st.expander("📋 Chiefdom Centers List"):
+                        chiefdom_list = filtered_shapefile[['FIRST_CHIE', 'FIRST_DNAM', 'center_lat', 'center_lon']].copy()
+                        chiefdom_list['center_lat'] = chiefdom_list['center_lat'].round(6)
+                        chiefdom_list['center_lon'] = chiefdom_list['center_lon'].round(6)
+                        st.dataframe(chiefdom_list)
 
                     # Download options
                     st.markdown("### 💾 Download Options")
@@ -495,25 +471,21 @@ if uploaded_file is not None:
                         st.download_button(
                             label="🌐 Download Interactive Map (HTML)",
                             data=html_map,
-                            file_name="central_point_map.html",
+                            file_name="chiefdom_centers_map.html",
                             mime="text/html"
                         )
                     
                     with download_col2:
-                        # CSV download of selected data
-                        if display_mode == "single_row":
-                            csv_data = pd.DataFrame([selected_data[selected_vars]]).to_csv(index=False)
-                        else:
-                            csv_data = df[selected_vars].to_csv(index=False)
-                        
+                        # CSV download of centers
+                        centers_csv = filtered_shapefile[['FIRST_CHIE', 'FIRST_DNAM', 'center_lat', 'center_lon']].to_csv(index=False)
                         st.download_button(
-                            label="📊 Download Selected Data (CSV)",
-                            data=csv_data,
-                            file_name="selected_data.csv",
+                            label="📊 Download Centers Data (CSV)",
+                            data=centers_csv,
+                            file_name="chiefdom_centers.csv",
                             mime="text/csv"
                         )
 
-                    st.success("🎉 Interactive central point map generated successfully!")
+                    st.success("🎉 Interactive chiefdom centers map generated successfully!")
 
         else:
             st.warning("⚠️ Please select at least one variable to display in the popup.")
@@ -534,27 +506,30 @@ else:
     st.markdown("""
     ### 🎯 What This App Does:
     
-    1. **📁 Upload any Excel file** with your data
-    2. **🎯 Choose which variables** to show in hover popup
-    3. **📋 Select which row** to display (or show summary)
-    4. **🌍 Set map center location** where the point appears
-    5. **🎨 Customize appearance** (colors, size, style)
-    6. **🗺️ Generate interactive map** with one central point
-    7. **💾 Download** as HTML or CSV
+    1. **🗺️ Loads your shapefile** automatically (Chiefdom 2021.shp)
+    2. **📍 Calculates center points** for each chiefdom automatically
+    3. **📁 Upload Excel data** to display at each center point
+    4. **🔗 Link data** to specific chiefdoms or use same data for all
+    5. **🎯 Choose variables** to show in interactive popups
+    6. **🎨 Customize appearance** and filter by district
+    7. **🗺️ Generate pure shapefile map** (no external map tiles needed)
     
-    ### 📋 Requirements:
-    - Excel file (.xlsx or .xls) with any structure
-    - No coordinate data needed!
+    ### 📋 Features:
+    - **One interactive point per chiefdom** at geometric center
+    - **Automatic center calculation** using shapefile geometry
+    - **Pure shapefile visualization** (no Google Maps or external tiles)
+    - **Custom hover popups** with your selected Excel variables
+    - **District filtering** for focused views
+    - **Data linking options** for chiefdom-specific information
+    - **Clean boundary display** with customizable styling
     
-    ### 🌟 Features:
-    - **Single central interactive point** placed anywhere on the map
-    - **Custom hover popups** with your selected variables
-    - **Multiple display modes** (single row or summary statistics)
-    - **Location presets** for quick map centering
-    - **Fully customizable** appearance and styling
-    - **Download options** for sharing and embedding
+    ### 🌟 Perfect For:
+    - Regional data visualization
+    - Administrative boundary analysis
+    - Chiefdom-level statistics display
+    - Local government data presentation
     """)
 
 # Footer
 st.markdown("---")
-st.markdown("💡 **Tip:** Perfect for displaying summary information, company data, or any dataset as a single interactive point on a map!")
+st.markdown("💡 **Tip:** The map will show one interactive point at the center of each chiefdom with your selected data variables!")
