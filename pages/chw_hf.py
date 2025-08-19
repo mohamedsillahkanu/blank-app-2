@@ -70,12 +70,12 @@ try:
                 # Get chiefdoms in this district
                 chiefdoms = sorted(district_shapefile['FIRST_CHIE'].unique())
                 
-                # Calculate subplot dimensions (4 columns)
+                # Calculate subplot dimensions (5 columns) - PowerPoint compatible size
                 cols = 5
                 rows = (len(chiefdoms) + cols - 1) // cols  # Ceiling division
                 
-                # Create figure
-                fig, axes = plt.subplots(rows, cols, figsize=(20, 5*rows))
+                # Create figure with PowerPoint-friendly dimensions (16:9 aspect ratio)
+                fig, axes = plt.subplots(rows, cols, figsize=(13.33, 7.5))  # PowerPoint slide size in inches
                 fig.suptitle(f'{district} District - Chiefdoms', fontsize=16, fontweight='bold')
                 
                 # Ensure axes is always a 2D array for consistent indexing
@@ -117,13 +117,16 @@ try:
                     
                     # Set title and formatting
                     ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} hf/chw)', 
-                               fontsize=10, fontweight='bold')
+                               fontsize=9, fontweight='bold')
                     ax.set_aspect('equal')
                     ax.axis('off')  # Turn off axes
                     
-                    # Add legend if there are facilities
+                    # Add legend if there are facilities - with bold text
                     if len(chiefdom_facilities) > 0:
-                        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+                        legend = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=7)
+                        # Make legend text bold
+                        for text in legend.get_texts():
+                            text.set_fontweight('bold')
                 
                 # Hide empty subplots
                 total_subplots = rows * cols
@@ -149,7 +152,8 @@ try:
             # Create summary map of all districts
             status_text.text('Creating summary map...')
             
-            fig, ax = plt.subplots(1, 1, figsize=(12, 15))
+            # Summary map with PowerPoint dimensions
+            fig, ax = plt.subplots(1, 1, figsize=(13.33, 7.5))
             
             # Plot all districts with different colors
             district_colors = plt.cm.Set3(np.linspace(0, 1, len(districts)))
@@ -183,7 +187,11 @@ try:
                         fontsize=16, fontweight='bold')
             ax.set_aspect('equal')
             ax.axis('off')  # Turn off axes
-            ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            
+            # Add legend with bold text for summary map
+            legend = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            for text in legend.get_texts():
+                text.set_fontweight('bold')
             
             plt.tight_layout()
             
@@ -229,12 +237,12 @@ try:
         # Get chiefdoms in this district
         chiefdoms = sorted(district_shapefile['FIRST_CHIE'].unique())
         
-        # Calculate subplot dimensions (4 columns)
-        cols = 4
+        # Calculate subplot dimensions (5 columns) - PowerPoint compatible
+        cols = 5
         rows = (len(chiefdoms) + cols - 1) // cols
         
-        # Create figure
-        fig, axes = plt.subplots(rows, cols, figsize=(20, 5*rows))
+        # Create figure with PowerPoint-friendly dimensions
+        fig, axes = plt.subplots(rows, cols, figsize=(13.33, 7.5))
         fig.suptitle(f'{selected_district} District - Chiefdoms', fontsize=16, fontweight='bold')
         
         # Ensure axes is always a 2D array for consistent indexing
@@ -276,13 +284,16 @@ try:
             
             # Set title and formatting
             ax.set_title(f'{chiefdom}\n({len(chiefdom_facilities)} hf/chw)', 
-                       fontsize=10, fontweight='bold')
+                       fontsize=9, fontweight='bold')
             ax.set_aspect('equal')
             ax.axis('off')  # Turn off axes
             
-            # Add legend if there are facilities
+            # Add legend if there are facilities - with bold text
             if len(chiefdom_facilities) > 0:
-                ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=8)
+                legend = ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left', fontsize=7)
+                # Make legend text bold
+                for text in legend.get_texts():
+                    text.set_fontweight('bold')
         
         # Hide empty subplots
         total_subplots = rows * cols
