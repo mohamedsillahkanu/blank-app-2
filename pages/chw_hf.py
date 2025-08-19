@@ -16,7 +16,7 @@ TYPE_COLORS = {
     'HF': '#1f77b4',      # Blue
     'HTR': '#2ca02c',     # Green
     'ETR': '#9467bd',     # Purple
-    'HTR/ETR': '#ff7f0e'  # Orange
+    'Unknown CHW': '#ff7f0e'  # Orange
 }
 
 try:
