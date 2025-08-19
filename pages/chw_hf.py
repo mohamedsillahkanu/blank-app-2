@@ -71,7 +71,7 @@ try:
                 chiefdoms = sorted(district_shapefile['FIRST_CHIE'].unique())
                 
                 # Calculate subplot dimensions (4 columns)
-                cols = 4
+                cols = 5
                 rows = (len(chiefdoms) + cols - 1) // cols  # Ceiling division
                 
                 # Create figure
@@ -149,7 +149,7 @@ try:
             # Create summary map of all districts
             status_text.text('Creating summary map...')
             
-            fig, ax = plt.subplots(1, 1, figsize=(15, 12))
+            fig, ax = plt.subplots(1, 1, figsize=(12, 15))
             
             # Plot all districts with different colors
             district_colors = plt.cm.Set3(np.linspace(0, 1, len(districts)))
