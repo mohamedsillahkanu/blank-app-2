@@ -108,7 +108,7 @@ try:
                                 type_facilities['w_long'], 
                                 type_facilities['w_lat'],
                                 c=TYPE_COLORS.get(facility_type, '#666666'),
-                                s=30,
+                                s=15,
                                 alpha=0.8,
                                 label=f'{facility_type} ({len(type_facilities)})',
                                 edgecolors='white',
